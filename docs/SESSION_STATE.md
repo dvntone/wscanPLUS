@@ -8,7 +8,7 @@ Audience: professional / advanced users (defensive detection & assessment)
 
 ## Core Architecture
 
-- **Android** (Kotlin, API 31+): GPS companion, field sensor, tethering provider, distributed scanner node
+- **Android** (Kotlin, API 24+): GPS companion, field sensor, tethering provider, distributed scanner node
 - **Desktop** (Linux-first, Electron/Node): primary hub — scan aggregation, Kismet/BetterCap integration, PCAP analysis, AI heuristics
 - **Web UI**: PWA dashboard served locally by desktop — not standalone for scanning
 
@@ -71,6 +71,9 @@ Audience: professional / advanced users (defensive detection & assessment)
 ```
 wscanplus/
 ├── android/           # Kotlin companion app (Gradle)
+│   ├── app/           # Application module
+│   ├── core/          # Library module
+│   └── gradle/        # Wrapper + daemon config
 ├── desktop/           # Electron app (Linux-first, ESM)
 │   ├── src/
 │   │   ├── main/      # Electron main process
@@ -85,18 +88,46 @@ wscanplus/
 
 ## Phase
 
-**Phase 0 (Foundation / Safety / Build Integrity)** — nearing completion
+**Phase 1 (Android Source)** — scaffold merged, first Kotlin sources next
 
 ---
 
-## Phase 0 Remaining Actions
+## Phase 0 — Complete ✅
+
+All PRs merged: #40, #43, #45, #47, #49, #51, #53, #55, #57
 
 1. ~~Add guardrails: AGENTS.md + .github/copilot-instructions.md~~ ✅
 2. ~~Add docs: INDEX, ROADMAP, DEPENDENCIES, SESSION_STATE~~ ✅
 3. ~~Add secrets scaffolding: .env.example + secrets.defaults.properties + .gitignore~~ ✅
-4. Fix and complete CI: timeouts + Android unit test + blocking secret scan ← **in progress**
-5. ~~Configure GitHub repo secrets~~ ✅ — 7 secrets configured 2026-03-15: GOOGLE_MAPS_API_KEY, GOOGLE_MAPS_SIGNING_SECRET, VERTEX_AI_API_KEY, ANDROID_KEYSTORE, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD, ANDROID_STORE_PASSWORD
-6. Create GitHub labels/milestones for Phase 1 planning ← **pending** (labels already exist, milestones TBD)
+4. ~~Fix and complete CI: timeouts + Android unit test + blocking secret scan~~ ✅
+5. ~~Configure GitHub repo secrets~~ ✅ — 7 secrets configured 2026-03-15
+6. ~~Android scaffold (Gradle project foundation)~~ ✅ — PR #57 merged 2026-03-15
+
+---
+
+## Phase 1 — In Progress
+
+### Confirmed Android build stack (on main)
+
+| Component | Version | Notes |
+|-----------|---------|-------|
+| AGP | 9.0.0 | 9.1.0 is alpha-only — do not use |
+| Gradle | 9.3.1 | Wrapper SHA-256 pinned |
+| compileSdk / targetSdk | 36 | — |
+| minSdk | 24 | — |
+| JDK | 17 | — |
+
+### Known constraint: Kotlin plugin
+
+AGP 9.0.0 registers the `kotlin` extension internally. Applying `org.jetbrains.kotlin.android` explicitly causes a conflict. `kotlin-stdlib` is not declared yet. **Before adding any `.kt` source file**, a dedicated PR must establish the correct Kotlin integration pattern. See KNOWN_ISSUES.md.
+
+### Phase 1 Remaining Actions
+
+1. Resolve AGP 9.0.0 Kotlin plugin integration — dedicated PR ← **next**
+2. First Kotlin source files — WatchdogService stub, scanner chain skeleton
+3. AndroidManifest permissions (USE_BIOMETRIC, ACCESS_FINE_LOCATION, etc.)
+4. Gemini/Vertex AI integration scaffold
+5. Google Maps integration scaffold
 
 ---
 
