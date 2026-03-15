@@ -111,7 +111,7 @@ AGP 9.0.0 registers a `kotlin` extension internally. This means:
 - Root `build.gradle.kts`: declare AGP only (`com.android.application`, `com.android.library`) — no Kotlin plugin declaration
 - Module `build.gradle.kts`: apply AGP plugin only — no `id("org.jetbrains.kotlin.android")`
 - Remove `kotlinOptions { jvmTarget = "17" }` — use `compileOptions` only
-- Keep `kotlin-stdlib` as a dependency (AGP manages compilation)
+- Remove `kotlin-stdlib` dependency until Kotlin plugin is properly introduced — premature without the plugin applied
 
 ### Confirmed Stable Versions (as of 2026-03-15)
 
