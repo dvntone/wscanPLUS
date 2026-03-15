@@ -128,6 +128,10 @@ AGP 9.0.0 registers a `kotlin` extension internally. This means:
 
 When Codex or any agent says a plugin is "embedded" in AGP, verify whether that means auto-applied (no declaration needed) or version-bundled (still requires declaration). For AGP 9.0.0, it means the former — do not add the Kotlin plugin explicitly.
 
+### Pending: Kotlin sources not yet introduced
+
+`kotlin-stdlib` was removed from app and core because no Kotlin source files exist in the scaffold and the Kotlin Android plugin cannot be applied explicitly under AGP 9.0.0 (extension conflict). When the first Kotlin source file is added, a dedicated PR must resolve the correct Kotlin integration pattern for AGP 9.0.0 before stdlib can be re-declared. Do not add `.kt` files without first sorting this out.
+
 ---
 
 ## 2026-03-14: Copilot Session Incident (PR #32-#36)
