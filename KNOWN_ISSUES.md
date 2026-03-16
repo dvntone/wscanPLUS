@@ -98,7 +98,7 @@ All changes were made on 2026-03-14 to improve repository security, simplify con
 
 AGP 9.0.0 ships with **built-in Kotlin**. The `org.jetbrains.kotlin.android` plugin is intentionally removed — AGP applies it internally. This caused 3 CI failures during scaffold setup before the official migration guide was consulted.
 
-### Official behaviour (confirmed: developer.android.com/build/migrate-to-built-in-kotlin)
+### Official behaviour (confirmed: [developer.android.com/build/migrate-to-built-in-kotlin](https://developer.android.com/build/migrate-to-built-in-kotlin))
 
 - `org.jetbrains.kotlin.android` must NOT be applied — AGP registers the `kotlin` extension; applying it again throws `Cannot add extension with name 'kotlin'`
 - `kotlinOptions { }` is removed — replaced by `kotlin { compilerOptions { } }` top-level block
@@ -115,13 +115,11 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // jvmTarget for Kotlin defaults to targetCompatibility — no separate kotlin block needed
     }
-}
 
-kotlin {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-    }
+    // If the module has no Kotlin sources, disable built-in Kotlin for build performance:
+    // enableKotlin = false
 }
 ```
 

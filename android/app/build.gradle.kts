@@ -30,14 +30,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    // No Kotlin sources in :app yet — disable built-in Kotlin for build performance
+    enableKotlin = false
+
     packaging {
         resources.excludes.add("/META-INF/{AL2.0,LGPL2.1}")
-    }
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
