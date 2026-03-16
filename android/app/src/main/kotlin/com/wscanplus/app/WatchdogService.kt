@@ -9,7 +9,6 @@ import com.wscanplus.core.scanner.ScannerChain
  * WatchdogService manages the scanner chain and the ADB communication socket.
  *
  * Foreground service — foregroundServiceType="dataSync" (declared in AndroidManifest).
- * Listens on localhost:9000 via java.net.ServerSocket for desktop ADB communication.
  * Serial number is the primary device key in all data structures.
  *
  * Android 15 constraint: dataSync foreground services have a 6-hour max runtime.
@@ -31,15 +30,17 @@ class WatchdogService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // TODO: startForeground(NOTIFICATION_ID, buildNotification()) — requires permissions PR
-        scannerChain = ScannerChain(applicationContext)
-        // TODO: scannerChain!!.start() on a background thread
+        if (scannerChain == null) {
+            scannerChain = ScannerChain(applicationContext)
+            // TODO: scannerChain!!.start() on a background thread
+        }
         return START_STICKY
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        // TODO: scannerChain?.stop()
-        // TODO: close ServerSocket
+        scannerChain?.stop()
+        // TODO: close ServerSocket (Phase 3)
         scannerChain = null
     }
 }

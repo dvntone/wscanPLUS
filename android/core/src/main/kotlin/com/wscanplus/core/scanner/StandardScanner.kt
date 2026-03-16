@@ -20,6 +20,7 @@ import android.os.Build
  *   ACCESS_FINE_LOCATION (all API levels), NEARBY_WIFI_DEVICES with neverForLocation (API 33+)
  *
  * Threading rule: start() and stop() MUST be called from a background thread.
+ * start() is idempotent — safe to call multiple times.
  *
  * TODO (Phase 1): implement registerScanResultsCallback() path for API 30+.
  * TODO (Phase 1): forward scan results via callback or channel to ScannerChain.
@@ -30,6 +31,7 @@ class StandardScanner(private val context: Context) {
     private var receiver: BroadcastReceiver? = null
 
     fun start() {
+        if (receiver != null) return  // idempotent — already started
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // API 30+: use registerScanResultsCallback — TODO implement
         } else {
@@ -43,7 +45,7 @@ class StandardScanner(private val context: Context) {
                 if (intent.action != WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) return
                 val wifiManager = ctx.applicationContext
                     .getSystemService(Context.WIFI_SERVICE) as WifiManager
-                @Suppress("DEPRECATION")
+                @Suppress("DEPRECATION", "UNUSED_VARIABLE")
                 val results = wifiManager.scanResults
                 // TODO: forward results to ScannerChain callback
             }
@@ -55,8 +57,15 @@ class StandardScanner(private val context: Context) {
     }
 
     fun stop() {
+        // Balanced: receiver is only set by startWithBroadcastReceiver(), cleared here.
+        // IllegalArgumentException should not occur given idempotent start(), but caught
+        // defensively in case of unexpected lifecycle edge cases.
         receiver?.let {
-            try { context.unregisterReceiver(it) } catch (_: IllegalArgumentException) {}
+            try {
+                context.unregisterReceiver(it)
+            } catch (e: IllegalArgumentException) {
+                // Receiver was not registered — log in future when logging is available
+            }
             receiver = null
         }
         // TODO: unregister registerScanResultsCallback when API 30+ path is implemented
