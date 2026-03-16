@@ -3,6 +3,7 @@ plugins {
     // TODO: add id("com.google.gms.google-services") once google-services.json
     // is placed at android/app/google-services.json (obtain from Firebase Console).
     // Applying without the file will fail the build — see KNOWN_ISSUES.md.
+    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
 }
 
 android {
@@ -38,6 +39,13 @@ android {
     }
 }
 
+secrets {
+    // Reads GOOGLE_MAPS_API_KEY and VERTEX_AI_API_KEY from android/local.properties (gitignored).
+    // Fallback placeholder values from android/secrets.defaults.properties (committed).
+    propertiesFileName = "local.properties"
+    defaultPropertiesFileName = "secrets.defaults.properties"
+}
+
 dependencies {
     implementation(project(":core"))
     implementation("androidx.core:core-ktx:1.18.0")
@@ -49,7 +57,12 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.10.0"))
     implementation("com.google.firebase:firebase-ai")
 
+    // Google Maps SDK — scan history heatmap + GPS-tagged scan visualisation
+    // API key injected from local.properties via secrets-gradle-plugin (MAPS_API_KEY)
+    implementation("com.google.android.gms:play-services-maps:20.0.0")
+
     testImplementation("junit:junit:4.13.2")
+
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }
