@@ -40,7 +40,7 @@ android {
 }
 
 secrets {
-    // Reads MAPS_API_KEY and GEMINI_API_KEY from android/local.properties (gitignored).
+    // Reads GOOGLE_MAPS_API_KEY and VERTEX_AI_API_KEY from android/local.properties (gitignored).
     // Fallback placeholder values from android/secrets.defaults.properties (committed).
     propertiesFileName = "local.properties"
     defaultPropertiesFileName = "secrets.defaults.properties"
