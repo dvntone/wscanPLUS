@@ -20,7 +20,7 @@
 - Artifact: `com.google.firebase:firebase-ai` (no explicit version when using BOM; standalone = `17.10.0`)
 - `firebase-ai:16.x` is superseded; stable line is 17.x
 **Breaking changes 16.x → 17.x:** minSdk bumped to 23 (project minSdk 24 — compatible). `generateContent()`/`countTokens()` require ≥1 argument. Grounding metadata fields non-optional. No migration burden since no Firebase AI code exists yet.
-**Status:** Corrected in SESSION_STATE. No code impact until Firebase scaffold PR.
+**Status:** ✅ RESOLVED — SESSION_STATE and the “Firebase AI SDK name — use firebase-ai, not firebase-vertexai” docs section now both use BOM `com.google.firebase:firebase-bom:34.10.0` and `com.google.firebase:firebase-ai` (BOM-managed / `17.10.0` standalone). No code impact until Firebase scaffold PR.
 
 ---
 
