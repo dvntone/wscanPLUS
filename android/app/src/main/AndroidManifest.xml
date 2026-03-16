@@ -61,6 +61,15 @@
             android:foregroundServiceType="dataSync"
             android:exported="false" />
 
+        <!--
+            Google Maps API key — injected by secrets-gradle-plugin from local.properties.
+            Key name: MAPS_API_KEY. Set MAPS_API_KEY=your_key in android/local.properties.
+            Placeholder value (REPLACE_ME) sourced from android/secrets.defaults.properties.
+        -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" />
+
     </application>
 
 </manifest>
