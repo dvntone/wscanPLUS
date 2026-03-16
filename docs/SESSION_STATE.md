@@ -117,14 +117,15 @@ All PRs merged: #40, #43, #45, #47, #49, #51, #53, #55, #57
 | minSdk | 24 | — |
 | JDK | 17 | — |
 
-### Known constraint: Kotlin plugin
+### Kotlin configuration (resolved — PR #60)
 
-AGP 9.0.0 registers the `kotlin` extension internally. Applying `org.jetbrains.kotlin.android` explicitly causes a conflict. `kotlin-stdlib` is not declared yet. **Before adding any `.kt` source file**, a dedicated PR must establish the correct Kotlin integration pattern. See KNOWN_ISSUES.md.
+AGP 9.0.0 ships with built-in Kotlin. No `org.jetbrains.kotlin.android` plugin needed. `jvmTarget` defaults to `compileOptions.targetCompatibility`. Modules with no Kotlin sources use `enableKotlin = false`. See KNOWN_ISSUES.md for full pattern.
+
+`CoreModule.kt` stub is in `core/` — Kotlin compilation verified end-to-end.
 
 ### Phase 1 Remaining Actions
 
-1. Resolve AGP 9.0.0 Kotlin plugin integration — dedicated PR ← **next**
-2. First Kotlin source files — WatchdogService stub, scanner chain skeleton
+1. First Kotlin source files — WatchdogService stub, scanner chain skeleton ← **next**
 3. AndroidManifest permissions (USE_BIOMETRIC, ACCESS_FINE_LOCATION, etc.)
 4. Gemini/Vertex AI integration scaffold
 5. Google Maps integration scaffold
