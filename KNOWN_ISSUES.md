@@ -1,5 +1,53 @@
 # Known Issues
 
+## 2026-03-16: CVE-2024-21538 — jest 29.7.0 (desktop, dev-only)
+
+**Severity:** High (CVSS 7.5) — dev tooling only, not shipped in production app
+**Affected:** `jest:29.7.0` → transitive dep `cross-spawn@7.0.3` (via execa)
+**Vulnerability:** ReDoS (Regular Expression Denial of Service) — CPU exhaustion via crafted input to `cross-spawn`
+**Fix:** `jest:30.3.0` (ships `cross-spawn@7.0.5+`)
+**Status:** Pending — dependency update PR required before next feature PR
+**Action:** Update desktop `jest` 29.7.0 → 30.3.0. Review Jest 29→30 migration guide for breaking changes.
+
+---
+
+## 2026-03-16: Scanner chain — Nexmon and Shizuku removed
+
+**Decision date:** 2026-03-16
+**Removed from scanner chain:** Nexmon, Shizuku
+**New effective chain:** USB > Standard (Root = developer opt-in stub, never silent fallback)
+
+**Nexmon removal rationale:**
+- Broadcom chipsets only (~20% of Android market)
+- Primary test devices (OnePlus 10T = Qualcomm Snapdragon, Pixel 10 Pro XL = Google Tensor) are incompatible
+- Requires per-device bootloader unlock + kernel flashing — not distributable as an app feature
+- Only viable for dedicated research hardware (Kali NetHunter, etc.)
+
+**Shizuku removal rationale:**
+- Previously dropped from scope (REFERENCES.md)
+- Research confirmed: adds zero WiFi scanning capability over standard WifiManager
+- Scan throttling (4/2 min foreground) still applies; no monitor mode; no raw frames
+- Sessions don't survive reboot without root; Android 16 beta already broke it
+
+---
+
+## 2026-03-16: adbkit — all variants CJS-only, deferred to Phase 3
+
+**Issue:** `openstf/adbkit` is unmaintained (~7 years). `@u4/adbkit` v5.1.7 (maintained fork) is confirmed CJS-only — no `"exports"` field, no `"type": "module"`. Incompatible with wscanplus ESM-only rule without a `createRequire` shim.
+**Decision:** `createRequire` workaround rejected — violates ESM-only principle. ADB desktop library deferred to Phase 3.
+**Phase 3 action:** Evaluate Tango ADB for native ESM compatibility before adding any ADB library.
+**Impact:** No ADB library added to desktop in Phase 1 or 2. Android-side `ServerSocket(9000)` architecture unaffected.
+
+---
+
+## 2026-03-16: Firebase AI SDK name — use firebase-ai, not firebase-vertexai
+
+**Issue:** `com.google.firebase:firebase-vertexai` is superseded. `com.google.ai.client.generativeai` is deprecated.
+**Resolution (Codex verified Mar 2026):** Use **`com.google.firebase:firebase-ai:16.0.0`** (Firebase AI Logic SDK) via BOM `firebase-bom:35.5.0`. Requires `com.google.gms:google-services:4.4.2` plugin and `google-services.json` at `android/app/google-services.json`.
+**WIF note (gemini_findings.md):** WIF is for CI/CD → GCP server-side auth only. Not for Android app runtime. Filed for Phase 4+.
+
+---
+
 ## 2026-03-14: Repository Configuration Changes
 
 On 2026-03-14, multiple repository settings were changed by @dvntone (repository admin) to improve security, traceability, and align with AI-driven project workflow requirements.

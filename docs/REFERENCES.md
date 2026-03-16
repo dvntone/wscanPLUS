@@ -53,7 +53,7 @@ Agents should study these before implementing related features.
 | WGTunnel | https://github.com/wgtunnel/android | WireGuard/AmneziaWG Android — VPN tethering and network interface reference. |
 | ByeDPIAndroid | https://github.com/krlvm/ByeDPIAndroid | Local VPN service for network interception — network layer reference. |
 | Dhizuku | https://github.com/iamr0s/Dhizuku | DeviceOwner permission sharing — Android privilege model reference. |
-| ya-webadb | https://github.com/yume-chan/ya-webadb | Browser-based ADB interface — ADB communication layer reference. |
+| ya-webadb | https://github.com/yume-chan/ya-webadb | Browser-based ADB interface — desktop ADB library is TBD (deferred to Phase 3); ya-webadb reserved for future web dashboard only. |
 | MetaRadar | https://github.com/BLE-Research-Group/MetaRadar | BLE environment monitoring — wireless scanning patterns for Android. |
 | ReTerminal | https://github.com/RohitKushvaha01/ReTerminal | Android terminal emulator — terminal UI reference for advanced mode. |
 
@@ -68,10 +68,20 @@ Agents should study these before implementing related features.
 
 ---
 
+## Desktop / Node.js References
+
+| Library | URL | Why |
+|---------|-----|-----|
+| adbkit | https://github.com/openstf/adbkit | ADB Node.js client — reference only. Original is unmaintained; @u4/adbkit fork is CJS-only. **Desktop ADB library is deferred to Phase 3** pending ESM-compatible option (evaluate Tango ADB). |
+| Tango ADB | https://github.com/tango-adb/example-nodejs | Modern TypeScript ADB implementation — evaluate for native ESM compatibility at Phase 3 before adding any ADB library to desktop. |
+
+---
+
 ## Do NOT Use
 
 | Repo | Reason |
 |------|--------|
 | SonarQube Scan Action | Explicitly excluded — no CodeQL/Sonar/Semgrep/Detekt per AGENTS.md |
 | ipdrone / Xteam / TermuxCyberArmy | Offensive-only tools with no defensive relevance to wscanplus |
-| awesome-shizuku / ShizuWall | Shizuku was dropped from wscanplus scope |
+| awesome-shizuku / ShizuWall | Shizuku dropped from wscanplus scope — adds zero scanning capability, no monitor mode, throttling still applies |
+| nexmon / seemoo-lab/nexmon | Broadcom-only chipset requirement (~20% of market); incompatible with primary test devices (OnePlus 10T, Pixel 10 Pro XL). Requires per-device firmware flashing — not viable for mainstream app distribution. |
