@@ -53,7 +53,7 @@ Agents should study these before implementing related features.
 | WGTunnel | https://github.com/wgtunnel/android | WireGuard/AmneziaWG Android — VPN tethering and network interface reference. |
 | ByeDPIAndroid | https://github.com/krlvm/ByeDPIAndroid | Local VPN service for network interception — network layer reference. |
 | Dhizuku | https://github.com/iamr0s/Dhizuku | DeviceOwner permission sharing — Android privilege model reference. |
-| ya-webadb | https://github.com/yume-chan/ya-webadb | Browser-based ADB interface — skip for MVP (adbkit is sufficient); revisit only if web dashboard is added. |
+| ya-webadb | https://github.com/yume-chan/ya-webadb | Browser-based ADB interface — desktop ADB library is TBD (deferred to Phase 3); ya-webadb reserved for future web dashboard only. |
 | MetaRadar | https://github.com/BLE-Research-Group/MetaRadar | BLE environment monitoring — wireless scanning patterns for Android. |
 | ReTerminal | https://github.com/RohitKushvaha01/ReTerminal | Android terminal emulator — terminal UI reference for advanced mode. |
 
@@ -72,7 +72,8 @@ Agents should study these before implementing related features.
 
 | Library | URL | Why |
 |---------|-----|-----|
-| adbkit | https://github.com/openstf/adbkit | Pure Node.js ADB client — used on desktop side for device enumeration, port forwarding, and multi-device management. Primary ADB transport library for wscanplus. |
+| adbkit | https://github.com/openstf/adbkit | ADB Node.js client — reference only. Original is unmaintained; @u4/adbkit fork is CJS-only. **Desktop ADB library is deferred to Phase 3** pending ESM-compatible option (evaluate Tango ADB). |
+| Tango ADB | https://github.com/tango-adb/example-nodejs | Modern TypeScript ADB implementation — evaluate for native ESM compatibility at Phase 3 before adding any ADB library to desktop. |
 
 ---
 
