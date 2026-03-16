@@ -1,6 +1,8 @@
 package com.wscanplus.core.scanner
 
+import android.Manifest
 import android.content.Context
+import androidx.annotation.RequiresPermission
 
 /**
  * ScannerChain orchestrates the scanner priority chain: USB > Standard.
@@ -23,6 +25,7 @@ class ScannerChain(private val context: Context) {
     private val standardScanner = StandardScanner(context)
     // RootScanner is never instantiated in the chain — dev opt-in only.
 
+    @RequiresPermission(allOf = [Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.ACCESS_FINE_LOCATION])
     fun start() {
         if (usbScanner.isAvailable()) {
             usbScanner.start()

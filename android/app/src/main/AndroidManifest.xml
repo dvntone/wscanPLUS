@@ -10,8 +10,13 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
 
-    <!-- Dangerous permission — must be requested at runtime (API 24+) -->
+    <!--
+        Dangerous permissions — must be requested at runtime (API 24+).
+        Android 12+ requires both FINE and COARSE to be declared; the user
+        may choose to grant only COARSE — app must handle that gracefully.
+    -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <!--
         NEARBY_WIFI_DEVICES (API 33+): replaces the location permission requirement
@@ -63,7 +68,7 @@
 
         <!--
             Google Maps API key — injected by secrets-gradle-plugin from local.properties.
-            Key name: MAPS_API_KEY. Set MAPS_API_KEY=your_key in android/local.properties.
+            Key name: GOOGLE_MAPS_API_KEY. Set GOOGLE_MAPS_API_KEY=your_key in android/local.properties.
             Placeholder value (REPLACE_ME) sourced from android/secrets.defaults.properties.
         -->
         <meta-data

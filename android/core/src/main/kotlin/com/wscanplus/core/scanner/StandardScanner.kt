@@ -1,11 +1,14 @@
 package com.wscanplus.core.scanner
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.wifi.WifiManager
 import android.os.Build
+import androidx.annotation.RequiresPermission
 
 /**
  * StandardScanner is the guaranteed baseline scanner — works on all devices, all API levels.
@@ -30,6 +33,7 @@ class StandardScanner(private val context: Context) {
 
     private var receiver: BroadcastReceiver? = null
 
+    @RequiresPermission(allOf = [Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.ACCESS_FINE_LOCATION])
     fun start() {
         if (receiver != null) return  // idempotent — already started
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -41,6 +45,9 @@ class StandardScanner(private val context: Context) {
 
     private fun startWithBroadcastReceiver() {
         receiver = object : BroadcastReceiver() {
+            // Permission verified by start() caller via @RequiresPermission contract.
+            // Lint cannot trace through BroadcastReceiver.onReceive() system callbacks.
+            @SuppressLint("MissingPermission")
             override fun onReceive(ctx: Context, intent: Intent) {
                 if (intent.action != WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) return
                 val wifiManager = ctx.applicationContext
