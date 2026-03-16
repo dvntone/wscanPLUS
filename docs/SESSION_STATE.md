@@ -111,15 +111,15 @@ All PRs merged: #40, #43, #45, #47, #49, #51, #53, #55, #57
 
 | Component | Version | Notes |
 |-----------|---------|-------|
-| AGP | 9.0.0 | 9.1.0 is alpha-only — do not use |
-| Gradle | 9.3.1 | Wrapper SHA-256 pinned |
+| AGP | 9.1.0 | Stable since 2026-03-03. Gradle 9.3.1 already meets minimum. |
+| Gradle | 9.3.1 | Wrapper SHA-256 pinned — already meets AGP 9.1.0 minimum |
 | compileSdk / targetSdk | 36 | — |
 | minSdk | 24 | — |
 | JDK | 17 | — |
 
 ### Kotlin configuration (resolved — PR #60)
 
-AGP 9.0.0 ships with built-in Kotlin. No `org.jetbrains.kotlin.android` plugin needed. `jvmTarget` defaults to `compileOptions.targetCompatibility`. Modules with no Kotlin sources use `enableKotlin = false`. See KNOWN_ISSUES.md for full pattern.
+AGP 9.x ships with built-in Kotlin. No `org.jetbrains.kotlin.android` plugin needed. `jvmTarget` defaults to `compileOptions.targetCompatibility`. Modules with no Kotlin sources use `enableKotlin = false`. See KNOWN_ISSUES.md for full pattern.
 
 `CoreModule.kt` stub is in `core/` — Kotlin compilation verified end-to-end.
 
@@ -146,12 +146,20 @@ AGP 9.0.0 ships with built-in Kotlin. No `org.jetbrains.kotlin.android` plugin n
 - **ya-webadb:** Skip — reserved for future web dashboard only.
 - **LocalSocket:** NOT used for desktop↔Android comms. Standard TCP `ServerSocket` + ADB port forwarding is correct.
 
-### Firebase AI Logic / Gemini integration (Codex verified — 2026-03-16)
+### Firebase AI Logic / Gemini integration (re-verified Codex — 2026-03-16)
 
-- **Android SDK:** `com.google.firebase:firebase-ai:16.0.0` via BOM `com.google.firebase:firebase-bom:35.5.0` (Firebase AI Logic SDK). Do NOT use `firebase-vertexai` (superseded) or `com.google.ai.client.generativeai` (deprecated).
+- **Android SDK:** `com.google.firebase:firebase-ai` via BOM `com.google.firebase:firebase-bom:34.10.0` (Firebase AI Logic SDK). No explicit version on `firebase-ai` when using BOM. Standalone pin is `firebase-ai:17.10.0`.
+- **Previous lock (35.5.0 BOM / 16.0.0 artifact) was incorrect** — BOM 35.x does not exist; 34.10.0 is current stable (released 2026-02-26). `firebase-ai` 16.x is superseded; stable line is 17.x.
+- **Breaking changes 16.x → 17.x** (all pre-code — no migration needed since no Firebase code written yet): minSdk bumped to 23 (project minSdk 24 — compatible); `generateContent()`/`countTokens()` require ≥1 argument; grounding metadata fields are now non-optional.
+- **Do NOT use:** `firebase-vertexai` (superseded), `com.google.ai.client.generativeai` (deprecated).
 - **Requires:** `com.google.gms:google-services:4.4.2` plugin + `google-services.json` at `android/app/google-services.json`
 - **Root build.gradle.kts addition:** `id("com.google.gms.google-services") version "4.4.2" apply false`
 - **App build.gradle.kts:** Add `id("com.google.gms.google-services")` to plugins block. No special `buildFeatures` needed.
+- **Dependency block (app + core):**
+  ```kotlin
+  implementation(platform("com.google.firebase:firebase-bom:34.10.0"))
+  implementation("com.google.firebase:firebase-ai")
+  ```
 - **Auth:** API key via `secrets-gradle-plugin:2.0.1` in `local.properties`. No WIF for Android runtime.
 - **WIF (gemini_findings.md):** Valid for CI/CD → GCP server-side only. Filed for Phase 4+.
 - **Google Maps SDK:** `com.google.android.gms:play-services-maps:18.1.0`
@@ -172,11 +180,12 @@ AGP 9.0.0 ships with built-in Kotlin. No `org.jetbrains.kotlin.android` plugin n
 
 ### Phase 1 Remaining Actions (PR sequence)
 
-1. **[PR — DEPENDENCY, do first — CVE blocker]** jest 29.7.0 → 30.3.0 + `jest.config.mjs` + test script update + Android test dep updates (core-ktx 1.18.0, test.ext:junit 1.3.0, espresso 3.6.1)
-2. **[PR — FEATURE]** WatchdogService stub + scanner chain skeleton (USB > Standard; Root dev-opt-in stub)
-3. **[PR — FEATURE]** AndroidManifest permissions (USE_BIOMETRIC, ACCESS_FINE_LOCATION, FOREGROUND_SERVICE, FOREGROUND_SERVICE_DATA_SYNC, INTERNET, NEARBY_WIFI_DEVICES)
-4. **[PR — FEATURE]** Firebase AI Logic scaffold (`firebase-ai:16.0.0`, google-services plugin, `google-services.json` placeholder)
-5. **[PR — FEATURE]** Google Maps scaffold
+1. ~~**[PR #62 — DEPENDENCY, CVE blocker]** jest 29.7.0 → 30.3.0 + `jest.config.mjs` + test script update + Android test dep updates~~ ✅ merged e95a880
+2. ~~**[PR — DEPENDENCY]** AGP 9.0.0 → 9.1.0~~ — in progress
+3. **[PR — FEATURE]** WatchdogService stub + scanner chain skeleton (USB > Standard; Root dev-opt-in stub)
+4. **[PR — FEATURE]** AndroidManifest permissions (USE_BIOMETRIC, ACCESS_FINE_LOCATION, FOREGROUND_SERVICE, FOREGROUND_SERVICE_DATA_SYNC, INTERNET, NEARBY_WIFI_DEVICES)
+5. **[PR — FEATURE]** Firebase AI Logic scaffold (`firebase-bom:34.10.0` + `firebase-ai`, google-services plugin, `google-services.json` placeholder)
+6. **[PR — FEATURE]** Google Maps scaffold
 
 ---
 

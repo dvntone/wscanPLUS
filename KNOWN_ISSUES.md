@@ -6,8 +6,31 @@
 **Affected:** `jest:29.7.0` → transitive dep `cross-spawn@7.0.3` (via execa)
 **Vulnerability:** ReDoS (Regular Expression Denial of Service) — CPU exhaustion via crafted input to `cross-spawn`
 **Fix:** `jest:30.3.0` (ships `cross-spawn@7.0.5+`)
-**Status:** Pending — dependency update PR required before next feature PR
-**Action:** Update desktop `jest` 29.7.0 → 30.3.0. Review Jest 29→30 migration guide for breaking changes.
+**Status:** ✅ RESOLVED — PR #62 merged 2026-03-16 (commit e95a880)
+**Resolution:** `cross-spawn` resolved to `7.0.6` in lockfile. `npm ci` clean, 0 vulnerabilities.
+**Note:** `glob@7.2.3` deprecation warning remains (transitive via test-exclude→Jest). npm audit shows 0 CVEs — dev-only, not shipped. Track for future dep update.
+
+---
+
+## 2026-03-16: Firebase AI BOM version correction (35.5.0 → 34.10.0)
+
+**Issue:** Initial Codex verification (2026-03-16) locked `firebase-bom:35.5.0` and `firebase-ai:16.0.0`. Both were incorrect — Firebase BOM 35.x does not exist.
+**Correct versions (re-verified Codex 2026-03-16):**
+- BOM: `com.google.firebase:firebase-bom:34.10.0` (released 2026-02-26)
+- Artifact: `com.google.firebase:firebase-ai` (no explicit version when using BOM; standalone = `17.10.0`)
+- `firebase-ai:16.x` is superseded; stable line is 17.x
+**Breaking changes 16.x → 17.x:** minSdk bumped to 23 (project minSdk 24 — compatible). `generateContent()`/`countTokens()` require ≥1 argument. Grounding metadata fields non-optional. No migration burden since no Firebase AI code exists yet.
+**Status:** Corrected in SESSION_STATE. No code impact until Firebase scaffold PR.
+
+---
+
+## 2026-03-16: AGP 9.1.0 now stable — pending upgrade
+
+**Issue:** AGP 9.0.0 was locked with note "9.1.0 is alpha-only". AGP 9.1.0 was promoted to stable 2026-03-03.
+**Action:** Bump AGP to 9.1.0 in next dep PR (after PR #62 merges).
+**Migration from 9.0.0:** Gradle wrapper already at 9.3.1 (meets 9.1.0 minimum — no wrapper change needed). SDK Build Tools 36.0.0 (already set). R8 repackaging enabled by default in 9.1.0 — add `-dontrepackage` to ProGuard rules only if it causes issues (unlikely at scaffold stage).
+**Built-in Kotlin:** Still applies in AGP 9.1.0 — no `org.jetbrains.kotlin.android` plugin needed.
+**Status:** ✅ RESOLVED — PR #62 merged 2026-03-16. AGP bumped to 9.1.0 in this PR.
 
 ---
 
@@ -175,7 +198,7 @@ android {
 
 | Tool | Version | Notes |
 |------|---------|-------|
-| AGP | 9.0.0 | 9.1.0 is alpha-only — do not use |
+| AGP | 9.1.0 | Stable since 2026-03-03. Gradle 9.3.1 already meets minimum. |
 | Gradle | 9.3.1 | Wrapper SHA-256 pinned |
 | compileSdk / targetSdk | 36 | — |
 | minSdk | 24 | — |
