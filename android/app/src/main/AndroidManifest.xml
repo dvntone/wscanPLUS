@@ -1,5 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- ================================================================
+         WiFi scanning — required across all supported API levels (24–36)
+         ================================================================ -->
+
+    <!-- Normal permissions — granted at install time -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+
+    <!-- Dangerous permission — must be requested at runtime (API 24+) -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!--
+        NEARBY_WIFI_DEVICES (API 33+): replaces the location permission requirement
+        for getScanResults() on API 33+. neverForLocation flag ensures this permission
+        is not used to derive the user's location. Declare alongside ACCESS_FINE_LOCATION
+        for API 24–32 fallback coverage.
+    -->
+    <uses-permission
+        android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="33" />
+
+    <!-- ================================================================
+         WatchdogService foreground service permissions
+         ================================================================ -->
+
+    <!-- Required API 28+ to call startForeground() -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <!--
+        Required API 34+ for foregroundServiceType="dataSync".
+        Guards the 6-hour dataSync runtime limit on Android 15.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <!-- Required for ServerSocket(9000) ADB communication (Phase 3) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- ================================================================
+         Biometric authentication
+         HARD RULE: NEVER remove USE_BIOMETRIC — silent crash on Android 14+
+         ================================================================ -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
     <application
         android:allowBackup="false"
@@ -10,8 +55,6 @@
             WatchdogService — foreground service managing the scanner chain + ADB socket.
             foregroundServiceType="dataSync": correct type for background data transfer.
             NOT "connectedDevice" — that type is for direct USB device management only.
-            Permissions required (declared in Phase 1 permissions PR):
-              FOREGROUND_SERVICE (API 28+), FOREGROUND_SERVICE_DATA_SYNC (API 34+), INTERNET
         -->
         <service
             android:name=".WatchdogService"
