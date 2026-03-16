@@ -5,6 +5,19 @@
         android:allowBackup="false"
         android:label="wscan+"
         android:supportsRtl="true">
+
+        <!--
+            WatchdogService — foreground service managing the scanner chain + ADB socket.
+            foregroundServiceType="dataSync": correct type for background data transfer.
+            NOT "connectedDevice" — that type is for direct USB device management only.
+            Permissions required (declared in Phase 1 permissions PR):
+              FOREGROUND_SERVICE (API 28+), FOREGROUND_SERVICE_DATA_SYNC (API 34+), INTERNET
+        -->
+        <service
+            android:name=".WatchdogService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
+
     </application>
 
 </manifest>
