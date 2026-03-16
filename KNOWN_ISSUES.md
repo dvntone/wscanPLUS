@@ -24,13 +24,13 @@
 
 ---
 
-## 2026-03-16: AGP 9.1.0 now stable — pending upgrade
+## 2026-03-16: AGP 9.0.0 → 9.1.0 upgrade
 
 **Issue:** AGP 9.0.0 was locked with note "9.1.0 is alpha-only". AGP 9.1.0 was promoted to stable 2026-03-03.
-**Action:** Bump AGP to 9.1.0 in next dep PR (after PR #62 merges).
+**Action:** Bumped AGP to 9.1.0 in PR #63 (dep PR after PR #62 merged).
 **Migration from 9.0.0:** Gradle wrapper already at 9.3.1 (meets 9.1.0 minimum — no wrapper change needed). SDK Build Tools 36.0.0 (already set). R8 repackaging enabled by default in 9.1.0 — add `-dontrepackage` to ProGuard rules only if it causes issues (unlikely at scaffold stage).
 **Built-in Kotlin:** Still applies in AGP 9.1.0 — no `org.jetbrains.kotlin.android` plugin needed.
-**Status:** ✅ RESOLVED — PR #62 merged 2026-03-16. AGP bumped to 9.1.0 in this PR.
+**Status:** ✅ RESOLVED — PR #63 merged 2026-03-16.
 
 ---
 
@@ -66,7 +66,7 @@
 ## 2026-03-16: Firebase AI SDK name — use firebase-ai, not firebase-vertexai
 
 **Issue:** `com.google.firebase:firebase-vertexai` is superseded. `com.google.ai.client.generativeai` is deprecated.
-**Resolution (Codex verified Mar 2026):** Use **`com.google.firebase:firebase-ai:16.0.0`** (Firebase AI Logic SDK) via BOM `firebase-bom:35.5.0`. Requires `com.google.gms:google-services:4.4.2` plugin and `google-services.json` at `android/app/google-services.json`.
+**Resolution (Codex re-verified Mar 2026):** Use `com.google.firebase:firebase-ai` (no explicit version) via BOM `com.google.firebase:firebase-bom:34.10.0`. Standalone pin: `firebase-ai:17.10.0`. Requires `com.google.gms:google-services:4.4.2` plugin and `google-services.json` at `android/app/google-services.json`. See BOM correction entry above for full details.
 **WIF note (gemini_findings.md):** WIF is for CI/CD → GCP server-side auth only. Not for Android app runtime. Filed for Phase 4+.
 
 ---

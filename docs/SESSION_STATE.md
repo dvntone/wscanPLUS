@@ -107,7 +107,7 @@ All PRs merged: #40, #43, #45, #47, #49, #51, #53, #55, #57
 
 ## Phase 1 — In Progress
 
-### Confirmed Android build stack (on main)
+### Confirmed Android build stack (pending PR #63 merge)
 
 | Component | Version | Notes |
 |-----------|---------|-------|
@@ -181,7 +181,7 @@ AGP 9.x ships with built-in Kotlin. No `org.jetbrains.kotlin.android` plugin nee
 ### Phase 1 Remaining Actions (PR sequence)
 
 1. ~~**[PR #62 — DEPENDENCY, CVE blocker]** jest 29.7.0 → 30.3.0 + `jest.config.mjs` + test script update + Android test dep updates~~ ✅ merged e95a880
-2. ~~**[PR — DEPENDENCY]** AGP 9.0.0 → 9.1.0~~ — in progress
+2. **[PR #63 — DEPENDENCY]** AGP 9.0.0 → 9.1.0 — pending merge
 3. **[PR — FEATURE]** WatchdogService stub + scanner chain skeleton (USB > Standard; Root dev-opt-in stub)
 4. **[PR — FEATURE]** AndroidManifest permissions (USE_BIOMETRIC, ACCESS_FINE_LOCATION, FOREGROUND_SERVICE, FOREGROUND_SERVICE_DATA_SYNC, INTERNET, NEARBY_WIFI_DEVICES)
 5. **[PR — FEATURE]** Firebase AI Logic scaffold (`firebase-bom:34.10.0` + `firebase-ai`, google-services plugin, `google-services.json` placeholder)
