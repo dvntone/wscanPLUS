@@ -92,45 +92,52 @@ All changes were made on 2026-03-14 to improve repository security, simplify con
 
 ---
 
-## 2026-03-15: AGP 9.0.0 Kotlin Plugin Behaviour (PR #57)
+## 2026-03-15: AGP 9.0.0 Built-in Kotlin (PR #57, #59)
 
 ### Summary
 
-AGP 9.0.0 has ambiguous Kotlin plugin behaviour that caused 3 CI failures during Phase 1 scaffold setup.
+AGP 9.0.0 ships with **built-in Kotlin**. The `org.jetbrains.kotlin.android` plugin is intentionally removed — AGP applies it internally. This caused 3 CI failures during scaffold setup before the official migration guide was consulted.
 
-### Root Cause
+### Official behaviour (confirmed: developer.android.com/build/migrate-to-built-in-kotlin)
 
-AGP 9.0.0 registers a `kotlin` extension internally. This means:
+- `org.jetbrains.kotlin.android` must NOT be applied — AGP registers the `kotlin` extension; applying it again throws `Cannot add extension with name 'kotlin'`
+- `kotlinOptions { }` is removed — replaced by `kotlin { compilerOptions { } }` top-level block
+- `jvmTarget` defaults automatically to `compileOptions.targetCompatibility` — explicit set is optional but recommended for clarity
+- `kotlin-stdlib` is managed by AGP built-in Kotlin — no explicit declaration needed
+- For modules with no Kotlin sources: optionally add `android { enableKotlin = false }` to improve build performance
 
-1. **Do NOT apply `org.jetbrains.kotlin.android` explicitly in modules** — AGP already registered the extension; applying it again throws: `Cannot add extension with name 'kotlin', as there is an extension already registered with that name`
-2. **Do NOT use `kotlinOptions { }` in build files** — without the explicit plugin, `kotlinOptions` is unresolved at script compile time; and with it applied, the extension conflict above occurs
-3. **`compileOptions` is sufficient** for the scaffold — AGP 9.0.0 aligns Kotlin JVM target with Java target compatibility automatically
+### Correct module pattern
 
-### Resolution
+```kotlin
+// No Kotlin plugin declaration needed
 
-- Root `build.gradle.kts`: declare AGP only (`com.android.application`, `com.android.library`) — no Kotlin plugin declaration
-- Module `build.gradle.kts`: apply AGP plugin only — no `id("org.jetbrains.kotlin.android")`
-- Remove `kotlinOptions { jvmTarget = "17" }` — use `compileOptions` only
-- Remove `kotlin-stdlib` dependency until Kotlin plugin is properly introduced — premature without the plugin applied
+android {
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+```
 
 ### Confirmed Stable Versions (as of 2026-03-15)
 
 | Tool | Version | Notes |
 |------|---------|-------|
 | AGP | 9.0.0 | 9.1.0 is alpha-only — do not use |
-| Gradle | 9.3.1 | Compatible with AGP 9.0.0 |
-| kotlin-stdlib | 2.0.21 | AGP 9.0.0 compatible |
+| Gradle | 9.3.1 | Wrapper SHA-256 pinned |
 | compileSdk / targetSdk | 36 | — |
 | minSdk | 24 | — |
 | JDK | 17 | — |
 
 ### Lesson
 
-When Codex or any agent says a plugin is "embedded" in AGP, verify whether that means auto-applied (no declaration needed) or version-bundled (still requires declaration). For AGP 9.0.0, it means the former — do not add the Kotlin plugin explicitly.
-
-### Pending: Kotlin sources not yet introduced
-
-`kotlin-stdlib` was removed from app and core because no Kotlin source files exist in the scaffold and the Kotlin Android plugin cannot be applied explicitly under AGP 9.0.0 (extension conflict). When the first Kotlin source file is added, a dedicated PR must resolve the correct Kotlin integration pattern for AGP 9.0.0 before stdlib can be re-declared. Do not add `.kt` files without first sorting this out.
+Always consult the official AGP migration guide when hitting plugin extension conflicts. The fix was in the docs — 3 CI cycles could have been avoided.
 
 ---
 
