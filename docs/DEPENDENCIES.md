@@ -50,24 +50,24 @@
 
 ### Currently on main
 
-| Dependency | Pinned Version | Latest Stable | Action |
-|------------|---------------|---------------|--------|
-| `androidx.core:core-ktx` | 1.13.1 | **1.18.0** | UPDATE in dep PR |
-| `androidx.test.ext:junit` | 1.1.5 | **1.3.0** | UPDATE in dep PR |
-| `androidx.test.espresso:espresso-core` | 3.5.1 | **3.6.1** | UPDATE in dep PR |
-| `junit:junit` | 4.13.2 | 4.13.2 | PASS — already latest |
+| Dependency | Pinned Version | Notes |
+|------------|---------------|-------|
+| `androidx.core:core-ktx` | 1.18.0 | Updated PR #62 |
+| `androidx.test.ext:junit` | 1.3.0 | Updated PR #62 |
+| `androidx.test.espresso:espresso-core` | 3.6.1 | Updated PR #62 |
+| `junit:junit` | 4.13.2 | Already latest |
 
-### Planned for Phase 1 (not yet added — confirmed versions)
+### Planned for Phase 1 (not yet added — verified 2026-03-16 against Maven Central / upstream release notes)
 
 | Dependency | Version to Pin | Notes |
 |------------|---------------|-------|
-| `com.google.gms:google-services` (plugin) | 4.4.2 | Required for Firebase AI. Add to root + app build.gradle.kts |
-| `com.google.firebase:firebase-bom` (platform) | 35.5.0 | Firebase BOM — manages Firebase lib versions |
-| `com.google.firebase:firebase-ai` | 16.0.0 | Firebase AI Logic SDK (Gemini). NOT `firebase-vertexai` (superseded) or `generativeai` (deprecated) |
-| `com.google.android.gms:play-services-maps` | 18.1.0 | Google Maps SDK |
-| `com.google.android.libraries.mapsplatform.secrets-gradle-plugin` | 2.0.1 | Secrets plugin for API key injection from local.properties |
-| `org.jetbrains.kotlinx:kotlinx-coroutines-core` | 1.10.2 | Add only when first coroutine code lands |
-| `org.jetbrains.kotlinx:kotlinx-coroutines-android` | 1.10.2 | Add alongside coroutines-core |
+| `com.google.gms:google-services` (plugin) | **4.4.4** | Bumped from 4.4.2. Required for Firebase AI. Add to root + app build.gradle.kts. |
+| `com.google.firebase:firebase-bom` (platform) | **34.10.0** | Latest stable as of 2026-03-16 (firebase.google.com/support/release-notes/android). No CVEs. |
+| `com.google.firebase:firebase-ai` | unversioned via BOM (standalone: `17.10.0`) | Firebase AI Logic SDK. NOT `firebase-vertexai` (superseded) or `generativeai` (deprecated). No CVEs. |
+| `com.google.android.gms:play-services-maps` | **20.0.0** | Bumped from 18.1.0. No CVEs. |
+| `com.google.android.libraries.mapsplatform.secrets-gradle-plugin` | **2.0.1** | Current stable. No CVEs. |
+| `org.jetbrains.kotlinx:kotlinx-coroutines-core` | **1.10.2** | Current stable. Add only when first coroutine code lands. No CVEs. |
+| `org.jetbrains.kotlinx:kotlinx-coroutines-android` | **1.10.2** | Current stable. Add alongside coroutines-core. No CVEs. |
 
 **google-services.json** required at `android/app/google-services.json` — placeholder file needed before Firebase deps compile.
 
@@ -75,19 +75,19 @@
 
 ## Desktop npm Dependencies (Codex verified — March 2026)
 
-### Currently on main
+### Currently on main (verified 2026-03-16 against upstream release notes / Snyk)
 
 | Dependency | Pinned Version | Latest Stable | Action |
 |------------|---------------|---------------|--------|
-| `electron` | 41.0.2 | 41.0.2 | PASS |
-| `eslint` | 9.0.0 | 10.0.3 | ADVISORY — no CVE, update when convenient |
-| `jest` | 29.7.0 | **30.3.0** | **UPDATE REQUIRED — CVE-2024-21538** |
+| `electron` | 41.0.2 | 41.0.2 | PASS — current stable, no CVEs (CVE-2025-55305 affects older versions only) |
+| `eslint` | 9.0.0 | **10.0.3** | ADVISORY — ESLint 10.x is real, no CVE, update in separate dep PR |
+| `jest` | 30.3.0 | 30.3.0 | PASS — CVE-2024-21538 resolved (PR #62) |
 
-**Jest 30 migration notes (Codex confirmed):**
-- `--experimental-vm-modules` flag no longer needed — remove from test script
-- Updated script: `"test": "jest --runInBand --passWithNoTests"`
-- Add `jest.config.mjs`: `export default { testEnvironment: "node", transform: {}, extensionsToTreatAsEsm: [".js", ".mjs"] }`
-- CVE-2024-21538 (cross-spawn ReDoS) fixed in Jest 30.x via updated cross-spawn/execa
+**Jest 30 config (on main — `desktop/jest.config.mjs`):**
+```js
+export default { testEnvironment: "node", transform: {} }
+```
+`extensionsToTreatAsEsm` is NOT required for `.js`/`.mjs` files. Jest 30 already treats `.mjs` and `type: "module"` `.js` as ESM automatically. Only needed for non-standard extensions (`.ts`, `.jsx`). Current config is correct.
 
 ### Planned for Phase 3 (not yet added)
 

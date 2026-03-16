@@ -1,24 +1,28 @@
 # wscan+ Roadmap
 
-## Phase 0 — Foundation (must be green before Phase 1)
-- [ ] Add AI guardrails (AGENTS.md + copilot instructions)
-- [ ] Consolidate docs (INDEX + ROADMAP + DEPENDENCIES + SESSION_STATE)
-- [ ] Secrets scaffolding (.env.example, secrets.defaults.properties, .gitignore)
-- [ ] Minimal CI only:
+## Phase 0 — Foundation ✅ Complete
+- [x] Add AI guardrails (AGENTS.md + copilot instructions)
+- [x] Consolidate docs (INDEX + ROADMAP + DEPENDENCIES + SESSION_STATE)
+- [x] Secrets scaffolding (.env.example, secrets.defaults.properties, .gitignore)
+- [x] Minimal CI only:
   - Node: lint + tests
   - Android: unit tests + build
   - Secret scanning (TruffleHog or equivalent)
   - Job + step timeouts
-- [ ] GitHub hygiene:
+- [x] GitHub hygiene:
   - Labels, milestones, project board
   - One-PR-at-a-time policy enforced socially + branch protection
 
-## Phase 1 — Android (ship a solid standalone scanner)
+## Phase 1 — Android (ship a solid standalone scanner) — In Progress
+- [ ] WatchdogService stub + scanner chain skeleton (USB > Standard; Root dev-opt-in only)
+- [ ] AndroidManifest permissions (USE_BIOMETRIC, ACCESS_FINE_LOCATION, FOREGROUND_SERVICE, FOREGROUND_SERVICE_DATA_SYNC, INTERNET, NEARBY_WIFI_DEVICES)
+- [ ] Firebase AI Logic scaffold (firebase-bom + firebase-ai, google-services plugin)
 - [ ] Google Maps-based scan history + threat heatmap
 - [ ] Biometric lock (protect local history + keys)
 - [ ] VPN-based “disconnect anomaly” detector (worded conservatively; not raw 802.11 deauth frames)
-- [ ] Scanner fallback chain (and Shizuku option if desired)
 - [ ] Export: JSON + optional PCAP for captured flows (IP-layer only) / logs
+
+> **Scanner chain (confirmed 2026-03-16):** USB > Standard. Root = dev opt-in stub only, never silent fallback. Nexmon removed (Broadcom-only). Shizuku removed (zero scanning capability).
 
 ## Phase 2 — Linux Desktop Hub (professional workflow)
 - [ ] Passive scan + heuristic engine
