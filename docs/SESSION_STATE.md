@@ -152,8 +152,8 @@ AGP 9.x ships with built-in Kotlin. No `org.jetbrains.kotlin.android` plugin nee
 - **Previous lock (35.5.0 BOM / 16.0.0 artifact) was incorrect** — BOM 35.x does not exist; 34.10.0 is current stable (released 2026-02-26). `firebase-ai` 16.x is superseded; stable line is 17.x.
 - **Breaking changes 16.x → 17.x** (all pre-code — no migration needed since no Firebase code written yet): minSdk bumped to 23 (project minSdk 24 — compatible); `generateContent()`/`countTokens()` require ≥1 argument; grounding metadata fields are now non-optional.
 - **Do NOT use:** `firebase-vertexai` (superseded), `com.google.ai.client.generativeai` (deprecated).
-- **Requires:** `com.google.gms:google-services:4.4.2` plugin + `google-services.json` at `android/app/google-services.json`
-- **Root build.gradle.kts addition:** `id("com.google.gms.google-services") version "4.4.2" apply false`
+- **Requires:** `com.google.gms:google-services:4.4.4` plugin + `google-services.json` at `android/app/google-services.json`
+- **Root build.gradle.kts addition:** `id("com.google.gms.google-services") version "4.4.4" apply false`
 - **App build.gradle.kts:** Add `id("com.google.gms.google-services")` to plugins block. No special `buildFeatures` needed.
 - **Dependency block (app + core):**
   ```kotlin
@@ -162,7 +162,7 @@ AGP 9.x ships with built-in Kotlin. No `org.jetbrains.kotlin.android` plugin nee
   ```
 - **Auth:** API key via `secrets-gradle-plugin:2.0.1` in `local.properties`. No WIF for Android runtime.
 - **WIF (gemini_findings.md):** Valid for CI/CD → GCP server-side only. Filed for Phase 4+.
-- **Google Maps SDK:** `com.google.android.gms:play-services-maps:18.1.0`
+- **Google Maps SDK:** `com.google.android.gms:play-services-maps:20.0.0`
 
 ### WiFi scanning API (confirmed — 2026-03-16)
 

@@ -57,12 +57,12 @@
 | `androidx.test.espresso:espresso-core` | 3.6.1 | Updated PR #62 |
 | `junit:junit` | 4.13.2 | Already latest |
 
-### Planned for Phase 1 (not yet added — Codex verified 2026-03-16, GPT 5.2 extra high reasoning)
+### Planned for Phase 1 (not yet added — verified 2026-03-16 against Maven Central / upstream release notes)
 
 | Dependency | Version to Pin | Notes |
 |------------|---------------|-------|
 | `com.google.gms:google-services` (plugin) | **4.4.4** | Bumped from 4.4.2. Required for Firebase AI. Add to root + app build.gradle.kts. |
-| `com.google.firebase:firebase-bom` (platform) | **34.10.0** | Current stable. Do NOT use 35.x (does not exist). No CVEs. |
+| `com.google.firebase:firebase-bom` (platform) | **34.10.0** | Latest stable as of 2026-03-16 (firebase.google.com/support/release-notes/android). No CVEs. |
 | `com.google.firebase:firebase-ai` | unversioned via BOM (standalone: `17.10.0`) | Firebase AI Logic SDK. NOT `firebase-vertexai` (superseded) or `generativeai` (deprecated). No CVEs. |
 | `com.google.android.gms:play-services-maps` | **20.0.0** | Bumped from 18.1.0. No CVEs. |
 | `com.google.android.libraries.mapsplatform.secrets-gradle-plugin` | **2.0.1** | Current stable. No CVEs. |
@@ -75,7 +75,7 @@
 
 ## Desktop npm Dependencies (Codex verified — March 2026)
 
-### Currently on main (Codex verified 2026-03-16, GPT 5.2 extra high reasoning)
+### Currently on main (verified 2026-03-16 against upstream release notes / Snyk)
 
 | Dependency | Pinned Version | Latest Stable | Action |
 |------------|---------------|---------------|--------|
