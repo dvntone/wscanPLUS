@@ -58,7 +58,7 @@ dependencies {
     implementation("com.google.firebase:firebase-ai")
 
     // Google Maps SDK — scan history heatmap + GPS-tagged scan visualisation
-    // API key injected from local.properties via secrets-gradle-plugin (MAPS_API_KEY)
+    // API key injected from local.properties via secrets-gradle-plugin (GOOGLE_MAPS_API_KEY)
     implementation("com.google.android.gms:play-services-maps:20.0.0")
 
     testImplementation("junit:junit:4.13.2")
