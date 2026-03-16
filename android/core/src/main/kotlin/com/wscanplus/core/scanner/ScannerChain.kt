@@ -1,0 +1,38 @@
+package com.wscanplus.core.scanner
+
+import android.content.Context
+
+/**
+ * ScannerChain orchestrates the scanner priority chain: USB > Standard.
+ * Root scanner is a developer opt-in stub only — never a silent fallback.
+ *
+ * Chain logic:
+ *   1. USB scanner — external OTG WiFi adapter (enhanced scanning, advanced users)
+ *   2. Standard scanner — WifiManager BroadcastReceiver (guaranteed baseline, all devices)
+ *   Root — dev opt-in only, never in the chain without an explicit flag
+ *
+ * Threading rule: start() and stop() MUST be called from a background thread.
+ * This class does not manage threading itself — callers (WatchdogService) are responsible.
+ *
+ * TODO (Phase 1): implement USB adapter detection and chain switching.
+ * TODO (Phase 1): wire scan results to WatchdogService via callback or channel.
+ */
+class ScannerChain(private val context: Context) {
+
+    private val usbScanner = UsbScanner(context)
+    private val standardScanner = StandardScanner(context)
+    // RootScanner is never instantiated in the chain — dev opt-in only.
+
+    fun start() {
+        if (usbScanner.isAvailable()) {
+            usbScanner.start()
+        } else {
+            standardScanner.start()
+        }
+    }
+
+    fun stop() {
+        usbScanner.stop()
+        standardScanner.stop()
+    }
+}

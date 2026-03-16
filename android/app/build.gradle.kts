@@ -30,15 +30,13 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    // No Kotlin sources in :app yet — disable built-in Kotlin for build performance
-    enableKotlin = false
-
     packaging {
         resources.excludes.add("/META-INF/{AL2.0,LGPL2.1}")
     }
 }
 
 dependencies {
+    implementation(project(":core"))
     implementation("androidx.core:core-ktx:1.18.0")
 
     testImplementation("junit:junit:4.13.2")
