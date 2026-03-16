@@ -1,5 +1,18 @@
 # Known Issues
 
+## 2026-03-16: Firebase AI scaffold — google-services.json required before runtime init
+
+**Issue:** `google-services.json` is gitignored (`**/google-services.json` in root `.gitignore`). The google-services plugin (`com.google.gms.google-services:4.4.4`) is declared in `android/build.gradle.kts` with `apply false` but NOT yet applied in `:app` — applying it without the JSON file causes a build failure.
+**Action required (dev setup):**
+1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com) for wscanplus
+2. Register the Android app with package name `com.wscanplus.app`
+3. Download `google-services.json` and place it at `android/app/google-services.json`
+4. Uncomment `id("com.google.gms.google-services")` in `android/app/build.gradle.kts`
+**Status:** Pending — firebase-bom + firebase-ai dependencies are declared and compile correctly. Firebase will not initialise at runtime until the plugin is applied and JSON is in place.
+**Note:** CI passes without the JSON because the plugin is not applied.
+
+---
+
 ## 2026-03-16: CVE-2024-21538 — jest 29.7.0 (desktop, dev-only)
 
 **Severity:** High (CVSS 7.5) — dev tooling only, not shipped in production app

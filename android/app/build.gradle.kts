@@ -1,5 +1,8 @@
 plugins {
     id("com.android.application")
+    // TODO: add id("com.google.gms.google-services") once google-services.json
+    // is placed at android/app/google-services.json (obtain from Firebase Console).
+    // Applying without the file will fail the build — see KNOWN_ISSUES.md.
 }
 
 android {
@@ -38,6 +41,13 @@ android {
 dependencies {
     implementation(project(":core"))
     implementation("androidx.core:core-ktx:1.18.0")
+
+    // Firebase AI Logic SDK (Gemini in-app threat analysis — Android only)
+    // BOM manages all firebase-* versions. Do NOT pin firebase-ai explicitly.
+    // google-services plugin + google-services.json required before Firebase
+    // initialises at runtime — see KNOWN_ISSUES.md.
+    implementation(platform("com.google.firebase:firebase-bom:34.10.0"))
+    implementation("com.google.firebase:firebase-ai")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
