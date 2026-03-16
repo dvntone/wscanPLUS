@@ -8,7 +8,7 @@
 2. Register the Android app with package name `com.wscanplus.app`
 3. Download `google-services.json` and place it at `android/app/google-services.json`
 4. Uncomment `id("com.google.gms.google-services")` in `android/app/build.gradle.kts`
-**Status:** Pending — firebase-bom + firebase-ai dependencies are declared and compile correctly. Firebase will not initialise at runtime until the plugin is applied and JSON is in place.
+**Status:** Pending — firebase-bom + firebase-ai dependencies are declared and compile correctly. The default automatic Firebase initialisation path requires the plugin + JSON to be in place; programmatic initialisation is possible without them but not the intended setup for this project.
 **Note:** CI passes without the JSON because the plugin is not applied.
 
 ---
@@ -79,7 +79,7 @@
 ## 2026-03-16: Firebase AI SDK name — use firebase-ai, not firebase-vertexai
 
 **Issue:** `com.google.firebase:firebase-vertexai` is superseded. `com.google.ai.client.generativeai` is deprecated.
-**Resolution (Codex re-verified Mar 2026):** Use `com.google.firebase:firebase-ai` (no explicit version) via BOM `com.google.firebase:firebase-bom:34.10.0`. Standalone pin: `firebase-ai:17.10.0`. Requires `com.google.gms:google-services:4.4.2` plugin and `google-services.json` at `android/app/google-services.json`. See BOM correction entry above for full details.
+**Resolution (Codex re-verified Mar 2026):** Use `com.google.firebase:firebase-ai` (no explicit version) via BOM `com.google.firebase:firebase-bom:34.10.0`. Standalone pin: `firebase-ai:17.10.0`. Requires `com.google.gms:google-services:4.4.4` plugin and `google-services.json` at `android/app/google-services.json`. See BOM correction entry above for full details.
 **WIF note (gemini_findings.md):** WIF is for CI/CD → GCP server-side auth only. Not for Android app runtime. Filed for Phase 4+.
 
 ---
