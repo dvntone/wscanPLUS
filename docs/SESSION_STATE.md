@@ -249,7 +249,7 @@ Both platforms must implement their cache layer before making any CTI API calls.
 
 > Corresponds to **Phase 4 — AI Layer** in ROADMAP.md. Defined during Phase 1 so the shape is locked before implementation begins.
 
-Three additions required across the threat pipeline — implement in Phase 4 before any threat UI or CTI/Gemini wiring:
+Three additions required — implement these in Phase 4 (AI Layer) before wiring CTI API calls or Gemini prompts. The schema is locked now so Android and Desktop can reserve the correct DB columns from Phase 2 onward:
 
 ```
 // Per-layer signal source — enum class (exhaustive when-expressions, no typos)
@@ -266,13 +266,15 @@ data class ThreatSignal(
 )
 
 // CTI cache entry (Android: Room entity; Desktop: sqlite row)
-// Primary/unique key: composite (ip, dataset) — each dataset is a separate row per IP
+// Unique constraint: (ip, dataset) — two rows per IP max (one SMOKE, one FIRE)
+// Room annotation: @Entity(indices = [Index(value = ["ip", "dataset"], unique = true)])
 // smoke TTL: 48h | fire TTL: 6h
 data class CtiCacheEntry(
     val ip: String,
     val dataset: CtiDataset,      // SMOKE (per-IP lookup) | FIRE (presence in bulk feed)
     val responseJson: String,
     val cachedAt: Long,           // epoch ms
+    // @PrimaryKey — use composite surrogate or (ip + dataset.name) as string key
 )
 
 // Degraded-mode flag injected into Gemini prompt context
@@ -283,7 +285,8 @@ const val CTI_MISSING_FLAG = "cti_unavailable"
 ### Phase 1 Next
 
 1. **eslint advisory dep PR** — eslint 9.x → 10.0.3 (no CVE, deferred)
-2. **Phase 2 planning** — app icon, dataExtractionRules, biometric auth, threat pipeline UI, CTI integration
+2. **Phase 1 remaining** — app icon, dataExtractionRules, biometric auth (Android-only; complete before moving to ROADMAP Phase 2)
+3. **Phase 4 prep (AI Layer)** — threat pipeline UI, CTI integration — schema locked above; implementation deferred until Phase 4 per ROADMAP
 
 ### StandardScanner (PR #76 — confirmed pattern)
 
