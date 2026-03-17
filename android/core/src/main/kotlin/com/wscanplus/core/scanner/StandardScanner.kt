@@ -70,11 +70,11 @@ class StandardScanner(
             }
         val callback =
             object : WifiManager.ScanResultsCallback() {
-            override fun onScanResultsAvailable() {
-                val results = wifiManager.scanResults
-                resultsListener.onResults(results.map { it.toWifiScanResult() })
+                override fun onScanResultsAvailable() {
+                    val results = wifiManager.scanResults
+                    resultsListener.onResults(results.map { it.toWifiScanResult() })
+                }
             }
-        }
         // Assign fields only after successful registration to prevent partial state on throw.
         try {
             wifiManager.registerScanResultsCallback(executor, callback)
@@ -98,20 +98,20 @@ class StandardScanner(
 
         receiver =
             object : BroadcastReceiver() {
-            // Permission verified by start() caller via @RequiresPermission contract.
-            // Lint cannot trace through BroadcastReceiver.onReceive() system callbacks.
-            @SuppressLint("MissingPermission")
-            override fun onReceive(
-                ctx: Context,
-                intent: Intent,
-            ) {
-                if (intent.action != WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) return
-                executor.execute {
-                    val results = wifiManager.scanResults
-                    resultsListener.onResults(results.map { it.toWifiScanResult() })
+                // Permission verified by start() caller via @RequiresPermission contract.
+                // Lint cannot trace through BroadcastReceiver.onReceive() system callbacks.
+                @SuppressLint("MissingPermission")
+                override fun onReceive(
+                    ctx: Context,
+                    intent: Intent,
+                ) {
+                    if (intent.action != WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) return
+                    executor.execute {
+                        val results = wifiManager.scanResults
+                        resultsListener.onResults(results.map { it.toWifiScanResult() })
+                    }
                 }
             }
-        }
         appContext.registerReceiver(
             receiver,
             IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION),
