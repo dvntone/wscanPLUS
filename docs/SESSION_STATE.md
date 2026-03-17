@@ -180,7 +180,7 @@ AGP 9.x ships with built-in Kotlin. No `org.jetbrains.kotlin.android` plugin nee
 
 ### Phase 1 PR Log
 
-All merged to main (head: `89d4f1a`):
+All merged to main (head: `11e4a45`):
 
 1. ~~**[PR #62]** jest 29.7.0 → 30.3.0 (CVE-2024-21538) + Android test dep updates~~ ✅ e95a880
 2. ~~**[PR #63]** AGP 9.0.0 → 9.1.0~~ ✅ e7e9fbe
@@ -193,6 +193,11 @@ All merged to main (head: `89d4f1a`):
 9. ~~**[PR #70]** Docs — post-quality-gate SESSION_STATE + KNOWN_ISSUES~~ ✅ 3d54c1f
 10. ~~**[PR #71]** deps — Gradle 9.3.1 → 9.4.0 + espresso-core 3.6.1 → 3.7.0~~ ✅ 9ea356d
 11. ~~**[PR #72]** WatchdogService `startForeground()` + notification channel~~ ✅ 89d4f1a
+12. ~~**[PR #73]** Docs — post-PR #72 SESSION_STATE + KNOWN_ISSUES update~~ ✅ b512aea
+13. ~~**[PR #74]** Stub MainActivity — permission flow + WatchdogService start~~ ✅ df7b7c0
+14. ~~**[PR #75]** StandardScanner implementation + WifiScanResult data model~~ ✅ 00ec021
+15. ~~**[PR #76]** StandardScanner Copilot fixes — executor threading, executor leak, CHANGE_WIFI_STATE~~ ✅ 5f03771
+16. ~~**[PR #77]** Wire scanner results into WatchdogService + WifiScanResult Phase 1 fields~~ ✅ 11e4a45
 
 ### Quality Gate (2026-03-16)
 
@@ -209,10 +214,19 @@ All merged to main (head: `89d4f1a`):
 - `@SuppressLint("InlinedApi")` — constant is API 29, safe because `ServiceCompat` guards internally
 - Placeholder icon `android.R.drawable.ic_menu_search` — replace in Phase 2
 
-### Phase 1 Next — Feature Work (Codex-confirmed sequence)
+### Phase 1 Next
 
-1. **Stub MainActivity** — `RequestMultiplePermissions` for `ACCESS_COARSE_LOCATION` (API 24–32) + `NEARBY_WIFI_DEVICES` (API 33+); on grant calls `startForegroundService()`. Android 12+ FGS-from-background restriction requires Activity-initiated start.
-2. **StandardScanner implementation** — `BroadcastReceiver` + `getScanResults()` → results callback on background thread
+1. **Docs PR** — update SESSION_STATE + KNOWN_ISSUES post-PR #77
+2. **eslint advisory dep PR** — eslint 9.x → 10.0.3 (no CVE, deferred)
+3. **Phase 2 planning** — app icon, dataExtractionRules, biometric auth, UI
+
+### StandardScanner (PR #76 — confirmed pattern)
+
+- API 30+: `registerScanResultsCallback()` with `Executors.newSingleThreadExecutor()`. Fields assigned after registration; executor shut down on registration failure.
+- API 24–29: `BroadcastReceiver` + `getScanResults()`. Results dispatched via same executor (`executor.execute {}`).
+- Both paths deliver `onResults()` off the main thread — consistent threading.
+- `startScan()` only on API < 28.
+- `@RequiresPermission`: `ACCESS_WIFI_STATE` + `ACCESS_FINE_LOCATION` + `CHANGE_WIFI_STATE` on both `StandardScanner.start()` and `ScannerChain.start()`.
 
 ---
 
