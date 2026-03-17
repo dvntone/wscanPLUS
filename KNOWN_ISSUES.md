@@ -187,8 +187,7 @@ On 2026-03-14, multiple repository settings were changed by @dvntone (repository
 - All documentation remains in repository (AGENTS.md, docs/, README.md)
 - **Do not re-enable without a tracked issue approved by @dvntone**
 - Documented in docs/AGENTS.md:154
-
-**2026-03-17 update:** GitHub Pages environment was still appearing active in repo settings. Root cause: a GitHub Actions environment named `github-pages` existed and was not removed when Pages was disabled. @dvntone deleted the Actions environment — Pages is now fully inactive.
+- **(2026-03-17)** Pages was still appearing active — root cause: a GitHub Actions environment named `github-pages` was not removed when Pages was disabled. @dvntone deleted the Actions environment. Pages is now fully inactive.
 
 ### 5. Google Cloud Apps Disabled
 

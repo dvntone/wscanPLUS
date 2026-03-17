@@ -256,7 +256,7 @@ Both platforms must implement their cache layer before making any CTI API calls.
 enum class ThreatSource { LOCAL_HEURISTIC, CROWDSEC_CTI, GEMINI }
 
 // Supporting enum — CTI dataset. Also determines cache TTL.
-// Cache key for CtiCacheEntry is the string "$ip:$dataset" — one row per ip+dataset pair.
+// Cache key for CtiCacheEntry is the string "$ip:${dataset.name}" — one row per ip+dataset pair.
 enum class CtiDataset { SMOKE, FIRE }
 
 // Primary addition 1 — per-layer signal wrapper
