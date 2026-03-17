@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Cloud backup rules for Android 12+ (replaces deprecated android:allowBackup).
+    wscan+ does not back up any data — scan results and threat data stay on-device.
+    Phase 6 may revisit if user-exportable data is added.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="." />
+    </device-transfer>
+</data-extraction-rules>
