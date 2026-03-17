@@ -111,8 +111,8 @@ All PRs merged: #40, #43, #45, #47, #49, #51, #53, #55, #57
 
 | Component | Version | Notes |
 |-----------|---------|-------|
-| AGP | 9.1.0 | Stable since 2026-03-03. Gradle 9.3.1 already meets minimum. |
-| Gradle | 9.3.1 | Wrapper SHA-256 pinned — already meets AGP 9.1.0 minimum |
+| AGP | 9.1.0 | Stable since 2026-03-03. |
+| Gradle | 9.4.0 | Wrapper SHA-256 pinned — meets AGP 9.1.0 minimum (9.3.1+) |
 | compileSdk / targetSdk | 36 | — |
 | minSdk | 24 | — |
 | JDK | 17 | — |
@@ -178,9 +178,9 @@ AGP 9.x ships with built-in Kotlin. No `org.jetbrains.kotlin.android` plugin nee
 - **Updated test script:** `"test": "jest --runInBand --passWithNoTests"`
 - **New file:** `jest.config.mjs` — `export default { testEnvironment: "node", transform: {} }` — `extensionsToTreatAsEsm` is NOT needed for `.js`/`.mjs` with `"type": "module"` in Jest 30.
 
-### Phase 1 Scaffold — Complete ✅
+### Phase 1 PR Log
 
-All scaffold PRs merged to main (head: `10f753f`):
+All merged to main (head: `89d4f1a`):
 
 1. ~~**[PR #62]** jest 29.7.0 → 30.3.0 (CVE-2024-21538) + Android test dep updates~~ ✅ e95a880
 2. ~~**[PR #63]** AGP 9.0.0 → 9.1.0~~ ✅ e7e9fbe
@@ -190,22 +190,29 @@ All scaffold PRs merged to main (head: `10f753f`):
 6. ~~**[PR #67]** Firebase AI Logic scaffold (firebase-bom:34.10.0 + firebase-ai)~~ ✅ 94c5c59
 7. ~~**[PR #68]** Google Maps scaffold (play-services-maps:20.0.0, GOOGLE_MAPS_API_KEY)~~ ✅ 1218a1e
 8. ~~**[PR #69]** Lint fix — ACCESS_COARSE_LOCATION + @RequiresPermission annotations~~ ✅ 10f753f
+9. ~~**[PR #70]** Docs — post-quality-gate SESSION_STATE + KNOWN_ISSUES~~ ✅ 3d54c1f
+10. ~~**[PR #71]** deps — Gradle 9.3.1 → 9.4.0 + espresso-core 3.6.1 → 3.7.0~~ ✅ 9ea356d
+11. ~~**[PR #72]** WatchdogService `startForeground()` + notification channel~~ ✅ 89d4f1a
 
-### Quality Gate Results (2026-03-16)
+### Quality Gate (2026-03-16)
 
 | Check | Result |
 |-------|--------|
-| `./gradlew assembleDebug` | ✅ BUILD SUCCESSFUL |
-| `npm test` (desktop) | ✅ Pass (`npm ci` resolved corrupt node_modules) |
-| `./gradlew lint` | ✅ 0 errors (2 errors caught + fixed in PR #69) |
+| `./gradlew assembleDebug` | ✅ BUILD SUCCESSFUL (Gradle 9.4.0) |
+| `npm test` (desktop) | ✅ Pass |
+| `./gradlew lint` | ✅ 0 errors, 2 warnings (icon + dataExtractionRules — Phase 2) |
 
-**Advisory warnings (non-blocking, future dep PR):** espresso-core 3.6.1 → 3.7.0, Gradle 9.3.1 → 9.4.0, missing app icon + `android:dataExtractionRules` (Phase 2 UI work).
+### WatchdogService notification (PR #72 — confirmed pattern)
 
-### Phase 1 Next — Feature Work
+- `createNotificationChannel()` in `onCreate()` — `IMPORTANCE_LOW`, API 26+ guard
+- `ServiceCompat.startForeground()` at top of `onStartCommand()` with `FOREGROUND_SERVICE_TYPE_DATA_SYNC`
+- `@SuppressLint("InlinedApi")` — constant is API 29, safe because `ServiceCompat` guards internally
+- Placeholder icon `android.R.drawable.ic_menu_search` — replace in Phase 2
 
-- StandardScanner real implementation: `BroadcastReceiver` + `getScanResults()` → results callback
-- Plan runtime permission request flow (which component requests `ACCESS_COARSE_LOCATION` / `NEARBY_WIFI_DEVICES`)
-- WatchdogService startup trigger (what calls `startForegroundService()`)
+### Phase 1 Next — Feature Work (Codex-confirmed sequence)
+
+1. **Stub MainActivity** — `RequestMultiplePermissions` for `ACCESS_COARSE_LOCATION` (API 24–32) + `NEARBY_WIFI_DEVICES` (API 33+); on grant calls `startForegroundService()`. Android 12+ FGS-from-background restriction requires Activity-initiated start.
+2. **StandardScanner implementation** — `BroadcastReceiver` + `getScanResults()` → results callback on background thread
 
 ---
 
