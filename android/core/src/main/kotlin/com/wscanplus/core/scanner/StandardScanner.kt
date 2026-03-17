@@ -45,7 +45,13 @@ class StandardScanner(
     private var scanResultsCallback: WifiManager.ScanResultsCallback? = null
     private var scanCallbackExecutor: ExecutorService? = null
 
-    @RequiresPermission(allOf = [Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.ACCESS_FINE_LOCATION])
+    @RequiresPermission(
+        allOf = [
+            Manifest.permission.ACCESS_WIFI_STATE,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.CHANGE_WIFI_STATE
+        ]
+    )
     fun start() {
         if (receiver != null || scanResultsCallback != null) return  // idempotent — already started
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
