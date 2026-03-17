@@ -13,6 +13,7 @@ import androidx.core.app.ServiceCompat
 import com.wscanplus.core.scanner.ScannerChain
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.Future
 
 /**
  * WatchdogService manages the scanner chain and the ADB communication socket.
@@ -35,6 +36,7 @@ class WatchdogService : Service() {
 
     private var scannerChain: ScannerChain? = null
     private var scannerExecutor: ExecutorService? = null
+    private var startFuture: Future<*>? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -59,29 +61,35 @@ class WatchdogService : Service() {
                 Thread(runnable, "wscanplus-watchdog")
             }
             scannerExecutor = executor
-            scannerChain = ScannerChain(applicationContext) { results ->
-                // Phase 1 stub — results received on scanner thread (off main thread).
-                // TODO (Phase 2): forward results to data layer / ADB channel.
-                @Suppress("UNUSED_EXPRESSION")
-                results
+            scannerChain = ScannerChain(applicationContext) { _ ->
+                // Phase 1 stub — TODO (Phase 2): forward results to data layer / ADB channel.
             }
-            val chain = scannerChain!!
-            executor.execute { startChain(chain) }
+            startFuture = executor.submit { startChain(scannerChain!!) }
         }
         return START_STICKY
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        scannerChain?.stop()
+        // Cancel any queued start task before submitting stop, so a pending start cannot
+        // race with or follow the stop on the executor queue.
+        startFuture?.cancel(true)
+        startFuture = null
+        val executor = scannerExecutor
+        val chain = scannerChain
         scannerChain = null
-        scannerExecutor?.shutdown()
         scannerExecutor = null
+        // stop() must run on a background thread per ScannerChain/StandardScanner threading rule.
+        executor?.execute { chain?.stop() }
+        executor?.shutdown()
         // TODO (Phase 3): close ServerSocket
     }
 
-    // Permissions were verified by MainActivity before startForegroundService() — the system
-    // enforces that the foreground service starts only after the user grants them.
+    // MainActivity verifies permissions before calling startForegroundService(). However,
+    // this service can also be restarted via START_STICKY after permission revocation, so
+    // this assumption is not guaranteed at all entry points. A SecurityException from
+    // chain.start() will propagate to the executor thread.
+    // TODO (Phase 2): check permissions inside the service and stop gracefully if revoked.
     @SuppressLint("MissingPermission")
     private fun startChain(chain: ScannerChain) = chain.start()
 

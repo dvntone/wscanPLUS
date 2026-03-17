@@ -8,8 +8,9 @@ package com.wscanplus.core.scanner
  *   timestamp — API 17 (microseconds since boot when result was last seen)
  *   channelWidth / centerFreq0 / centerFreq1 — API 23 (channel bandwidth + center frequencies)
  *
- * channelWidth values: ScanResult.CHANNEL_WIDTH_20MHZ=0, 40=1, 80=2, 160=3, 80PLUS80=4, 320=5
- * centerFreq1 is only meaningful for 80+80 MHz (CHANNEL_WIDTH_80MHZ_PLUS_MHZ); 0 otherwise.
+ * channelWidth values: ScanResult.CHANNEL_WIDTH_20MHZ, CHANNEL_WIDTH_40MHZ, CHANNEL_WIDTH_80MHZ,
+ *   CHANNEL_WIDTH_160MHZ, CHANNEL_WIDTH_80MHZ_PLUS_MHZ, CHANNEL_WIDTH_320MHZ.
+ * centerFreq1 is only meaningful for ScanResult.CHANNEL_WIDTH_80MHZ_PLUS_MHZ; 0 otherwise.
  *
  * Phase 2 additions: wifiStandard (API 30), securityTypes (API 33), informationElements (API 30).
  */
