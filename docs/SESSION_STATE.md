@@ -88,7 +88,7 @@ wscanplus/
 
 ## Phase
 
-**Phase 1 (Android Source)** — scaffold complete, quality checks passed, feature work next
+**Phase 1 (Dev Tooling + Polish)** — scanner chain + scaffold complete. ktlint CI added. Remaining: app icon, dataExtractionRules, WatchdogService 6h restart, settings deep link, first unit tests. See docs/ROADMAP.md for revised 6-phase plan (2026-03-17 reassessment).
 
 ---
 
