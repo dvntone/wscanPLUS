@@ -214,17 +214,21 @@ All merged to main through PR #77 (last feature commit: `11e4a45`):
 - `@SuppressLint("InlinedApi")` — constant is API 29, safe because `ServiceCompat` guards internally
 - Placeholder icon `android.R.drawable.ic_menu_search` — replace in Phase 2
 
-### Threat Pipeline Architecture (locked — 2026-03-17, refined 2026-03-17)
+### Threat Pipeline Architecture (locked 2026-03-17)
 
 Three-layer design — rated 8.5/10 by Codex review:
 
 | Layer | What | Cost | When |
 |-------|------|------|------|
 | 1 — Local heuristics | WEP detection, evil twin signals, unknown BSSID patterns | Free, unlimited, on-device | Every scan |
-| 2 — CrowdSec CTI API | IP reputation, classification (VPN/proxy/Tor/botnet), behavior signals | 30 req/week free / 100 premium; cached in Room DB | Only IPs passing Layer 1 suspicion threshold |
+| 2 — CrowdSec CTI API | IP reputation, classification (VPN/proxy/Tor/botnet), behavior signals | 30 req/week free / 100 req/week premium; cached in Room DB | Only IPs passing Layer 1 suspicion threshold |
 | 3 — Gemini (firebase-ai) | Natural language threat assessment on combined Layer 1 + 2 signal | API cost; cache results | On-demand or threshold trigger |
 
-**CTI API:** `GET /v2/smoke/{ip}` with `x-api-key` header. Android: OkHttp. Electron: `fetch()`. nodejs-bouncer: ESM-first but remediation-only — not needed for CTI lookups.
+**CTI API endpoints:**
+- `GET /v2/smoke/{ip}` — per-IP stable reputation lookup (smoke dataset, 48h TTL). Primary lookup path.
+- `GET /v2/fire` — bulk feed of recently active aggressors (fire dataset, 6h TTL). Returns a list, not per-IP. Cache stores presence in feed per IP.
+
+Auth: `x-api-key` header. Android: OkHttp. Electron: `fetch()`. nodejs-bouncer: ESM-first but remediation-only — not needed for CTI lookups.
 
 **Six required refinements (Codex — 2026-03-17):**
 
@@ -235,7 +239,7 @@ Three-layer design — rated 8.5/10 by Codex review:
 5. **Explainability payload** — save top 3 reasons per layer for UI display and audit logs — makes results defensible
 6. **Quota budget guardrails** — hard caps per time window for both CTI and Gemini to prevent runaway bursts on noisy environments
 
-**CTI cache prerequisite:** Room DB cache keyed by IP (smoke TTL: 48h, fire TTL: 6h) must be implemented before any CTI API calls.
+**CTI cache prerequisite:** Room DB cache with composite key (ip + dataset) must be implemented before any CTI API calls. smoke TTL: 48h; fire TTL: 6h. Unique index on (ip, dataset) — each dataset has its own row per IP.
 
 ### Phase 2 Threat Data Model (minimal additions — locked shape)
 
@@ -257,10 +261,11 @@ data class ThreatSignal(
 )
 
 // CTI cache entry (Room entity)
+// Unique index: (ip, dataset) — composite key, one row per IP per dataset
 // smoke TTL: 48h | fire TTL: 6h
 data class CtiCacheEntry(
     val ip: String,
-    val dataset: CtiDataset,      // SMOKE | FIRE
+    val dataset: CtiDataset,      // SMOKE (per-IP lookup) | FIRE (presence in bulk feed)
     val responseJson: String,
     val cachedAt: Long,           // epoch ms
 )
