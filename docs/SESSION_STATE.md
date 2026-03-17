@@ -235,11 +235,11 @@ Three-layer design — rated 8.5/10 by Codex review:
 5. **Explainability payload** — save top 3 reasons per layer for UI display and audit logs — makes results defensible
 6. **Quota budget guardrails** — hard caps per time window for both CTI and Gemini to prevent runaway bursts on noisy environments
 
-**CTI cache prerequisite:** Room DB cache keyed by IP (smoke TTL: 48h, fire TTL: TBD) must be implemented before any CTI API calls.
+**CTI cache prerequisite:** Room DB cache keyed by IP (smoke TTL: 48h, fire TTL: 6h) must be implemented before any CTI API calls.
 
 ### Phase 2 Threat Data Model (minimal additions — locked shape)
 
-Four additions required across the threat pipeline — implement in Phase 2 before any threat UI or CTI/Gemini wiring:
+Three additions required across the threat pipeline — implement in Phase 2 before any threat UI or CTI/Gemini wiring:
 
 ```
 // Per-layer signal wrapper
