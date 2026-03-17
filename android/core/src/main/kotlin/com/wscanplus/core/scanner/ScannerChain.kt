@@ -19,10 +19,13 @@ import androidx.annotation.RequiresPermission
  * TODO (Phase 1): implement USB adapter detection and chain switching.
  * TODO (Phase 1): wire scan results to WatchdogService via callback or channel.
  */
-class ScannerChain(private val context: Context) {
+class ScannerChain(
+    private val context: Context,
+    private val resultsListener: ScanResultsListener = ScanResultsListener { }
+) {
 
     private val usbScanner = UsbScanner(context)
-    private val standardScanner = StandardScanner(context)
+    private val standardScanner = StandardScanner(context, resultsListener)
     // RootScanner is never instantiated in the chain — dev opt-in only.
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.ACCESS_FINE_LOCATION])
