@@ -19,8 +19,9 @@ import android.content.Context
  * TODO (Phase 1): implement developer opt-in flag check (BuildConfig or prefs).
  * TODO (Phase 1): implement root-based scan using su + iw/wpa_cli.
  */
-class RootScanner(private val context: Context) {
-
+class RootScanner(
+    private val context: Context,
+) {
     /**
      * Guard: always verify the developer opt-in flag before any scan operation.
      * Throws IllegalStateException if called without explicit opt-in.

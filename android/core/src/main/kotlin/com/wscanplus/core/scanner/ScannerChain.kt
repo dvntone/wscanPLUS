@@ -21,14 +21,19 @@ import androidx.annotation.RequiresPermission
  */
 class ScannerChain(
     private val context: Context,
-    private val resultsListener: ScanResultsListener = ScanResultsListener { }
+    private val resultsListener: ScanResultsListener = ScanResultsListener { },
 ) {
-
     private val usbScanner = UsbScanner(context)
     private val standardScanner = StandardScanner(context, resultsListener)
     // RootScanner is never instantiated in the chain — dev opt-in only.
 
-    @RequiresPermission(allOf = [Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.CHANGE_WIFI_STATE])
+    @RequiresPermission(
+        allOf = [
+            Manifest.permission.ACCESS_WIFI_STATE,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.CHANGE_WIFI_STATE,
+        ],
+    )
     fun start() {
         if (usbScanner.isAvailable()) {
             usbScanner.start()

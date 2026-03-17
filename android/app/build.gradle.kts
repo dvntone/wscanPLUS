@@ -4,6 +4,7 @@ plugins {
     // is placed at android/app/google-services.json (obtain from Firebase Console).
     // Applying without the file will fail the build — see KNOWN_ISSUES.md.
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
+    id("org.jlleitschuh.gradle.ktlint")
 }
 
 android {
@@ -24,7 +25,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }

@@ -115,6 +115,11 @@ jobs:
         working-directory: android
         run: ./gradlew :core:test
 
+      - name: Kotlin Lint (ktlint)
+        if: steps.check_gradlew.outputs.skip != 'true'
+        working-directory: android
+        run: ./gradlew :core:ktlintCheck :app:ktlintCheck
+
       - name: Android Build (assembleDebug)
         if: steps.check_gradlew.outputs.skip != 'true'
         working-directory: android
