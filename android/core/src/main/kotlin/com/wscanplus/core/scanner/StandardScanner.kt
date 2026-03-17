@@ -28,9 +28,9 @@ import java.util.concurrent.Executors
  * Threading rule: start() and stop() MUST be called from a background thread.
  * start() is idempotent — safe to call multiple times.
  *
- * Callback threading: onResults() is delivered on the dedicated executor thread (API 30+)
- * or the main thread (API 24–29 BroadcastReceiver path). Consumers must not perform UI
- * work or assume a specific thread. Future phases should post to a consistent thread.
+ * Callback threading: onResults() is delivered on the dedicated executor thread on both paths.
+ * API 30+: executor passed to registerScanResultsCallback(). API 24–29: BroadcastReceiver
+ * dispatches onto the same executor via executor.execute(). Both paths are off the main thread.
  *
  * TODO (Phase 1): handle permission-not-granted case gracefully.
  */
