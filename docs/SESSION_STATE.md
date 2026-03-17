@@ -88,7 +88,7 @@ wscanplus/
 
 ## Phase
 
-**Phase 1 (Android Source)** — scaffold merged, first Kotlin sources next
+**Phase 1 (Android Source)** — scaffold complete, quality checks passed, feature work next
 
 ---
 
@@ -169,23 +169,43 @@ AGP 9.x ships with built-in Kotlin. No `org.jetbrains.kotlin.android` plugin nee
 - `WifiManager.startScan()` deprecated API 28 — do not use for new scanner implementations.
 - **Standard scanner pattern:** `BroadcastReceiver` for `WifiManager.SCAN_RESULTS_AVAILABLE_ACTION` + `wifiManager.getScanResults()`.
 - `registerScanResultsCallback()` API 30+ only — guard with API level check.
-- **Permissions (full set for API 24–36):** `ACCESS_WIFI_STATE`, `CHANGE_WIFI_STATE`, `ACCESS_FINE_LOCATION` (runtime), `NEARBY_WIFI_DEVICES` with `neverForLocation` flag (API 33+ only, declare in manifest).
+- **Permissions (full set for API 24–36):** `ACCESS_WIFI_STATE`, `CHANGE_WIFI_STATE`, `ACCESS_FINE_LOCATION` + `ACCESS_COARSE_LOCATION` (both required at runtime — Android 12+ mandates both declared; user may grant only COARSE and app must handle that gracefully), `NEARBY_WIFI_DEVICES` with `neverForLocation` flag (API 33+ only, declare in manifest).
 - **USB adapter detection:** `android.hardware.usb.*` USB Host API (API 12+) — detect OTG adapters by vendor/product ID. No root required.
 
 ### Desktop test tooling (Codex verified — 2026-03-16)
 
 - **Jest:** 29.7.0 → **30.3.0** (fixes CVE-2024-21538). `--experimental-vm-modules` no longer needed in Jest 30.
 - **Updated test script:** `"test": "jest --runInBand --passWithNoTests"`
-- **New file:** `jest.config.mjs` — `export default { testEnvironment: "node", transform: {}, extensionsToTreatAsEsm: [".js", ".mjs"] }`
+- **New file:** `jest.config.mjs` — `export default { testEnvironment: "node", transform: {} }` — `extensionsToTreatAsEsm` is NOT needed for `.js`/`.mjs` with `"type": "module"` in Jest 30.
 
-### Phase 1 Remaining Actions (PR sequence)
+### Phase 1 Scaffold — Complete ✅
 
-1. ~~**[PR #62 — DEPENDENCY, CVE blocker]** jest 29.7.0 → 30.3.0 + `jest.config.mjs` + test script update + Android test dep updates~~ ✅ merged e95a880
-2. ~~**[PR #63 — DEPENDENCY]** AGP 9.0.0 → 9.1.0~~ ✅ merged e7e9fbe
-3. **[PR — FEATURE]** WatchdogService stub + scanner chain skeleton (USB > Standard; Root dev-opt-in stub)
-4. **[PR — FEATURE]** AndroidManifest permissions (USE_BIOMETRIC, ACCESS_FINE_LOCATION, FOREGROUND_SERVICE, FOREGROUND_SERVICE_DATA_SYNC, INTERNET, NEARBY_WIFI_DEVICES)
-5. **[PR — FEATURE]** Firebase AI Logic scaffold (`firebase-bom:34.10.0` + `firebase-ai`, google-services plugin, `google-services.json` placeholder)
-6. **[PR — FEATURE]** Google Maps scaffold
+All scaffold PRs merged to main (head: `10f753f`):
+
+1. ~~**[PR #62]** jest 29.7.0 → 30.3.0 (CVE-2024-21538) + Android test dep updates~~ ✅ e95a880
+2. ~~**[PR #63]** AGP 9.0.0 → 9.1.0~~ ✅ e7e9fbe
+3. ~~**[PR #64]** Dependency audit + doc alignment~~ ✅ 3ebd218
+4. ~~**[PR #65]** WatchdogService stub + scanner chain skeleton~~ ✅ 4ea62e2
+5. ~~**[PR #66]** AndroidManifest permissions (full set)~~ ✅ 4fd20fc
+6. ~~**[PR #67]** Firebase AI Logic scaffold (firebase-bom:34.10.0 + firebase-ai)~~ ✅ 94c5c59
+7. ~~**[PR #68]** Google Maps scaffold (play-services-maps:20.0.0, GOOGLE_MAPS_API_KEY)~~ ✅ 1218a1e
+8. ~~**[PR #69]** Lint fix — ACCESS_COARSE_LOCATION + @RequiresPermission annotations~~ ✅ 10f753f
+
+### Quality Gate Results (2026-03-16)
+
+| Check | Result |
+|-------|--------|
+| `./gradlew assembleDebug` | ✅ BUILD SUCCESSFUL |
+| `npm test` (desktop) | ✅ Pass (`npm ci` resolved corrupt node_modules) |
+| `./gradlew lint` | ✅ 0 errors (2 errors caught + fixed in PR #69) |
+
+**Advisory warnings (non-blocking, future dep PR):** espresso-core 3.6.1 → 3.7.0, Gradle 9.3.1 → 9.4.0, missing app icon + `android:dataExtractionRules` (Phase 2 UI work).
+
+### Phase 1 Next — Feature Work
+
+- StandardScanner real implementation: `BroadcastReceiver` + `getScanResults()` → results callback
+- Plan runtime permission request flow (which component requests `ACCESS_COARSE_LOCATION` / `NEARBY_WIFI_DEVICES`)
+- WatchdogService startup trigger (what calls `startForegroundService()`)
 
 ---
 

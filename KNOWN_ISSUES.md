@@ -1,5 +1,25 @@
 # Known Issues
 
+## 2026-03-16: Lint errors found in quality check — resolved PR #69
+
+**Issues found:** Two lint errors + stale key name references discovered during pre-feature quality check.
+
+1. **`CoarseFineLocation` error** (`AndroidManifest.xml`) — Android 12+ requires both `ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION` to be declared. Only `ACCESS_FINE_LOCATION` was present. App must handle COARSE-only grants gracefully.
+2. **`MissingPermission` error** (`StandardScanner.kt`) — `wifiManager.scanResults` called inside `BroadcastReceiver.onReceive()` without `@RequiresPermission` annotation. Lint cannot trace permission contract through system callbacks.
+3. **Stale key name** — `MAPS_API_KEY` referenced in `AndroidManifest` comment and `build.gradle.kts` comment after rename to `GOOGLE_MAPS_API_KEY` in PR #68.
+
+**Additional:** Local `desktop/node_modules` was corrupt (`exit-x` missing). Fixed with `npm ci`.
+
+**Status:** ✅ RESOLVED — PR #69 merged 2026-03-16 (commit `10f753f`). Lint now reports 0 errors.
+
+**Remaining advisory warnings (non-blocking):**
+- espresso-core 3.6.1 → 3.7.0 available
+- Gradle 9.3.1 → 9.4.0 available
+- Missing `android:icon` on `<application>` — Phase 2 UI work
+- `android:allowBackup` deprecated (Android 12+) — add `android:dataExtractionRules` — Phase 2 UI work
+
+---
+
 ## 2026-03-16: Firebase AI scaffold — google-services.json required before runtime init
 
 **Issue:** `google-services.json` is gitignored (`**/google-services.json` in root `.gitignore`). The google-services plugin (`com.google.gms.google-services:4.4.4`) is declared in `android/build.gradle.kts` with `apply false` but NOT yet applied in `:app` — applying it without the JSON file causes a build failure.
