@@ -20,7 +20,7 @@ Audience: professional / advanced users (defensive detection & assessment)
 - Export formats: PCAP/PCAPNG (Wireshark-compatible) + JSON.
 - Kismet: OPTIONAL integration. Primary near-term use: Android as remote GPS source.
 - BetterCap: OPTIONAL integration. Reference: https://github.com/bettercap/caplets
-- Minimal CI only. Do NOT add CodeQL/SonarCloud/Semgrep/Detekt by default.
+- Minimal CI only. Do NOT add CodeQL/SonarCloud/Semgrep as GitHub code scanning integrations by default. Detekt removed from planning (2026-03-17); ktlint used instead.
 - Secrets: NO tokens in repo. Android uses `local.properties` + secrets-gradle-plugin; desktop uses `.env` + dotenv.
 - AI guardrails: 1 PR at a time, 1 issue per PR, tests-first, stop if CI red.
 - **Node.js module system: ESM only.** All `package.json` files must have `"type": "module"`. No CommonJS.
@@ -206,6 +206,7 @@ All merged to main through PR #77 (last feature commit: `11e4a45`):
 | `./gradlew assembleDebug` | ✅ BUILD SUCCESSFUL (Gradle 9.4.0) |
 | `npm test` (desktop) | ✅ Pass |
 | `./gradlew lint` | ✅ 0 errors, 2 warnings (icon + dataExtractionRules — Phase 2) |
+| `./gradlew :core:ktlintCheck :app:ktlintCheck` | ✅ Added (issue #83) |
 
 ### WatchdogService notification (PR #72 — confirmed pattern)
 
@@ -286,9 +287,11 @@ const val CTI_MISSING_FLAG = "cti_unavailable"
 
 ### Phase 1 Next
 
-1. **eslint advisory dep PR** — eslint 9.x → 10.0.3 (no CVE, deferred)
-2. **Phase 1 remaining** — app icon, dataExtractionRules, biometric auth (Android-only; complete before moving to ROADMAP Phase 2)
-3. **Phase 4 prep (AI Layer)** — threat pipeline UI, CTI integration — schema locked above; implementation deferred until Phase 4 per ROADMAP
+1. ~~**ktlint CI addition**~~ ✅ — `org.jlleitschuh.gradle.ktlint:14.2.0`, zero-config. CI: `./gradlew :core:ktlintCheck :app:ktlintCheck`. Detekt removed from planning (2026-03-17).
+2. **Phase reassessment docs** — ROADMAP.md update with revised phase structure (2026-03-17 reassessment)
+3. **Phase 1 remaining** — app icon, dataExtractionRules, settings deep link on permission denial, WatchdogService 6-hour dataSync restart (Android 15+). Biometric deferred to Phase 6.
+4. **eslint advisory dep PR** — eslint 9.x → 10.0.3 (no CVE, deferred)
+5. **First unit tests** — `:core` module pure-logic tests
 
 ### StandardScanner (PR #76 — confirmed pattern)
 
