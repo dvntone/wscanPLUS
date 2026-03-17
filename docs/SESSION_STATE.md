@@ -180,7 +180,7 @@ AGP 9.x ships with built-in Kotlin. No `org.jetbrains.kotlin.android` plugin nee
 
 ### Phase 1 PR Log
 
-All merged to main (head: `11e4a45`):
+All merged to main through PR #77 (last feature commit: `11e4a45`):
 
 1. ~~**[PR #62]** jest 29.7.0 → 30.3.0 (CVE-2024-21538) + Android test dep updates~~ ✅ e95a880
 2. ~~**[PR #63]** AGP 9.0.0 → 9.1.0~~ ✅ e7e9fbe
@@ -216,9 +216,8 @@ All merged to main (head: `11e4a45`):
 
 ### Phase 1 Next
 
-1. **Docs PR** — update SESSION_STATE + KNOWN_ISSUES post-PR #77
-2. **eslint advisory dep PR** — eslint 9.x → 10.0.3 (no CVE, deferred)
-3. **Phase 2 planning** — app icon, dataExtractionRules, biometric auth, UI
+1. **eslint advisory dep PR** — eslint 9.x → 10.0.3 (no CVE, deferred)
+2. **Phase 2 planning** — app icon, dataExtractionRules, biometric auth, UI
 
 ### StandardScanner (PR #76 — confirmed pattern)
 
