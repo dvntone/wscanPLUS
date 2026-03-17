@@ -249,35 +249,37 @@ Both platforms must implement their cache layer before making any CTI API calls.
 
 > Corresponds to **Phase 4 — AI Layer** in ROADMAP.md. Defined during Phase 1 so the shape is locked before implementation begins.
 
-Three additions required — implement these in Phase 4 (AI Layer) before wiring CTI API calls or Gemini prompts. The schema is locked now so Android and Desktop can reserve the correct DB columns from Phase 2 onward:
+**Three primary additions** (ThreatSignal, CtiCacheEntry, CTI_MISSING_FLAG) plus **two supporting enum types** (ThreatSource, CtiDataset). All five belong to Phase 4 (AI Layer) per ROADMAP. The shapes are locked now so DB schema can be reserved from Phase 2 onward without breaking changes:
 
 ```
-// Per-layer signal source — enum class (exhaustive when-expressions, no typos)
+// Supporting enum — signal layer origin
 enum class ThreatSource { LOCAL_HEURISTIC, CROWDSEC_CTI, GEMINI }
 
-// CTI dataset selector — enum class; composite cache key is (ip, dataset)
+// Supporting enum — CTI dataset. Also determines cache TTL.
+// Cache key for CtiCacheEntry is the string "$ip:$dataset" — one row per ip+dataset pair.
 enum class CtiDataset { SMOKE, FIRE }
 
-// Per-layer signal wrapper
+// Primary addition 1 — per-layer signal wrapper
 data class ThreatSignal(
     val score: Float,             // 0.0–1.0 confidence
     val source: ThreatSource,     // layer origin
     val reasons: List<String>,    // top 3 human-readable reason strings (UI + audit log)
 )
 
-// CTI cache entry (Android: Room entity; Desktop: sqlite row)
-// Unique constraint: (ip, dataset) — two rows per IP max (one SMOKE, one FIRE)
-// Room annotation: @Entity(indices = [Index(value = ["ip", "dataset"], unique = true)])
-// smoke TTL: 48h | fire TTL: 6h
+// Primary addition 2 — CTI cache entry
+// Android: Room @Entity, @PrimaryKey val cacheKey: String = "$ip:${dataset.name}"
+// Desktop: sqlite row with same string primary key
+// Unique by design: ip+dataset string key ensures one row per IP per dataset (SMOKE or FIRE)
+// TTL: SMOKE → 48h, FIRE → 6h
 data class CtiCacheEntry(
+    val cacheKey: String,         // "$ip:${dataset.name}" — primary key
     val ip: String,
     val dataset: CtiDataset,      // SMOKE (per-IP lookup) | FIRE (presence in bulk feed)
     val responseJson: String,
     val cachedAt: Long,           // epoch ms
-    // @PrimaryKey — use composite surrogate or (ip + dataset.name) as string key
 )
 
-// Degraded-mode flag injected into Gemini prompt context
+// Primary addition 3 — degraded-mode flag injected into Gemini prompt context
 // when CTI is unavailable (offline / quota exhausted / cache miss + expired)
 const val CTI_MISSING_FLAG = "cti_unavailable"
 ```
