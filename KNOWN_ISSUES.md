@@ -1,5 +1,17 @@
 # Known Issues
 
+## 2026-03-17: StandardScanner Copilot review fixes — resolved PR #76
+
+**Issues identified and resolved across PR #75 → #76:**
+1. **BroadcastReceiver on main thread** — `onReceive()` delivered results on main thread. Fixed: Copilot autofix dispatches via `executor.execute {}` — both paths now off main thread.
+2. **Executor leak on registration failure** — executor created before `registerScanResultsCallback()` would leak if registration threw. Fixed: `try-catch(RuntimeException)` with `executor.shutdownNow()` on failure.
+3. **CHANGE_WIFI_STATE missing from @RequiresPermission** — `startScan()` (API < 28) requires it. Fixed: added to both `StandardScanner.start()` and `ScannerChain.start()`.
+4. **KDoc threading description stale** — said "main thread (API 24–29)" after executor fix. Corrected to reflect both paths deliver off main thread.
+
+**Status:** ✅ RESOLVED — PR #76 merged 2026-03-17 (commit `5f03771`).
+
+---
+
 ## 2026-03-16: WatchdogService InlinedApi warning — suppressed PR #72
 
 **Issue:** `ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC` (API 29) used with minSdk 24. Lint flags the constant as inlined.
