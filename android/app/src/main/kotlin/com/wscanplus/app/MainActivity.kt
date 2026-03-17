@@ -4,27 +4,47 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 
 class MainActivity : Activity() {
     private lateinit var statusView: TextView
+    private lateinit var rootLayout: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        rootLayout =
+            LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(48, 48, 48, 48)
+            }
         statusView =
             TextView(this).apply {
                 text = "wscan+ needs Wi-Fi scan permissions to start the scanner."
+                textSize = 16f
             }
-        setContentView(statusView)
+        rootLayout.addView(statusView)
+        setContentView(rootLayout)
 
         if (hasAllPermissions()) {
             startWatchdog()
         } else {
             requestPermissions(requiredPermissions(), REQUEST_CODE)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Re-check permissions when returning from Settings
+        if (hasAllPermissions() && scannerStarted.not()) {
+            startWatchdog()
         }
     }
 
@@ -40,9 +60,30 @@ class MainActivity : Activity() {
         if (hasAllPermissions()) {
             startWatchdog()
         } else {
-            statusView.text =
-                "Permissions denied. Grant Wi-Fi and location permissions in Settings to start."
+            showPermissionDenied()
         }
+    }
+
+    private fun showPermissionDenied() {
+        statusView.text =
+            "Scanning disabled. Grant Wi-Fi and location permissions in Settings to start."
+        val settingsButton =
+            Button(this).apply {
+                text = "Open Settings"
+                setOnClickListener { openAppSettings() }
+            }
+        // Avoid duplicate buttons on repeated denial
+        if (rootLayout.childCount == 1) {
+            rootLayout.addView(settingsButton)
+        }
+    }
+
+    private fun openAppSettings() {
+        val intent =
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", packageName, null)
+            }
+        startActivity(intent)
     }
 
     private fun requiredPermissions(): Array<String> {
@@ -59,8 +100,15 @@ class MainActivity : Activity() {
                 PackageManager.PERMISSION_GRANTED
         }
 
+    private var scannerStarted = false
+
     private fun startWatchdog() {
+        scannerStarted = true
         statusView.text = "Starting scanner..."
+        // Remove settings button if it was shown
+        if (rootLayout.childCount > 1) {
+            rootLayout.removeViewAt(1)
+        }
         val intent = Intent(this, WatchdogService::class.java)
         ContextCompat.startForegroundService(this, intent)
     }
