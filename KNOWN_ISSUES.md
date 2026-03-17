@@ -188,6 +188,8 @@ On 2026-03-14, multiple repository settings were changed by @dvntone (repository
 - **Do not re-enable without a tracked issue approved by @dvntone**
 - Documented in docs/AGENTS.md:154
 
+**2026-03-17 update:** GitHub Pages environment was still appearing active in repo settings. Root cause: a Copilot Environment (github-pages) existed and was not removed when Pages was disabled. @dvntone deleted the Copilot environment — Pages is now fully inactive.
+
 ### 5. Google Cloud Apps Disabled
 
 **Changed by**: @dvntone (repository admin)
