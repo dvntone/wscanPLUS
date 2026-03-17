@@ -106,8 +106,8 @@ class WatchdogService : Service() {
                     "wscan+ Scanner",
                     NotificationManager.IMPORTANCE_LOW,
                 ).apply {
-                description = "Active while the WiFi scanner chain is running"
-            }
+                    description = "Active while the WiFi scanner chain is running"
+                }
             getSystemService(NotificationManager::class.java)
                 .createNotificationChannel(channel)
         }
