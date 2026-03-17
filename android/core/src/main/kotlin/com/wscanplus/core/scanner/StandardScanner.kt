@@ -156,7 +156,11 @@ class StandardScanner(
             bssid = BSSID ?: "",
             signalLevel = level,
             frequencyMhz = frequency,
-            capabilities = capabilities ?: ""
+            capabilities = capabilities ?: "",
+            timestamp = timestamp,
+            channelWidth = channelWidth,
+            centerFreq0 = centerFreq0,
+            centerFreq1 = centerFreq1,
         )
     }
 }
