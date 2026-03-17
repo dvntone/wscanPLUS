@@ -214,10 +214,81 @@ All merged to main through PR #77 (last feature commit: `11e4a45`):
 - `@SuppressLint("InlinedApi")` — constant is API 29, safe because `ServiceCompat` guards internally
 - Placeholder icon `android.R.drawable.ic_menu_search` — replace in Phase 2
 
+### Threat Pipeline Architecture (locked 2026-03-17)
+
+Three-layer design — rated 8.5/10 by Codex review:
+
+| Layer | What | Cost | When |
+|-------|------|------|------|
+| 1 — Local heuristics | WEP detection, evil twin signals, unknown BSSID patterns | Free, unlimited, on-device | Every scan |
+| 2 — CrowdSec CTI API | IP reputation, classification (VPN/proxy/Tor/botnet), behavior signals | 30 req/week free / 100 req/week premium; cached locally (Room on Android; sqlite/file on Desktop) | Only IPs passing Layer 1 suspicion threshold |
+| 3 — Gemini (firebase-ai) | Natural language threat assessment on combined Layer 1 + 2 signal | API cost; cache results | On-demand or threshold trigger |
+
+**CTI API endpoints:**
+- `GET /v2/smoke/{ip}` — per-IP stable reputation lookup (smoke dataset, 48h TTL). Primary lookup path.
+- `GET /v2/fire` — bulk feed of recently active aggressors (fire dataset, 6h TTL). Returns a list, not per-IP. Cache stores presence in feed per IP.
+
+Auth: `x-api-key` header. Android: OkHttp. Electron: `fetch()`. nodejs-bouncer: ESM-first but remediation-only — not needed for CTI lookups.
+
+**Six required refinements (Codex — 2026-03-17):**
+
+1. **Confidence propagation** — each layer passes a numeric confidence + provenance into the next so Gemini weighs signals rather than treating them equally
+2. **Differentiated cache TTLs** — CTI "fire" (volatile, shorter TTL) vs "smoke" (stable reputation, longer TTL e.g. 48h)
+3. **False-positive brakes** — benign override heuristic: known corp ASN + clean CTI + stable RSSI → suppress escalation
+4. **Degraded-mode behavior** — define behavior when CTI unavailable: serve cache-only, or skip to Gemini with "CTI missing" flag in payload
+5. **Explainability payload** — save top 3 reasons per layer for UI display and audit logs — makes results defensible
+6. **Quota budget guardrails** — hard caps per time window for both CTI and Gemini to prevent runaway bursts on noisy environments
+
+**CTI cache prerequisite:**
+- **Android:** Room DB cache where the **primary key** is `cacheKey` with format `"$ip:${dataset.name}"` (one row per IP per dataset). Optionally add a **non-unique** index on `(ip, dataset)` for query performance. smoke TTL: 48h; fire TTL: 6h.
+- **Desktop (Electron):** sqlite or file-based cache with the same logical keying: primary key column `cacheKey` using `"$ip:${dataset.name}"`, with any `(ip, dataset)` index non-unique and used only for performance — Room is Android-only.
+
+Both platforms must implement their cache layer before making any CTI API calls.
+
+### AI Layer Threat Data Model (Phase 4 — locked shape, defined ahead of time)
+
+> Corresponds to **Phase 4 — AI Layer** in ROADMAP.md. Defined during Phase 1 so the shape is locked before implementation begins.
+
+**Three primary additions** (ThreatSignal, CtiCacheEntry, CTI_MISSING_FLAG) plus **two supporting enum types** (ThreatSource, CtiDataset). All five belong to Phase 4 (AI Layer) per ROADMAP. The shapes are locked now so DB schema can be reserved from Phase 2 onward without breaking changes:
+
+```
+// Supporting enum — signal layer origin
+enum class ThreatSource { LOCAL_HEURISTIC, CROWDSEC_CTI, GEMINI }
+
+// Supporting enum — CTI dataset. Also determines cache TTL.
+// Cache key for CtiCacheEntry is the string "$ip:${dataset.name}" — one row per ip+dataset pair.
+enum class CtiDataset { SMOKE, FIRE }
+
+// Primary addition 1 — per-layer signal wrapper
+data class ThreatSignal(
+    val confidence: Float,        // 0.0–1.0 confidence
+    val source: ThreatSource,     // layer origin
+    val reasons: List<String>,    // top 3 human-readable reason strings (UI + audit log)
+)
+
+// Primary addition 2 — CTI cache entry
+// Android: Room @Entity, @PrimaryKey val cacheKey: String = "$ip:${dataset.name}"
+// Desktop: sqlite row with same string primary key
+// Unique by design: ip+dataset string key ensures one row per IP per dataset (SMOKE or FIRE)
+// TTL: SMOKE → 48h, FIRE → 6h
+data class CtiCacheEntry(
+    val cacheKey: String,         // "$ip:${dataset.name}" — primary key
+    val ip: String,
+    val dataset: CtiDataset,      // SMOKE (per-IP lookup) | FIRE (presence in bulk feed)
+    val responseJson: String,
+    val cachedAt: Long,           // epoch ms
+)
+
+// Primary addition 3 — degraded-mode flag injected into Gemini prompt context
+// when CTI is unavailable (offline / quota exhausted / cache miss + expired)
+const val CTI_MISSING_FLAG = "cti_unavailable"
+```
+
 ### Phase 1 Next
 
 1. **eslint advisory dep PR** — eslint 9.x → 10.0.3 (no CVE, deferred)
-2. **Phase 2 planning** — app icon, dataExtractionRules, biometric auth, UI
+2. **Phase 1 remaining** — app icon, dataExtractionRules, biometric auth (Android-only; complete before moving to ROADMAP Phase 2)
+3. **Phase 4 prep (AI Layer)** — threat pipeline UI, CTI integration — schema locked above; implementation deferred until Phase 4 per ROADMAP
 
 ### StandardScanner (PR #76 — confirmed pattern)
 
