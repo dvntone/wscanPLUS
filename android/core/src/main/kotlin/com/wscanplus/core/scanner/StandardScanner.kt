@@ -68,9 +68,15 @@ class StandardScanner(
             }
         }
         // Assign fields only after successful registration to prevent partial state on throw.
-        wifiManager.registerScanResultsCallback(executor, callback)
-        scanCallbackExecutor = executor
-        scanResultsCallback = callback
+        try {
+            wifiManager.registerScanResultsCallback(executor, callback)
+            scanCallbackExecutor = executor
+            scanResultsCallback = callback
+        } catch (e: RuntimeException) {
+            // Ensure we do not leak the executor thread if registration fails.
+            executor.shutdownNow()
+            throw e
+        }
     }
 
     private fun startWithBroadcastReceiver() {
