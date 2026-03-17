@@ -1,5 +1,13 @@
 # Known Issues
 
+## 2026-03-16: WatchdogService InlinedApi warning — suppressed PR #72
+
+**Issue:** `ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC` (API 29) used with minSdk 24. Lint flags the constant as inlined.
+**Resolution:** Safe — `ServiceCompat.startForeground()` guards the type parameter internally and falls back to `startForeground(id, notification)` on API < 29. The integer constant is copied at compile time and causes no runtime issue. Suppressed with `@SuppressLint("InlinedApi")` and explanatory comment on `onStartCommand()`.
+**Status:** ✅ RESOLVED — PR #72 merged 2026-03-16 (commit `89d4f1a`).
+
+---
+
 ## 2026-03-16: Lint errors found in quality check — resolved PR #69
 
 **Issues found:** Two lint errors + stale key name references discovered during pre-feature quality check.
