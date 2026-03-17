@@ -28,6 +28,10 @@ import java.util.concurrent.Executors
  * Threading rule: start() and stop() MUST be called from a background thread.
  * start() is idempotent — safe to call multiple times.
  *
+ * Callback threading: onResults() is delivered on the dedicated executor thread on both paths.
+ * API 30+: executor passed to registerScanResultsCallback(). API 24–29: BroadcastReceiver
+ * dispatches onto the same executor via executor.execute(). Both paths are off the main thread.
+ *
  * TODO (Phase 1): handle permission-not-granted case gracefully.
  */
 class StandardScanner(
@@ -41,7 +45,13 @@ class StandardScanner(
     private var scanResultsCallback: WifiManager.ScanResultsCallback? = null
     private var scanCallbackExecutor: ExecutorService? = null
 
-    @RequiresPermission(allOf = [Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.ACCESS_FINE_LOCATION])
+    @RequiresPermission(
+        allOf = [
+            Manifest.permission.ACCESS_WIFI_STATE,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.CHANGE_WIFI_STATE
+        ]
+    )
     fun start() {
         if (receiver != null || scanResultsCallback != null) return  // idempotent — already started
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -63,20 +73,36 @@ class StandardScanner(
                 resultsListener.onResults(results.map { it.toWifiScanResult() })
             }
         }
-        scanCallbackExecutor = executor
-        scanResultsCallback = callback
-        wifiManager.registerScanResultsCallback(executor, callback)
+        // Assign fields only after successful registration to prevent partial state on throw.
+        try {
+            wifiManager.registerScanResultsCallback(executor, callback)
+            scanCallbackExecutor = executor
+            scanResultsCallback = callback
+        } catch (e: RuntimeException) {
+            // Ensure we do not leak the executor thread if registration fails.
+            executor.shutdownNow()
+            throw e
+        }
     }
 
     private fun startWithBroadcastReceiver() {
+        if (scanCallbackExecutor == null) {
+            scanCallbackExecutor = Executors.newSingleThreadExecutor { runnable ->
+                Thread(runnable, "wscanplus-standard-scanner")
+            }
+        }
+        val executor = scanCallbackExecutor!!
+
         receiver = object : BroadcastReceiver() {
             // Permission verified by start() caller via @RequiresPermission contract.
             // Lint cannot trace through BroadcastReceiver.onReceive() system callbacks.
             @SuppressLint("MissingPermission")
             override fun onReceive(ctx: Context, intent: Intent) {
                 if (intent.action != WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) return
-                val results = wifiManager.scanResults
-                resultsListener.onResults(results.map { it.toWifiScanResult() })
+                executor.execute {
+                    val results = wifiManager.scanResults
+                    resultsListener.onResults(results.map { it.toWifiScanResult() })
+                }
             }
         }
         appContext.registerReceiver(
@@ -103,10 +129,14 @@ class StandardScanner(
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             scanResultsCallback?.let { callback ->
-                @SuppressLint("MissingPermission")
-                // Permission was held at start() time — same WifiManager session.
-                fun unregister() = wifiManager.unregisterScanResultsCallback(callback)
-                unregister()
+                try {
+                    @SuppressLint("MissingPermission")
+                    // Permission was held at start() time — same WifiManager session.
+                    fun unregister() = wifiManager.unregisterScanResultsCallback(callback)
+                    unregister()
+                } catch (e: Exception) {
+                    // Callback not registered or already unregistered — log in future when logging is available
+                }
             }
         }
         scanResultsCallback = null
