@@ -261,7 +261,7 @@ enum class CtiDataset { SMOKE, FIRE }
 
 // Primary addition 1 — per-layer signal wrapper
 data class ThreatSignal(
-    val score: Float,             // 0.0–1.0 confidence
+    val confidence: Float,        // 0.0–1.0 confidence
     val source: ThreatSource,     // layer origin
     val reasons: List<String>,    // top 3 human-readable reason strings (UI + audit log)
 )
