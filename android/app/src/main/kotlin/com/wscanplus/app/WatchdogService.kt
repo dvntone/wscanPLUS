@@ -165,6 +165,7 @@ class WatchdogService : Service() {
         private const val CHANNEL_ID = "wscanplus_watchdog"
         private const val NOTIFICATION_ID = 1
         private const val ANDROID_15_API = 35
+
         // 5 hours 50 minutes in milliseconds — restart 10 min before 6h limit
         private const val RESTART_DELAY_MS = 5L * 60 * 60 * 1000 + 50 * 60 * 1000
     }
