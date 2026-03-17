@@ -221,7 +221,7 @@ Three-layer design — rated 8.5/10 by Codex review:
 | Layer | What | Cost | When |
 |-------|------|------|------|
 | 1 — Local heuristics | WEP detection, evil twin signals, unknown BSSID patterns | Free, unlimited, on-device | Every scan |
-| 2 — CrowdSec CTI API | IP reputation, classification (VPN/proxy/Tor/botnet), behavior signals | 30 req/week free / 100 req/week premium; cached in Room DB | Only IPs passing Layer 1 suspicion threshold |
+| 2 — CrowdSec CTI API | IP reputation, classification (VPN/proxy/Tor/botnet), behavior signals | 30 req/week free / 100 req/week premium; cached locally (Room on Android; sqlite/file cache on Desktop) | Only IPs passing Layer 1 suspicion threshold |
 | 3 — Gemini (firebase-ai) | Natural language threat assessment on combined Layer 1 + 2 signal | API cost; cache results | On-demand or threshold trigger |
 
 **CTI API endpoints:**
