@@ -7,9 +7,14 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
+import android.os.SystemClock
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import com.wscanplus.core.scanner.ScannerChain
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -25,7 +30,8 @@ import java.util.concurrent.Future
  * Serial number is the primary device key in all data structures.
  *
  * Android 15 constraint: dataSync foreground services have a 6-hour max runtime.
- * This service must handle a clean restart when that limit is reached (START_STICKY).
+ * On API 35+, this service schedules a clean restart at 5h 50min to reset the timer.
+ * On older APIs, no restart is needed (no runtime limit).
  *
  * Threading rule: scanner chain and ServerSocket operations MUST run on background
  * threads. Never call scanners or socket operations on the main thread.
@@ -36,6 +42,9 @@ class WatchdogService : Service() {
     private var scannerChain: ScannerChain? = null
     private var scannerExecutor: ExecutorService? = null
     private var startFuture: Future<*>? = null
+    private var startTimeMillis: Long = 0L
+    private val handler = Handler(Looper.getMainLooper())
+    private val restartRunnable = Runnable { performScheduledRestart() }
 
     override fun onCreate() {
         super.onCreate()
@@ -60,6 +69,7 @@ class WatchdogService : Service() {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
         )
         if (scannerChain == null) {
+            startTimeMillis = SystemClock.elapsedRealtime()
             val executor =
                 Executors.newSingleThreadExecutor { runnable ->
                     Thread(runnable, "wscanplus-watchdog")
@@ -70,12 +80,14 @@ class WatchdogService : Service() {
                     // Phase 1 stub — TODO (Phase 2): forward results to data layer / ADB channel.
                 }
             startFuture = executor.submit { startChain(scannerChain!!) }
+            scheduleDataSyncRestart()
         }
         return START_STICKY
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        handler.removeCallbacks(restartRunnable)
         // Cancel any queued start task before submitting stop, so a pending start cannot
         // race with or follow the stop on the executor queue.
         startFuture?.cancel(true)
@@ -98,6 +110,33 @@ class WatchdogService : Service() {
     @SuppressLint("MissingPermission")
     private fun startChain(chain: ScannerChain) = chain.start()
 
+    /**
+     * Android 15+ (API 35): dataSync foreground services have a 6-hour max runtime.
+     * Schedule a clean restart 10 minutes before the limit to avoid being killed.
+     * On older APIs, this is a no-op.
+     */
+    private fun scheduleDataSyncRestart() {
+        if (Build.VERSION.SDK_INT < ANDROID_15_API) return
+        handler.postDelayed(restartRunnable, RESTART_DELAY_MS)
+        Log.d(TAG, "Scheduled dataSync restart in ${RESTART_DELAY_MS / 1000 / 60} minutes")
+    }
+
+    /**
+     * Performs a clean restart: stops the scanner chain, stops self, then starts a new
+     * service instance. The new instance gets a fresh 6-hour runtime window.
+     */
+    private fun performScheduledRestart() {
+        Log.d(TAG, "Performing scheduled dataSync restart after ${uptimeMinutes()} minutes")
+        val restartIntent = Intent(this, WatchdogService::class.java)
+        stopSelf()
+        ContextCompat.startForegroundService(this, restartIntent)
+    }
+
+    private fun uptimeMinutes(): Long {
+        val elapsed = SystemClock.elapsedRealtime() - startTimeMillis
+        return elapsed / 1000 / 60
+    }
+
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel =
@@ -117,13 +156,16 @@ class WatchdogService : Service() {
         NotificationCompat
             .Builder(this, CHANNEL_ID)
             .setContentTitle("wscan+ scanning")
-            // Placeholder system icon — replace with app icon in Phase 2
-            .setSmallIcon(android.R.drawable.ic_menu_search)
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setOngoing(true)
             .build()
 
     companion object {
+        private const val TAG = "WatchdogService"
         private const val CHANNEL_ID = "wscanplus_watchdog"
         private const val NOTIFICATION_ID = 1
+        private const val ANDROID_15_API = 35
+        // 5 hours 50 minutes in milliseconds — restart 10 min before 6h limit
+        private const val RESTART_DELAY_MS = 5L * 60 * 60 * 1000 + 50 * 60 * 1000
     }
 }
