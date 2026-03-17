@@ -242,20 +242,27 @@ Three-layer design — rated 8.5/10 by Codex review:
 Three additions required across the threat pipeline — implement in Phase 2 before any threat UI or CTI/Gemini wiring:
 
 ```
+// Per-layer signal source — use sealed class or named constants in implementation
+// to prevent typos and enable exhaustive when-expressions
+enum class ThreatSource { LOCAL_HEURISTIC, CROWDSEC_CTI, GEMINI }
+
+// CTI dataset selector — use enum or named constants in implementation
+enum class CtiDataset { SMOKE, FIRE }
+
 // Per-layer signal wrapper
 data class ThreatSignal(
-    val score: Float,          // 0.0–1.0 confidence
-    val source: String,        // "local_heuristic" | "crowdsec_cti" | "gemini"
-    val reasons: List<String>, // top 3 human-readable reason strings (UI + audit log)
+    val score: Float,             // 0.0–1.0 confidence
+    val source: ThreatSource,     // layer origin
+    val reasons: List<String>,    // top 3 human-readable reason strings (UI + audit log)
 )
 
 // CTI cache entry (Room entity)
 // smoke TTL: 48h | fire TTL: 6h
 data class CtiCacheEntry(
     val ip: String,
-    val dataset: String,       // "smoke" | "fire"
+    val dataset: CtiDataset,      // SMOKE | FIRE
     val responseJson: String,
-    val cachedAt: Long,        // epoch ms
+    val cachedAt: Long,           // epoch ms
 )
 
 // Degraded-mode flag injected into Gemini prompt context
