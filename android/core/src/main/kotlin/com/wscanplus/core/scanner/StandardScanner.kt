@@ -8,7 +8,10 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.wifi.WifiManager
 import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 /**
  * StandardScanner is the guaranteed baseline scanner — works on all devices, all API levels.
@@ -17,7 +20,7 @@ import androidx.annotation.RequiresPermission
  *   API 30+: registerScanResultsCallback() (non-deprecated, preferred)
  *   API 24–29: BroadcastReceiver for SCAN_RESULTS_AVAILABLE_ACTION + getScanResults()
  *
- * Note: WifiManager.startScan() is deprecated API 28 — NOT used here.
+ * Note: WifiManager.startScan() is deprecated API 28 — only used on API < 28.
  *
  * Runtime permissions required (declared in Phase 1 permissions PR):
  *   ACCESS_FINE_LOCATION (all API levels), NEARBY_WIFI_DEVICES with neverForLocation (API 33+)
@@ -25,22 +28,44 @@ import androidx.annotation.RequiresPermission
  * Threading rule: start() and stop() MUST be called from a background thread.
  * start() is idempotent — safe to call multiple times.
  *
- * TODO (Phase 1): implement registerScanResultsCallback() path for API 30+.
- * TODO (Phase 1): forward scan results via callback or channel to ScannerChain.
  * TODO (Phase 1): handle permission-not-granted case gracefully.
  */
-class StandardScanner(private val context: Context) {
+class StandardScanner(
+    context: Context,
+    private val resultsListener: ScanResultsListener = ScanResultsListener { }
+) {
 
+    private val appContext = context.applicationContext
+    private val wifiManager = appContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
     private var receiver: BroadcastReceiver? = null
+    private var scanResultsCallback: WifiManager.ScanResultsCallback? = null
+    private var scanCallbackExecutor: ExecutorService? = null
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.ACCESS_FINE_LOCATION])
     fun start() {
-        if (receiver != null) return  // idempotent — already started
+        if (receiver != null || scanResultsCallback != null) return  // idempotent — already started
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // API 30+: use registerScanResultsCallback — TODO implement
+            startWithScanResultsCallback()
         } else {
             startWithBroadcastReceiver()
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    @SuppressLint("MissingPermission")
+    private fun startWithScanResultsCallback() {
+        val executor = Executors.newSingleThreadExecutor { runnable ->
+            Thread(runnable, "wscanplus-standard-scanner")
+        }
+        val callback = object : WifiManager.ScanResultsCallback() {
+            override fun onScanResultsAvailable() {
+                val results = wifiManager.scanResults
+                resultsListener.onResults(results.map { it.toWifiScanResult() })
+            }
+        }
+        scanCallbackExecutor = executor
+        scanResultsCallback = callback
+        wifiManager.registerScanResultsCallback(executor, callback)
     }
 
     private fun startWithBroadcastReceiver() {
@@ -50,17 +75,18 @@ class StandardScanner(private val context: Context) {
             @SuppressLint("MissingPermission")
             override fun onReceive(ctx: Context, intent: Intent) {
                 if (intent.action != WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) return
-                val wifiManager = ctx.applicationContext
-                    .getSystemService(Context.WIFI_SERVICE) as WifiManager
-                @Suppress("DEPRECATION", "UNUSED_VARIABLE")
                 val results = wifiManager.scanResults
-                // TODO: forward results to ScannerChain callback
+                resultsListener.onResults(results.map { it.toWifiScanResult() })
             }
         }
-        context.registerReceiver(
+        appContext.registerReceiver(
             receiver,
             IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)
         )
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            @Suppress("DEPRECATION")
+            wifiManager.startScan()
+        }
     }
 
     fun stop() {
@@ -69,12 +95,38 @@ class StandardScanner(private val context: Context) {
         // defensively in case of unexpected lifecycle edge cases.
         receiver?.let {
             try {
-                context.unregisterReceiver(it)
+                appContext.unregisterReceiver(it)
             } catch (e: IllegalArgumentException) {
                 // Receiver was not registered — log in future when logging is available
             }
             receiver = null
         }
-        // TODO: unregister registerScanResultsCallback when API 30+ path is implemented
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            scanResultsCallback?.let { callback ->
+                @SuppressLint("MissingPermission")
+                // Permission was held at start() time — same WifiManager session.
+                fun unregister() = wifiManager.unregisterScanResultsCallback(callback)
+                unregister()
+            }
+        }
+        scanResultsCallback = null
+        scanCallbackExecutor?.shutdown()
+        scanCallbackExecutor = null
+    }
+
+    @Suppress("DEPRECATION")
+    private fun android.net.wifi.ScanResult.toWifiScanResult(): WifiScanResult {
+        val ssid = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            wifiSsid?.toString()
+        } else {
+            SSID
+        }
+        return WifiScanResult(
+            ssid = ssid ?: "",
+            bssid = BSSID ?: "",
+            signalLevel = level,
+            frequencyMhz = frequency,
+            capabilities = capabilities ?: ""
+        )
     }
 }
