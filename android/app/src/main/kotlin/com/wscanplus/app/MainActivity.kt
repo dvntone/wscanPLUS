@@ -10,15 +10,15 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 
 class MainActivity : Activity() {
-
     private lateinit var statusView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        statusView = TextView(this).apply {
-            text = "wscan+ needs Wi-Fi scan permissions to start the scanner."
-        }
+        statusView =
+            TextView(this).apply {
+                text = "wscan+ needs Wi-Fi scan permissions to start the scanner."
+            }
         setContentView(statusView)
 
         if (hasAllPermissions()) {
@@ -31,7 +31,7 @@ class MainActivity : Activity() {
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
-        grantResults: IntArray
+        grantResults: IntArray,
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode != REQUEST_CODE) {

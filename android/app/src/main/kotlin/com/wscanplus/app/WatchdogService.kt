@@ -33,7 +33,6 @@ import java.util.concurrent.Future
  * TODO (Phase 3): open ServerSocket(9000) on a background thread for ADB comms.
  */
 class WatchdogService : Service() {
-
     private var scannerChain: ScannerChain? = null
     private var scannerExecutor: ExecutorService? = null
     private var startFuture: Future<*>? = null
@@ -49,21 +48,27 @@ class WatchdogService : Service() {
     // guards the type parameter internally and falls back to startForeground(id, notification)
     // on API < 29. The constant value is copied at compile time and causes no runtime issue.
     @SuppressLint("InlinedApi")
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
         ServiceCompat.startForeground(
             this,
             NOTIFICATION_ID,
             buildNotification(),
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
         )
         if (scannerChain == null) {
-            val executor = Executors.newSingleThreadExecutor { runnable ->
-                Thread(runnable, "wscanplus-watchdog")
-            }
+            val executor =
+                Executors.newSingleThreadExecutor { runnable ->
+                    Thread(runnable, "wscanplus-watchdog")
+                }
             scannerExecutor = executor
-            scannerChain = ScannerChain(applicationContext) { _ ->
-                // Phase 1 stub — TODO (Phase 2): forward results to data layer / ADB channel.
-            }
+            scannerChain =
+                ScannerChain(applicationContext) { _ ->
+                    // Phase 1 stub — TODO (Phase 2): forward results to data layer / ADB channel.
+                }
             startFuture = executor.submit { startChain(scannerChain!!) }
         }
         return START_STICKY
@@ -95,11 +100,12 @@ class WatchdogService : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "wscan+ Scanner",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
+            val channel =
+                NotificationChannel(
+                    CHANNEL_ID,
+                    "wscan+ Scanner",
+                    NotificationManager.IMPORTANCE_LOW,
+                ).apply {
                 description = "Active while the WiFi scanner chain is running"
             }
             getSystemService(NotificationManager::class.java)
@@ -107,12 +113,14 @@ class WatchdogService : Service() {
         }
     }
 
-    private fun buildNotification() = NotificationCompat.Builder(this, CHANNEL_ID)
-        .setContentTitle("wscan+ scanning")
-        // Placeholder system icon — replace with app icon in Phase 2
-        .setSmallIcon(android.R.drawable.ic_menu_search)
-        .setOngoing(true)
-        .build()
+    private fun buildNotification() =
+        NotificationCompat
+            .Builder(this, CHANNEL_ID)
+            .setContentTitle("wscan+ scanning")
+            // Placeholder system icon — replace with app icon in Phase 2
+            .setSmallIcon(android.R.drawable.ic_menu_search)
+            .setOngoing(true)
+            .build()
 
     companion object {
         private const val CHANNEL_ID = "wscanplus_watchdog"

@@ -15,8 +15,9 @@ import android.content.Context
  * TODO (Phase 1): build vendor/product ID list for common USB WiFi adapters.
  * TODO (Phase 1): implement scan using the detected adapter.
  */
-class UsbScanner(private val context: Context) {
-
+class UsbScanner(
+    private val context: Context,
+) {
     /**
      * Returns true if a supported USB OTG WiFi adapter is connected.
      * Always returns false until USB detection is implemented.
