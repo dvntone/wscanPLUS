@@ -240,8 +240,8 @@ Auth: `x-api-key` header. Android: OkHttp. Electron: `fetch()`. nodejs-bouncer: 
 6. **Quota budget guardrails** — hard caps per time window for both CTI and Gemini to prevent runaway bursts on noisy environments
 
 **CTI cache prerequisite:**
-- **Android:** Room DB cache with composite key (ip + dataset). Unique index on (ip, dataset) — one row per IP per dataset. smoke TTL: 48h; fire TTL: 6h.
-- **Desktop (Electron):** sqlite or file-based cache with equivalent key structure — Room is Android-only.
+- **Android:** Room DB cache where the **primary key** is `cacheKey` with format `"$ip:${dataset.name}"` (one row per IP per dataset). Optionally add a **non-unique** index on `(ip, dataset)` for query performance. smoke TTL: 48h; fire TTL: 6h.
+- **Desktop (Electron):** sqlite or file-based cache with the same logical keying: primary key column `cacheKey` using `"$ip:${dataset.name}"`, with any `(ip, dataset)` index non-unique and used only for performance — Room is Android-only.
 
 Both platforms must implement their cache layer before making any CTI API calls.
 
