@@ -74,14 +74,23 @@ class StandardScanner(
     }
 
     private fun startWithBroadcastReceiver() {
+        if (scanCallbackExecutor == null) {
+            scanCallbackExecutor = Executors.newSingleThreadExecutor { runnable ->
+                Thread(runnable, "wscanplus-standard-scanner")
+            }
+        }
+        val executor = scanCallbackExecutor!!
+
         receiver = object : BroadcastReceiver() {
             // Permission verified by start() caller via @RequiresPermission contract.
             // Lint cannot trace through BroadcastReceiver.onReceive() system callbacks.
             @SuppressLint("MissingPermission")
             override fun onReceive(ctx: Context, intent: Intent) {
                 if (intent.action != WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) return
-                val results = wifiManager.scanResults
-                resultsListener.onResults(results.map { it.toWifiScanResult() })
+                executor.execute {
+                    val results = wifiManager.scanResults
+                    resultsListener.onResults(results.map { it.toWifiScanResult() })
+                }
             }
         }
         appContext.registerReceiver(
