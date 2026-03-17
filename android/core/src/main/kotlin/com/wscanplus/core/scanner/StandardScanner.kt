@@ -28,6 +28,10 @@ import java.util.concurrent.Executors
  * Threading rule: start() and stop() MUST be called from a background thread.
  * start() is idempotent — safe to call multiple times.
  *
+ * Callback threading: onResults() is delivered on the dedicated executor thread (API 30+)
+ * or the main thread (API 24–29 BroadcastReceiver path). Consumers must not perform UI
+ * work or assume a specific thread. Future phases should post to a consistent thread.
+ *
  * TODO (Phase 1): handle permission-not-granted case gracefully.
  */
 class StandardScanner(
@@ -63,9 +67,10 @@ class StandardScanner(
                 resultsListener.onResults(results.map { it.toWifiScanResult() })
             }
         }
+        // Assign fields only after successful registration to prevent partial state on throw.
+        wifiManager.registerScanResultsCallback(executor, callback)
         scanCallbackExecutor = executor
         scanResultsCallback = callback
-        wifiManager.registerScanResultsCallback(executor, callback)
     }
 
     private fun startWithBroadcastReceiver() {
@@ -103,10 +108,14 @@ class StandardScanner(
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             scanResultsCallback?.let { callback ->
-                @SuppressLint("MissingPermission")
-                // Permission was held at start() time — same WifiManager session.
-                fun unregister() = wifiManager.unregisterScanResultsCallback(callback)
-                unregister()
+                try {
+                    @SuppressLint("MissingPermission")
+                    // Permission was held at start() time — same WifiManager session.
+                    fun unregister() = wifiManager.unregisterScanResultsCallback(callback)
+                    unregister()
+                } catch (e: Exception) {
+                    // Callback not registered or already unregistered — log in future when logging is available
+                }
             }
         }
         scanResultsCallback = null
