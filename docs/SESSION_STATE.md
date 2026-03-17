@@ -239,18 +239,23 @@ Auth: `x-api-key` header. Android: OkHttp. Electron: `fetch()`. nodejs-bouncer: 
 5. **Explainability payload** — save top 3 reasons per layer for UI display and audit logs — makes results defensible
 6. **Quota budget guardrails** — hard caps per time window for both CTI and Gemini to prevent runaway bursts on noisy environments
 
-**CTI cache prerequisite:** Room DB cache with composite key (ip + dataset) must be implemented before any CTI API calls. smoke TTL: 48h; fire TTL: 6h. Unique index on (ip, dataset) — each dataset has its own row per IP.
+**CTI cache prerequisite:**
+- **Android:** Room DB cache with composite key (ip + dataset). Unique index on (ip, dataset) — one row per IP per dataset. smoke TTL: 48h; fire TTL: 6h.
+- **Desktop (Electron):** sqlite or file-based cache with equivalent key structure — Room is Android-only.
 
-### Phase 2 Threat Data Model (minimal additions — locked shape)
+Both platforms must implement their cache layer before making any CTI API calls.
 
-Three additions required across the threat pipeline — implement in Phase 2 before any threat UI or CTI/Gemini wiring:
+### AI Layer Threat Data Model (Phase 4 — locked shape, defined ahead of time)
+
+> Corresponds to **Phase 4 — AI Layer** in ROADMAP.md. Defined during Phase 1 so the shape is locked before implementation begins.
+
+Three additions required across the threat pipeline — implement in Phase 4 before any threat UI or CTI/Gemini wiring:
 
 ```
-// Per-layer signal source — use sealed class or named constants in implementation
-// to prevent typos and enable exhaustive when-expressions
+// Per-layer signal source — enum class (exhaustive when-expressions, no typos)
 enum class ThreatSource { LOCAL_HEURISTIC, CROWDSEC_CTI, GEMINI }
 
-// CTI dataset selector — use enum or named constants in implementation
+// CTI dataset selector — enum class; composite cache key is (ip, dataset)
 enum class CtiDataset { SMOKE, FIRE }
 
 // Per-layer signal wrapper
@@ -260,8 +265,8 @@ data class ThreatSignal(
     val reasons: List<String>,    // top 3 human-readable reason strings (UI + audit log)
 )
 
-// CTI cache entry (Room entity)
-// Unique index: (ip, dataset) — composite key, one row per IP per dataset
+// CTI cache entry (Android: Room entity; Desktop: sqlite row)
+// Primary/unique key: composite (ip, dataset) — each dataset is a separate row per IP
 // smoke TTL: 48h | fire TTL: 6h
 data class CtiCacheEntry(
     val ip: String,
