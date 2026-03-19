@@ -90,6 +90,7 @@ data class ScanContext(
     val currentResults: List<ScanInput>,
     val knownProfiles: Map<String, BssidProfile>,
     val baselineNetworkCount: Int?,     // null if < MIN_BASELINE_SAMPLES sessions observed
+    val baselineStdDev: Double?,        // null if < MIN_BASELINE_SAMPLES; needed for z-score
     val environmentType: EnvironmentType
 )
 
@@ -100,7 +101,7 @@ data class ScanInput(
     val capabilities: String,
     val rssiDbm: Int,
     val frequencyMhz: Int,
-    val channelWidth: Int?,
+    val channelWidth: Int,
     val timestamp: Long
 )
 
