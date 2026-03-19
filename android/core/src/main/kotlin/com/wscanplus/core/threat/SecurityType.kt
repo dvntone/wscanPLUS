@@ -9,4 +9,19 @@ enum class SecurityType(
     WPA(2),
     WEP(1),
     OPEN(0),
+    ;
+
+    companion object {
+        fun parse(capabilities: String): SecurityType {
+            val caps = capabilities.uppercase()
+            return when {
+                caps.contains("SAE") -> WPA3
+                caps.contains("OWE") -> OWE
+                caps.contains("RSN") || caps.contains("WPA2") -> WPA2
+                caps.contains("WPA") -> WPA
+                caps.contains("WEP") -> WEP
+                else -> OPEN
+            }
+        }
+    }
 }
