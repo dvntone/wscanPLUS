@@ -38,21 +38,23 @@ class KarmaHeuristicTest {
 
     @Test
     fun `2 SSIDs on same BSSID returns null`() {
-        val results: List<ScanInput> = listOf(
-            scan(ssid = "Net1", frequencyMhz = 2412),
-            scan(ssid = "Net2", frequencyMhz = 5180),
-        )
+        val results: List<ScanInput> =
+            listOf(
+                scan(ssid = "Net1", frequencyMhz = 2412),
+                scan(ssid = "Net2", frequencyMhz = 5180),
+            )
         val ctx: ScanContext = context(results)
         assertNull(heuristic.evaluate(results[0], ctx))
     }
 
     @Test
     fun `3 distinct SSIDs on same BSSID returns confidence 0_45`() {
-        val results: List<ScanInput> = listOf(
-            scan(ssid = "Net1", frequencyMhz = 2412),
-            scan(ssid = "Net2", frequencyMhz = 5180),
-            scan(ssid = "Net3", frequencyMhz = 2437),
-        )
+        val results: List<ScanInput> =
+            listOf(
+                scan(ssid = "Net1", frequencyMhz = 2412),
+                scan(ssid = "Net2", frequencyMhz = 5180),
+                scan(ssid = "Net3", frequencyMhz = 2437),
+            )
         val ctx: ScanContext = context(results)
         val signal: ThreatSignal? = heuristic.evaluate(results[0], ctx)
         assertNotNull(signal)
@@ -61,9 +63,10 @@ class KarmaHeuristicTest {
 
     @Test
     fun `5 distinct SSIDs returns confidence 0_75`() {
-        val results: List<ScanInput> = (1..5).map { i: Int ->
-            scan(ssid = "Net$i", frequencyMhz = 2412 + i * 5)
-        }
+        val results: List<ScanInput> =
+            (1..5).map { i: Int ->
+                scan(ssid = "Net$i", frequencyMhz = 2412 + i * 5)
+            }
         val ctx: ScanContext = context(results)
         val signal: ThreatSignal? = heuristic.evaluate(results[0], ctx)
         assertNotNull(signal)
@@ -72,9 +75,10 @@ class KarmaHeuristicTest {
 
     @Test
     fun `10 distinct SSIDs returns confidence 0_95`() {
-        val results: List<ScanInput> = (1..10).map { i: Int ->
-            scan(ssid = "Net$i", frequencyMhz = 2412 + i * 5)
-        }
+        val results: List<ScanInput> =
+            (1..10).map { i: Int ->
+                scan(ssid = "Net$i", frequencyMhz = 2412 + i * 5)
+            }
         val ctx: ScanContext = context(results)
         val signal: ThreatSignal? = heuristic.evaluate(results[0], ctx)
         assertNotNull(signal)
@@ -83,13 +87,14 @@ class KarmaHeuristicTest {
 
     @Test
     fun `hidden SSIDs excluded from count`() {
-        val results: List<ScanInput> = listOf(
-            scan(ssid = "Net1", frequencyMhz = 2412),
-            scan(ssid = "Net2", frequencyMhz = 5180),
-            scan(ssid = "Net3", frequencyMhz = 2437),
-            scan(ssid = "Hidden1", isHidden = true, frequencyMhz = 5200),
-            scan(ssid = "Hidden2", isHidden = true, frequencyMhz = 5220),
-        )
+        val results: List<ScanInput> =
+            listOf(
+                scan(ssid = "Net1", frequencyMhz = 2412),
+                scan(ssid = "Net2", frequencyMhz = 5180),
+                scan(ssid = "Net3", frequencyMhz = 2437),
+                scan(ssid = "Hidden1", isHidden = true, frequencyMhz = 5200),
+                scan(ssid = "Hidden2", isHidden = true, frequencyMhz = 5220),
+            )
         val ctx: ScanContext = context(results)
         val signal: ThreatSignal? = heuristic.evaluate(results[0], ctx)
         assertNotNull(signal)
@@ -98,11 +103,12 @@ class KarmaHeuristicTest {
 
     @Test
     fun `same channel and tight RSSI applies bonus`() {
-        val results: List<ScanInput> = listOf(
-            scan(ssid = "Net1", rssiDbm = -50, frequencyMhz = 2412),
-            scan(ssid = "Net2", rssiDbm = -48, frequencyMhz = 2412),
-            scan(ssid = "Net3", rssiDbm = -52, frequencyMhz = 2412),
-        )
+        val results: List<ScanInput> =
+            listOf(
+                scan(ssid = "Net1", rssiDbm = -50, frequencyMhz = 2412),
+                scan(ssid = "Net2", rssiDbm = -48, frequencyMhz = 2412),
+                scan(ssid = "Net3", rssiDbm = -52, frequencyMhz = 2412),
+            )
         val ctx: ScanContext = context(results)
         val signal: ThreatSignal? = heuristic.evaluate(results[0], ctx)
         assertNotNull(signal)
@@ -112,11 +118,12 @@ class KarmaHeuristicTest {
 
     @Test
     fun `wide RSSI spread no bonus`() {
-        val results: List<ScanInput> = listOf(
-            scan(ssid = "Net1", rssiDbm = -30, frequencyMhz = 2412),
-            scan(ssid = "Net2", rssiDbm = -50, frequencyMhz = 2412),
-            scan(ssid = "Net3", rssiDbm = -70, frequencyMhz = 2412),
-        )
+        val results: List<ScanInput> =
+            listOf(
+                scan(ssid = "Net1", rssiDbm = -30, frequencyMhz = 2412),
+                scan(ssid = "Net2", rssiDbm = -50, frequencyMhz = 2412),
+                scan(ssid = "Net3", rssiDbm = -70, frequencyMhz = 2412),
+            )
         val ctx: ScanContext = context(results)
         val signal: ThreatSignal? = heuristic.evaluate(results[0], ctx)
         assertNotNull(signal)
@@ -128,14 +135,15 @@ class KarmaHeuristicTest {
     fun `multiple qualifying BSSIDs produce separate signals`() {
         val bssid1 = "AA:AA:AA:AA:AA:AA"
         val bssid2 = "BB:BB:BB:BB:BB:BB"
-        val results: List<ScanInput> = listOf(
-            scan(bssid = bssid1, ssid = "A1"),
-            scan(bssid = bssid1, ssid = "A2"),
-            scan(bssid = bssid1, ssid = "A3"),
-            scan(bssid = bssid2, ssid = "B1"),
-            scan(bssid = bssid2, ssid = "B2"),
-            scan(bssid = bssid2, ssid = "B3"),
-        )
+        val results: List<ScanInput> =
+            listOf(
+                scan(bssid = bssid1, ssid = "A1"),
+                scan(bssid = bssid1, ssid = "A2"),
+                scan(bssid = bssid1, ssid = "A3"),
+                scan(bssid = bssid2, ssid = "B1"),
+                scan(bssid = bssid2, ssid = "B2"),
+                scan(bssid = bssid2, ssid = "B3"),
+            )
         val ctx: ScanContext = context(results)
         val signal1: ThreatSignal? = heuristic.evaluate(results[0], ctx)
         val signal2: ThreatSignal? = heuristic.evaluate(results[3], ctx)
@@ -147,12 +155,13 @@ class KarmaHeuristicTest {
 
     @Test
     fun `duplicate SSIDs on same BSSID counted once`() {
-        val results: List<ScanInput> = listOf(
-            scan(ssid = "Net1", frequencyMhz = 2412),
-            scan(ssid = "Net1", frequencyMhz = 5180),
-            scan(ssid = "Net2", frequencyMhz = 2437),
-            scan(ssid = "Net3", frequencyMhz = 5200),
-        )
+        val results: List<ScanInput> =
+            listOf(
+                scan(ssid = "Net1", frequencyMhz = 2412),
+                scan(ssid = "Net1", frequencyMhz = 5180),
+                scan(ssid = "Net2", frequencyMhz = 2437),
+                scan(ssid = "Net3", frequencyMhz = 5200),
+            )
         val ctx: ScanContext = context(results)
         val signal: ThreatSignal? = heuristic.evaluate(results[0], ctx)
         assertNotNull(signal)
@@ -162,20 +171,22 @@ class KarmaHeuristicTest {
 
     @Test
     fun `non-first entry for same BSSID returns null`() {
-        val results: List<ScanInput> = listOf(
-            scan(ssid = "Net1", frequencyMhz = 2412),
-            scan(ssid = "Net2", frequencyMhz = 5180),
-            scan(ssid = "Net3", frequencyMhz = 2437),
-        )
+        val results: List<ScanInput> =
+            listOf(
+                scan(ssid = "Net1", frequencyMhz = 2412),
+                scan(ssid = "Net2", frequencyMhz = 5180),
+                scan(ssid = "Net3", frequencyMhz = 2437),
+            )
         val ctx: ScanContext = context(results)
         assertNull(heuristic.evaluate(results[1], ctx))
     }
 
     @Test
     fun `bonus capped at 0_95 for 10 SSIDs with tight cluster`() {
-        val results: List<ScanInput> = (1..10).map { i: Int ->
-            scan(ssid = "Net$i", rssiDbm = -50, frequencyMhz = 2412)
-        }
+        val results: List<ScanInput> =
+            (1..10).map { i: Int ->
+                scan(ssid = "Net$i", rssiDbm = -50, frequencyMhz = 2412)
+            }
         val ctx: ScanContext = context(results)
         val signal: ThreatSignal? = heuristic.evaluate(results[0], ctx)
         assertNotNull(signal)

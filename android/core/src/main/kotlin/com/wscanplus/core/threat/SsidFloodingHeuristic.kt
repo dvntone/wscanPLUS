@@ -17,21 +17,23 @@ class SsidFloodingHeuristic : Heuristic {
         val currentCount: Int = context.currentResults.size
         val zScore: Double = (currentCount.toDouble() - baseline.toDouble()) / stdDev
 
-        val confidence: Float = when {
-            zScore >= 5.0 || currentCount > 200 -> 0.90f
-            zScore >= 3.5 -> 0.70f
-            zScore >= 2.5 -> 0.50f
-            else -> return null
-        }
+        val confidence: Float =
+            when {
+                zScore >= 5.0 || currentCount > 200 -> 0.90f
+                zScore >= 3.5 -> 0.70f
+                zScore >= 2.5 -> 0.50f
+                else -> return null
+            }
 
         val zFormatted: String = "%.2f".format(zScore)
 
         return ThreatSignal(
             confidence = confidence,
             source = ThreatSource.LOCAL_HEURISTIC,
-            reasons = listOf(
-                "Abnormal network count: $currentCount (baseline: $baseline, z-score: $zFormatted)",
-            ),
+            reasons =
+                listOf(
+                    "Abnormal network count: $currentCount (baseline: $baseline, z-score: $zFormatted)",
+                ),
             heuristicType = type,
             bssid = "SCAN_LEVEL",
         )

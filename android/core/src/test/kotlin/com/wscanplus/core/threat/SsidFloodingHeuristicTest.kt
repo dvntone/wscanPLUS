@@ -29,9 +29,10 @@ class SsidFloodingHeuristicTest {
         baseline: Int? = 20,
         stdDev: Double? = 5.0,
     ): ScanContext {
-        val results: List<ScanInput> = (1..count).map { i: Int ->
-            scan(bssid = "AA:BB:CC:DD:EE:%02X".format(i % 256), ssid = "Net$i")
-        }
+        val results: List<ScanInput> =
+            (1..count).map { i: Int ->
+                scan(bssid = "AA:BB:CC:DD:EE:%02X".format(i % 256), ssid = "Net$i")
+            }
         return ScanContext(
             currentResults = results,
             knownProfiles = emptyMap(),
