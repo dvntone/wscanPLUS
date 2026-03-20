@@ -1,7 +1,7 @@
 # ADB Logcat Findings (Wi-Fi and Supplicant Logs)
 
 Created: 2026-03-19
-Device: ZY22KFCNSK
+Device: <redacted-device>
 Scope: Read-only logcat sampling for Wi-Fi and supplicant visibility
 
 ## Command Run
@@ -31,3 +31,4 @@ adb shell logcat -d -v brief -b main,system,events,radio | Select-String -Patter
 
 - This is a point-in-time sample only
 - Additional captures during active events will be required to verify reason codes and error detail availability
+

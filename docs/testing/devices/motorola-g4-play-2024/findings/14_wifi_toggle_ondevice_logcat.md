@@ -1,7 +1,7 @@
 # Wi-Fi Toggle Capture (On-Device Logcat File)
 
 Created: 2026-03-19
-Device: ZY22KFCNSK
+Device: <redacted-device>
 Scope: On-device logcat capture while Wi-Fi was toggled via adb
 
 ## Commands Run
@@ -32,3 +32,4 @@ Scope: On-device logcat capture while Wi-Fi was toggled via adb
 - The log file includes SSID, BSSID, and IP details from system logs
 - This is a point-in-time capture tied to the Wi-Fi toggle event
 - Further captures may be needed for deauth or disassoc reason codes
+

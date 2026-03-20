@@ -125,7 +125,7 @@ This section is the fast re-entry point for the next Claude/Copilot session.
   - `docs/testing/devices/<device>/` for device-specific summaries
   - `docs/research/` for durable non-device research notes
 - Raw captures and scratch reference dumps belong under git-ignored local paths, not top-level `docs/`
-- Current active Android target is `Revvl Tab 2` (`FMTO5TSKOFFMPZZL`, Android 15)
+- Current active Android target is `Revvl Tab 2` (Android 15)
 - Previous archived device-testing baseline is `moto g play - 2024`
 - First Revvl baseline result is documented in `docs/testing/devices/revvl-tab-2/2026-03-20-baseline-smoke-test.md`
 - Runtime discrepancy from that baseline is tracked in issue `#122` (missing visible app-side adb logs on Revvl Android 15)

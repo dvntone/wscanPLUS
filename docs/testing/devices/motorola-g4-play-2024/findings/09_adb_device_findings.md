@@ -1,7 +1,7 @@
 # ADB Device Findings (Read-Only)
 
 Created: 2026-03-19
-Device: ZY22KFCNSK
+Device: <redacted-device>
 Scope: Read-only adb checks for context
 
 ## Commands Run
@@ -14,7 +14,7 @@ Scope: Read-only adb checks for context
 ## Verified Results
 
 Device and OS
-- Device listed as connected: ZY22KFCNSK
+- Device listed as connected: <redacted-device>
 - Android SDK: 34
 - Android release: 14
 
@@ -46,3 +46,4 @@ See: docs/ROADMAP.md (Deferred: READ_LOGS / wpa_supplicant reason codes)
 
 - All commands were read-only
 - Data here is device-specific and should not be generalized
+

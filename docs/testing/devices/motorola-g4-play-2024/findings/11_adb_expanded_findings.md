@@ -1,7 +1,7 @@
 # ADB Expanded Findings (Non-Play-Store Context)
 
 Created: 2026-03-19
-Device: ZY22KFCNSK
+Device: <redacted-device>
 Scope: Read-only adb checks with non-Play-Store assumption
 
 ## Commands Run
@@ -15,7 +15,7 @@ Scope: Read-only adb checks with non-Play-Store assumption
 ## Verified Results
 
 Device and OS
-- Device connected: ZY22KFCNSK
+- Device connected: <redacted-device>
 - Android SDK: 34
 - Android release: 14
 
@@ -53,3 +53,4 @@ Connectivity State (dumpsys connectivity)
 - All commands were read-only
 - Output reflects current device state only
 - This document assumes non-Play-Store policy per docs/codex_findings_gaps/10_non_playstore_policy.md
+

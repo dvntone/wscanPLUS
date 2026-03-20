@@ -1,7 +1,7 @@
 # ADB Forward and Reverse Test (Ports)
 
 Created: 2026-03-19
-Device: ZY22KFCNSK
+Device: <redacted-device>
 Scope: Verify adb forward and reverse behavior for app transport
 
 ## Commands Run
@@ -25,3 +25,4 @@ Scope: Verify adb forward and reverse behavior for app transport
 ## Implication
 
 - ADB port forwarding is functional for the device and can be used for desktop <-> Android transport
+

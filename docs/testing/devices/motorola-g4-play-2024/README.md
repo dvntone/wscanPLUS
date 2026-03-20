@@ -5,7 +5,6 @@ This folder archives the prior physical-device verification work completed befor
 ## Device
 
 - Model: `moto g play - 2024`
-- ADB serial seen during prep: `ZY22KFCNSK`
 - Role: previous baseline Android phone used for ADB, permissions, scan-behavior, Bluetooth, and export validation
 
 ## Contents

@@ -1,7 +1,7 @@
 # Wi-Fi Toggle Logcat Capture (Focused)
 
 Created: 2026-03-19
-Device: ZY22KFCNSK
+Device: <redacted-device>
 Scope: Focused logcat capture after manual Wi-Fi toggle
 
 ## Action Performed
@@ -38,3 +38,4 @@ adb logcat -d -v brief -b main,system,events,radio | Select-String -Pattern "wpa
 
 - This is a point-in-time sample only
 - The absence of toggle logs does not mean they are unavailable; it means they did not appear in this capture
+

@@ -2,7 +2,6 @@
 
 **Date:** 2026-03-20  
 **Device:** `Revvl Tab 2` (`9185W`)  
-**ADB serial:** `FMTO5TSKOFFMPZZL`  
 **Android:** `15`
 
 ## Scope
@@ -12,14 +11,14 @@ First baseline run using the current debug build after the Phase 2 merges, bug-f
 ## Commands used
 
 ```powershell
-adb -s FMTO5TSKOFFMPZZL install -r android\app\build\outputs\apk\debug\app-debug.apk
-adb -s FMTO5TSKOFFMPZZL shell pm grant com.wscanplus.app android.permission.ACCESS_COARSE_LOCATION
-adb -s FMTO5TSKOFFMPZZL shell pm grant com.wscanplus.app android.permission.ACCESS_FINE_LOCATION
-adb -s FMTO5TSKOFFMPZZL shell pm grant com.wscanplus.app android.permission.NEARBY_WIFI_DEVICES
-adb -s FMTO5TSKOFFMPZZL shell am start -W -n com.wscanplus.app/.MainActivity
-adb -s FMTO5TSKOFFMPZZL shell dumpsys activity services com.wscanplus.app
-adb -s FMTO5TSKOFFMPZZL shell cmd wifi list-scan-results
-adb -s FMTO5TSKOFFMPZZL logcat -d | Select-String -Pattern 'MainActivity|WatchdogService|StandardScanner|ScannerChain'
+adb -s <device> install -r android\app\build\outputs\apk\debug\app-debug.apk
+adb -s <device> shell pm grant com.wscanplus.app android.permission.ACCESS_COARSE_LOCATION
+adb -s <device> shell pm grant com.wscanplus.app android.permission.ACCESS_FINE_LOCATION
+adb -s <device> shell pm grant com.wscanplus.app android.permission.NEARBY_WIFI_DEVICES
+adb -s <device> shell am start -W -n com.wscanplus.app/.MainActivity
+adb -s <device> shell dumpsys activity services com.wscanplus.app
+adb -s <device> shell cmd wifi list-scan-results
+adb -s <device> logcat -d | Select-String -Pattern 'MainActivity|WatchdogService|StandardScanner|ScannerChain'
 ```
 
 ## Observed results

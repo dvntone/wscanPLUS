@@ -7,7 +7,6 @@ Current active Android tablet target for on-device verification.
 - Product model from ADB: `9185W`
 - Marketing name: `Revvl Tab 2`
 - Android version: `15`
-- ADB serial: `FMTO5TSKOFFMPZZL`
 
 ## Verified preflight state
 
@@ -51,12 +50,13 @@ The first session goal is not full heuristic validation in the field. It is to c
 ## Suggested ADB checks
 
 ```powershell
-adb -s FMTO5TSKOFFMPZZL logcat -c
-adb -s FMTO5TSKOFFMPZZL shell pm list packages | Select-String "com.wscanplus.app|com.vrem.wifianalyzer"
-adb -s FMTO5TSKOFFMPZZL shell dumpsys activity services com.wscanplus.app | Select-String -Pattern "WatchdogService|foreground" -Context 0,2
-adb -s FMTO5TSKOFFMPZZL logcat -d | Select-String -Pattern "MainActivity|WatchdogService|StandardScanner|ScannerChain"
+adb -s <redacted-device> logcat -c
+adb -s <redacted-device> shell pm list packages | Select-String "com.wscanplus.app|com.vrem.wifianalyzer"
+adb -s <redacted-device> shell dumpsys activity services com.wscanplus.app | Select-String -Pattern "WatchdogService|foreground" -Context 0,2
+adb -s <redacted-device> logcat -d | Select-String -Pattern "MainActivity|WatchdogService|StandardScanner|ScannerChain"
 ```
 
 ## WiFiAnalyzer comparison note
 
 ADB cannot directly read WiFiAnalyzer's rendered scan list, but it can confirm the package, launch state, and UI hierarchy captures if needed during the session. Treat WiFiAnalyzer as an operator-visible reference point, not an API source.
+

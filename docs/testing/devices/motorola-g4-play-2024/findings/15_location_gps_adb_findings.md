@@ -1,7 +1,7 @@
 # Location and GPS State (ADB)
 
 Created: 2026-03-19
-Device: ZY22KFCNSK
+Device: <redacted-device>
 Scope: Read-only location and GPS state checks
 
 ## Commands Run
@@ -31,3 +31,4 @@ Recent delivery events (from dumpsys location)
 - location_providers_allowed returned null on this device
 - Location data in dumpsys includes coordinates, accuracy, and timestamps
 - This output confirms that location signals are active and observable via adb
+
