@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.os.SystemClock
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import java.util.concurrent.ExecutorService
@@ -71,7 +72,7 @@ class StandardScanner(
         val callback =
             object : WifiManager.ScanResultsCallback() {
                 override fun onScanResultsAvailable() {
-                    val results = wifiManager.scanResults
+                    val results = freshScanResults()
                     resultsListener.onResults(results.map { it.toWifiScanResult() })
                 }
             }
@@ -107,7 +108,7 @@ class StandardScanner(
                 ) {
                     if (intent.action != WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) return
                     executor.execute {
-                        val results = wifiManager.scanResults
+                        val results = freshScanResults()
                         resultsListener.onResults(results.map { it.toWifiScanResult() })
                     }
                 }
@@ -151,6 +152,13 @@ class StandardScanner(
         scanCallbackExecutor = null
     }
 
+    private fun freshScanResults(): List<android.net.wifi.ScanResult> {
+        val nowUs = SystemClock.elapsedRealtime() * 1000
+        return wifiManager.scanResults.filter { result: android.net.wifi.ScanResult ->
+            nowUs - result.timestamp <= STALE_THRESHOLD_US
+        }
+    }
+
     @Suppress("DEPRECATION")
     private fun android.net.wifi.ScanResult.toWifiScanResult(): WifiScanResult {
         val ssid =
@@ -170,5 +178,9 @@ class StandardScanner(
             centerFreq0 = centerFreq0,
             centerFreq1 = centerFreq1,
         )
+    }
+
+    companion object {
+        private const val STALE_THRESHOLD_US = 120_000_000L
     }
 }

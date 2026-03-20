@@ -87,18 +87,34 @@ class MainActivity : Activity() {
     }
 
     private fun requiredPermissions(): Array<String> {
-        val base = mutableListOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        val base =
+            mutableListOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+            )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             base.add(Manifest.permission.NEARBY_WIFI_DEVICES)
         }
         return base.toTypedArray()
     }
 
-    private fun hasAllPermissions(): Boolean =
-        requiredPermissions().all { permission ->
-            ContextCompat.checkSelfPermission(this, permission) ==
-                PackageManager.PERMISSION_GRANTED
-        }
+    private fun hasAllPermissions(): Boolean = hasRequiredLocationPermission() && hasNonLocationPermissions()
+
+    private fun hasRequiredLocationPermission(): Boolean =
+        hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) ||
+            hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+
+    private fun hasNonLocationPermissions(): Boolean =
+        requiredPermissions()
+            .filter { permission: String ->
+                permission != Manifest.permission.ACCESS_FINE_LOCATION &&
+                    permission != Manifest.permission.ACCESS_COARSE_LOCATION
+            }.all { permission: String ->
+                hasPermission(permission)
+            }
+
+    private fun hasPermission(permission: String): Boolean =
+        ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
     private var scannerStarted = false
 

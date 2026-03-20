@@ -2,6 +2,7 @@ package com.wscanplus.core.scanner
 
 import android.Manifest
 import android.content.Context
+import android.util.Log
 import androidx.annotation.RequiresPermission
 
 /**
@@ -36,14 +37,22 @@ class ScannerChain(
     )
     fun start() {
         if (usbScanner.isAvailable()) {
-            usbScanner.start()
-        } else {
-            standardScanner.start()
+            try {
+                usbScanner.start()
+                return
+            } catch (e: Exception) {
+                Log.e(TAG, "USB scanner start failed, falling back to standard scanner", e)
+            }
         }
+        standardScanner.start()
     }
 
     fun stop() {
         usbScanner.stop()
         standardScanner.stop()
+    }
+
+    companion object {
+        private const val TAG = "ScannerChain"
     }
 }

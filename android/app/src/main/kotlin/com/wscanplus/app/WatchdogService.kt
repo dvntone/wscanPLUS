@@ -1,10 +1,12 @@
 package com.wscanplus.app
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.Handler
@@ -89,6 +91,11 @@ class WatchdogService : Service() {
         flags: Int,
         startId: Int,
     ): Int {
+        if (hasLocationPermission().not()) {
+            Log.w(TAG, "Location permission missing on service start; refusing START_STICKY restart")
+            stopSelfResult(startId)
+            return START_NOT_STICKY
+        }
         ServiceCompat.startForeground(
             this,
             NOTIFICATION_ID,
@@ -129,6 +136,10 @@ class WatchdogService : Service() {
         return START_STICKY
     }
 
+    private fun hasLocationPermission(): Boolean =
+        checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacks(restartRunnable)
@@ -146,11 +157,8 @@ class WatchdogService : Service() {
         // TODO (Phase 3): close ServerSocket
     }
 
-    // MainActivity verifies permissions before calling startForegroundService(). However,
-    // this service can also be restarted via START_STICKY after permission revocation, so
-    // this assumption is not guaranteed at all entry points. A SecurityException from
-    // chain.start() will propagate to the executor thread.
-    // TODO (Phase 2): check permissions inside the service and stop gracefully if revoked.
+    // onStartCommand() re-validates runtime location permission before invoking the chain.
+    // This suppresses lint for the background-thread call path after that guard succeeds.
     @SuppressLint("MissingPermission")
     private fun startChain(chain: ScannerChain) = chain.start()
 
