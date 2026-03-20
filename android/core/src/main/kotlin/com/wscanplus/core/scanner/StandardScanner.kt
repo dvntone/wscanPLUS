@@ -59,10 +59,10 @@ class StandardScanner(
         // idempotent — already started
         if (receiver != null || scanResultsCallback != null) return
         Log.d(TAG, "Scanner started (API ${Build.VERSION.SDK_INT})")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            startWithScanResultsCallback()
-        } else {
+        if (usesLegacyBroadcastPath(Build.VERSION.SDK_INT)) {
             startWithBroadcastReceiver()
+        } else {
+            startWithScanResultsCallback()
         }
     }
 
@@ -125,9 +125,16 @@ class StandardScanner(
             receiver,
             IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION),
         )
-        if (shouldRequestLegacyScan(Build.VERSION.SDK_INT)) {
+        if (usesLegacyBroadcastPath(Build.VERSION.SDK_INT)) {
             @Suppress("DEPRECATION")
-            wifiManager.startScan()
+            val scanStarted = wifiManager.startScan()
+            if (!scanStarted) {
+                Log.w(
+                    TAG,
+                    "WifiManager.startScan() request was not accepted (API ${Build.VERSION.SDK_INT}); " +
+                        "legacy scan may be throttled or otherwise rejected",
+                )
+            }
         }
     }
 
@@ -193,6 +200,6 @@ class StandardScanner(
         private const val TAG = "StandardScanner"
         private const val STALE_THRESHOLD_US = 120_000_000L
 
-        internal fun shouldRequestLegacyScan(apiLevel: Int): Boolean = apiLevel < Build.VERSION_CODES.R
+        internal fun usesLegacyBroadcastPath(apiLevel: Int): Boolean = apiLevel < Build.VERSION_CODES.R
     }
 }
