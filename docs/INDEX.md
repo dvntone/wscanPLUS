@@ -2,6 +2,7 @@
 
 ## Current State
 - docs/SESSION_STATE.md — architecture decisions, locked choices, current phase + next steps
+- `docs/SESSION_STATE.md#2026-03-20-handoff-snapshot` — fastest re-entry point for the next AI session
 
 ## Roadmap
 - docs/ROADMAP.md — phases and priorities
@@ -26,4 +27,5 @@
 - AGENTS.md — AI agent guardrails (quick reference)
 - docs/AGENTS.md — full universal guardrails for all agents
 - KNOWN_ISSUES.md — incident history, repo configuration changes, known limitations
+- KNOWN_ISSUES.md — also records Phase 2 completion status as of 2026-03-20
 - .github/copilot-instructions.md — Copilot-specific behavior rules
