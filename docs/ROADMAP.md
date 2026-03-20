@@ -14,7 +14,7 @@ PRs: #40, #43, #45, #47, #49, #51, #53, #55, #57
 
 ## Phase 1 — Dev Tooling + Polish ✅ Complete
 
-Scanner chain + Android scaffold complete. Now: quality tooling + remaining polish.
+Scanner chain + Android scaffold delivered, along with quality tooling and final polish.
 
 - [x] WatchdogService + scanner chain (USB > Standard; Root dev-opt-in stub)
 - [x] AndroidManifest permissions (full set for API 24-36)

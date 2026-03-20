@@ -88,7 +88,7 @@ wscanplus/
 
 ## Phase
 
-**Phase 1 (Dev Tooling + Polish)** — complete. Scanner chain, ktlint CI, launcher icon, data extraction rules, Android 15 timeout handling, settings recovery links, and the `:core` unit-test baseline are now on `main`. See [docs/ROADMAP.md](/Users/Devia/Documents/GitHub/wscanplus/docs/ROADMAP.md) for the current phased plan.
+**Phase 1 (Dev Tooling + Polish)** — complete. Scanner chain, ktlint CI, launcher icon, data extraction rules, Android 15 timeout handling, settings recovery links, and the `:core` unit-test baseline are now on `main`. See [docs/ROADMAP.md](/docs/ROADMAP.md) for the current phased plan.
 
 ---
 
