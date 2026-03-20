@@ -138,7 +138,7 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 - Current technical stance:
   - `ACCESS_FINE_LOCATION` remains the known-good requirement for scan retrieval on targetSdk 36
   - coarse-only is degraded-only, not full scan capability
-  - `ACCESS_BACKGROUND_LOCATION` is now the active fix path for long-running detection/logging mode
+  - `ACCESS_BACKGROUND_LOCATION` is now the required path for intended long-running field/detection mode
 - Additional Revvl findings now tracked:
   - `#124` - coarse-only launch succeeds but scan retrieval still fails
   - `#125` - backgrounded / keyguard-visible app loses effective `getScanResults()` access while shell scans still work
@@ -169,8 +169,8 @@ This section is the fast re-entry point for the next Claude/Copilot session.
    - settings deep link refinement
    - first additional unit tests
 4. Turn the remaining permission-model questions into tracked work:
-   - decide whether coarse-only should remain a degraded path or redirect into explicit fine-location escalation
-   - decide whether the app should enforce "Allow all the time" in its operator flow or keep it mode-specific
+   - decide whether coarse-only should remain a degraded path or redirect into explicit fine-location escalation in the app UX
+   - design the operator flow so "Allow all the time" is explicit for field mode rather than implied
    - validate first-trust Pixel / Advanced Protection onboarding separately from already-trusted-host behavior
 5. Carry the documented adb install / permission / state checks into the later desktop companion implementation
 

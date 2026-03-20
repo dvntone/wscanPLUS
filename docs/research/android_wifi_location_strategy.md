@@ -40,13 +40,14 @@ Practical interpretation:
 
 - coarse-only is useful to avoid a dead-end permission flow
 - coarse-only is not enough to promise normal scanner behavior on targetSdk 36
+- app UX should treat it as a fallback / limited mode, not the default or recommended operating mode
 
 ### 2. `ACCESS_BACKGROUND_LOCATION` is part of the current long-running collection model
 
 Conceptually, a purely foreground/manual test flow could operate without background location,
-but on Android 10+ the current operator flow intentionally blocks scanner startup until
-`ACCESS_BACKGROUND_LOCATION` is granted so the same session can survive background and
-lock-screen transitions.
+but on Android 10+ the intended wscan+ field mode depends on background continuity, so
+`ACCESS_BACKGROUND_LOCATION` should be treated as a required permission for the primary
+long-running detection/logging path.
 
 However, wscan+ is not a casual consumer app. Its role is long-running defensive detection, logging, and field collection. If the intended product behavior is:
 
@@ -114,8 +115,9 @@ Near-term stance for wscan+:
 
 1. Keep foreground fine-location behavior as the known-good baseline.
 2. Keep coarse-only support documented as degraded and incomplete for scan retrieval.
-3. Keep `ACCESS_BACKGROUND_LOCATION` tied to the explicit "field logging / long-running detection mode" design.
+3. Treat `ACCESS_BACKGROUND_LOCATION` as required for the explicit field logging / long-running detection mode.
 4. Do not add phone permissions for scanner debugging.
+5. Separate already-trusted-host adb behavior from first-trust onboarding claims on strict-security Pixel devices.
 
 ## Next validation work
 

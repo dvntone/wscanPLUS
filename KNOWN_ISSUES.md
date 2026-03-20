@@ -4,12 +4,18 @@
 
 All 9 tasks merged (PRs #96–#117). 7 WiFi threat heuristics, HeuristicEngine, PolicyGate, Room database (5 entities, 5 DAOs), OUI vendor lookup, and app-side logging are live.
 
+### Locked permission stance from device validation
+- `ACCESS_FINE_LOCATION` is the required scan-capable path on current Android targets.
+- `ACCESS_COARSE_LOCATION` is degraded-only and should not be treated as full scanner capability.
+- `ACCESS_BACKGROUND_LOCATION` is required for intended field / long-running detection mode because foreground-only access is not reliable under background and keyguard transitions.
+
 ### Known items deferred to Phase 3
 - `knownProfiles` and `baselineNetworkCount` not populated — needs scan history accumulation
 - OUI lookup wired as `null` in BssidFingerprintHeuristic — needs OuiAssetLoader integration in WatchdogService
 - `falsePositiveBrakes` stub in PolicyGate — needs CTI data
 - No DAO instrumentation tests — needs Android emulator
 - `signalLevel` → `rssiDbm` field rename in WifiScanResult (cosmetic)
+- first-trust Pixel / Advanced Protection onboarding still needs its own validation path; current evidence covers already-trusted host behavior
 
 ---
 
