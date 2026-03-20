@@ -9,6 +9,7 @@ import android.content.IntentFilter
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.SystemClock
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import java.util.concurrent.ExecutorService
@@ -55,6 +56,7 @@ class StandardScanner(
     fun start() {
         // idempotent — already started
         if (receiver != null || scanResultsCallback != null) return
+        Log.d(TAG, "Scanner started (API ${Build.VERSION.SDK_INT})")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             startWithScanResultsCallback()
         } else {
@@ -72,8 +74,10 @@ class StandardScanner(
         val callback =
             object : WifiManager.ScanResultsCallback() {
                 override fun onScanResultsAvailable() {
-                    val results = freshScanResults()
-                    resultsListener.onResults(results.map { it.toWifiScanResult() })
+                    val results = wifiManager.scanResults
+                    val freshResults = freshScanResults(results)
+                    Log.d(TAG, "Received ${results.size} scan results (${freshResults.size} after stale filter)")
+                    resultsListener.onResults(freshResults.map { it.toWifiScanResult() })
                 }
             }
         // Assign fields only after successful registration to prevent partial state on throw.
@@ -108,8 +112,10 @@ class StandardScanner(
                 ) {
                     if (intent.action != WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) return
                     executor.execute {
-                        val results = freshScanResults()
-                        resultsListener.onResults(results.map { it.toWifiScanResult() })
+                        val results = wifiManager.scanResults
+                        val freshResults = freshScanResults(results)
+                        Log.d(TAG, "Received ${results.size} scan results (${freshResults.size} after stale filter)")
+                        resultsListener.onResults(freshResults.map { it.toWifiScanResult() })
                     }
                 }
             }
@@ -124,6 +130,7 @@ class StandardScanner(
     }
 
     fun stop() {
+        Log.d(TAG, "Scanner stopped")
         // Balanced: receiver is only set by startWithBroadcastReceiver(), cleared here.
         // IllegalArgumentException should not occur given idempotent start(), but caught
         // defensively in case of unexpected lifecycle edge cases.
@@ -152,9 +159,9 @@ class StandardScanner(
         scanCallbackExecutor = null
     }
 
-    private fun freshScanResults(): List<android.net.wifi.ScanResult> {
+    private fun freshScanResults(results: List<android.net.wifi.ScanResult>): List<android.net.wifi.ScanResult> {
         val nowUs = SystemClock.elapsedRealtime() * 1000
-        return wifiManager.scanResults.filter { result: android.net.wifi.ScanResult ->
+        return results.filter { result: android.net.wifi.ScanResult ->
             nowUs - result.timestamp <= STALE_THRESHOLD_US
         }
     }
@@ -181,6 +188,7 @@ class StandardScanner(
     }
 
     companion object {
+        private const val TAG = "StandardScanner"
         private const val STALE_THRESHOLD_US = 120_000_000L
     }
 }

@@ -78,6 +78,7 @@ class WatchdogService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        Log.d(TAG, "Service created")
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -92,10 +93,11 @@ class WatchdogService : Service() {
         startId: Int,
     ): Int {
         if (hasLocationPermission().not()) {
-            Log.w(TAG, "Location permission missing on service start; refusing START_STICKY restart")
+            Log.w(TAG, "Permission denied, stopping")
             stopSelfResult(startId)
             return START_NOT_STICKY
         }
+        Log.d(TAG, "Service started")
         ServiceCompat.startForeground(
             this,
             NOTIFICATION_ID,
@@ -142,6 +144,7 @@ class WatchdogService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        Log.d(TAG, "Service destroyed")
         handler.removeCallbacks(restartRunnable)
         // Cancel any queued start task before submitting stop, so a pending start cannot
         // race with or follow the stop on the executor queue.
