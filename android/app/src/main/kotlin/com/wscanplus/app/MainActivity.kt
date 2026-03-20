@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -53,6 +54,8 @@ class MainActivity : Activity() {
         // Re-check permissions when returning from Settings
         if (hasAllPermissions()) {
             maybeStartWatchdog()
+        } else {
+            showPermissionDenied()
         }
     }
 
@@ -78,7 +81,7 @@ class MainActivity : Activity() {
     private fun showPermissionDenied() {
         statusView.text =
             "Scanning disabled. Grant Wi-Fi and location permissions in Settings to start."
-        configureActionButton("Open Settings") { openAppSettings() }
+        configureActionButton("Open App Settings") { openAppSettings() }
     }
 
     private fun openAppSettings() {
@@ -123,6 +126,10 @@ class MainActivity : Activity() {
 
     private fun maybeStartWatchdog() {
         if (scannerStarted) return
+        if (isDeviceLocationEnabled().not()) {
+            showLocationServicesRequired()
+            return
+        }
         if (requiresBackgroundLocationPrompt()) {
             showBackgroundLocationRequired()
             return
@@ -138,7 +145,32 @@ class MainActivity : Activity() {
     private fun showBackgroundLocationRequired() {
         statusView.text =
             "Scanning cannot start until you grant 'Allow all the time' location access in Settings."
-        configureActionButton("Open Settings") { openAppSettings() }
+        configureActionButton("Open App Settings") { openAppSettings() }
+    }
+
+    private fun showLocationServicesRequired() {
+        statusView.text =
+            "Scanning cannot start until device location services are turned on."
+        configureActionButton("Open Location Settings") { openLocationSettings() }
+    }
+
+    private fun openLocationSettings() {
+        val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+        startActivity(intent)
+    }
+
+    private fun isDeviceLocationEnabled(): Boolean {
+        val locationManager = getSystemService(LocationManager::class.java)
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            locationManager.isLocationEnabled
+        } else {
+            @Suppress("DEPRECATION")
+            Settings.Secure.getInt(
+                contentResolver,
+                Settings.Secure.LOCATION_MODE,
+                Settings.Secure.LOCATION_MODE_OFF,
+            ) != Settings.Secure.LOCATION_MODE_OFF
+        }
     }
 
     private fun configureActionButton(
