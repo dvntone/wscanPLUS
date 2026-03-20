@@ -32,4 +32,12 @@ data class ScanResultEntity(
     val channelWidth: Int,
     val timestamp: Long,
     val isHidden: Boolean,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val accuracyMeters: Float? = null,
+    val altitudeMeters: Double? = null,
+    val speedKph: Float? = null,
+    val locationTimestamp: Long? = null,
+    val locationProvider: String? = null,
+    val isMockLocation: Boolean? = null,
 )

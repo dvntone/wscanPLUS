@@ -71,6 +71,10 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".KismetSettingsActivity"
+            android:exported="false" />
+
         <!--
             WatchdogService — foreground service managing the scanner chain + ADB socket.
             foregroundServiceType includes location because Wi-Fi scan retrieval is

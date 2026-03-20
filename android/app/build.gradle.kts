@@ -50,6 +50,7 @@ secrets {
 dependencies {
     implementation(project(":core"))
     implementation("androidx.core:core-ktx:1.18.0")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 
     // Firebase AI Logic SDK (Gemini in-app threat analysis — Android only)
     // BOM manages all firebase-* versions. Do NOT pin firebase-ai explicitly.
