@@ -1,7 +1,7 @@
 # Revvl Tab 2 Full ADB Matrix
 
 **Date:** 2026-03-20  
-**Device:** `Revvl Tab 2` (`9185W`)  
+**Device:** `Revvl Tab 2`  
 **Android:** `15`
 
 ## Purpose
@@ -99,6 +99,43 @@ Interpretation:
 - Full-fine permission is operationally required for the current scan path on this tablet.
 - This is the strongest evidence from the session because it isolates the difference from the coarse-only path.
 
+### 4a. Backgrounding and keyguard break scan retrieval even when full-fine is granted
+
+With:
+
+- `ACCESS_COARSE_LOCATION=true`
+- `ACCESS_FINE_LOCATION=true`
+- `NEARBY_WIFI_DEVICES=true`
+- location services on
+- Wi-Fi on
+
+Observed behavior while `MainActivity` is visible:
+
+- logcat shows `WifiService: getScanResults` for the app UID
+- the `getScanResults not allowed ... has no location permission` failure is absent
+
+Observed behavior after sending the app to HOME:
+
+- `WatchdogService` remains active as a foreground service
+- shell-level `cmd wifi list-scan-results` still returns populated scan data
+- app logcat shifts to:
+
+```text
+WifiService: Permission violation - getScanResults not allowed ... UID 10261 has no location permission
+```
+
+Observed behavior on keyguard with screen on and lockscreen showing:
+
+- `KeyguardServiceDelegate showing=true`
+- `screenState=SCREEN_STATE_ON`
+- `WatchdogService` still remains foreground
+- the same `getScanResults not allowed ... has no location permission` failure appears for the app UID
+
+Interpretation:
+
+- On this Android 15 device, foreground-service status alone is not enough to preserve scan-result access once the UI is no longer actively foregrounded.
+- For wscan+'s discreet or long-running field-collection role, background location handling must be treated as an active product/implementation question rather than a policy afterthought.
+
 ### 5. App-side logs are still not visible in adb logcat
 
 Expected tags were not observed during the run:
@@ -150,4 +187,5 @@ Interpretation:
 ## Follow-up items
 
 - `#122` - missing visible app-side adb logs on Revvl Android 15
-- new issue needed for coarse-only fallback remaining operationally broken on Revvl Android 15
+- `#124` - coarse-only fallback remains operationally broken on Revvl Android 15
+- `#125` - backgrounded / keyguard scan path loses effective location access on Android 15

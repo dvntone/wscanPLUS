@@ -15,6 +15,7 @@
 
 ## Research
 - docs/research/README.md — tracked research/doc standards and where local-only backlog belongs
+- docs/research/android_wifi_location_strategy.md — Android 15 permission/background-location decision note for Wi-Fi scanning
 - docs/research/verified_sources.md — curated verified external sources
 
 ## Tooling / Setup

@@ -145,6 +145,8 @@ Every change must be fully traceable back to the agent that made it:
 - Never commit secrets: no API keys, tokens, passwords, or machine-specific config
   - Android: use `local.properties` + secrets-gradle-plugin
   - Desktop: use `.env` (git-ignored) + dotenv
+- Never include device serials or other persistent device identifiers in tracked docs, issues, PR text, or commit messages during device testing
+  - Raw identifiers may remain only in local git-ignored artifacts when operationally necessary
 - Never run the Electron app as root
 - Never use `exec()` with interpolated strings — use `spawn(cmd, [args])` only
 - Validate every argument passed to child processes

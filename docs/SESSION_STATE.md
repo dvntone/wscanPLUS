@@ -129,6 +129,19 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 - Previous archived device-testing baseline is `moto g play - 2024`
 - First Revvl baseline result is documented in `docs/testing/devices/revvl-tab-2/2026-03-20-baseline-smoke-test.md`
 - Runtime discrepancy from that baseline is tracked in issue `#122` (missing visible app-side adb logs on Revvl Android 15)
+- Android 15 permission strategy note is documented in `docs/research/android_wifi_location_strategy.md`
+- Current technical stance:
+  - `ACCESS_FINE_LOCATION` remains the known-good requirement for scan retrieval on targetSdk 36
+  - coarse-only is degraded-only, not full scan capability
+  - `ACCESS_BACKGROUND_LOCATION` is under consideration for long-running detection/logging mode, but not yet adopted
+- Additional Revvl findings now tracked:
+  - `#124` - coarse-only launch succeeds but scan retrieval still fails
+  - `#125` - backgrounded / keyguard-visible app loses effective `getScanResults()` access while shell scans still work
+- Cross-device validation status:
+  - Revvl Tab 2 / Android 15 reproduces the background / keyguard scan-access failure
+  - moto g play - 2024 / Android 14 reproduces the secure-keyguard scan-access failure
+  - shell Wi-Fi scan data remains available on-device while app UID access fails on both
+  - next validation target should be Pixel 10 Pro XL / Android 17 under advanced security
 
 ### Local workspace caution
 
@@ -145,6 +158,10 @@ This section is the fast re-entry point for the next Claude/Copilot session.
    - WatchdogService Android 15 six-hour restart hardening
    - settings deep link refinement
    - first additional unit tests
+4. Implement and verify the likely background-collection fix path before more passive device reproduction:
+   - add `ACCESS_BACKGROUND_LOCATION`
+   - re-evaluate `WatchdogService` foreground-service typing for location-sensitive work
+   - rerun `shared/49_background_keyguard_scan_matrix.md` on Revvl, Motorola, and then Pixel 10 Pro XL
 
 ---
 

@@ -15,4 +15,6 @@ This folder archives the prior physical-device verification work completed befor
 ## Notes
 
 - Treat the findings here as historical evidence, not proof that OEM-specific behavior will match on the Revvl Tab 2.
-- Re-run permission, scan behavior, and service lifecycle checks on the new device before assuming parity.
+- 2026-03-20 regression re-checks were added against the current Phase 2 build.
+- The Motorola is no longer only historical context; it now also confirms that secure keyguard can break app scan access while shell Wi-Fi scans still work.
+- See `2026-03-20-secure-keyguard-regression-check.md`.
