@@ -98,17 +98,17 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 
 ### Remote repo state
 
-- `main` is current and issue `#10` is now under active review in PR `#148`
+- `main` is current and PR `#148` is merged
 - `KNOWN_ISSUES.md` records the Phase 2 completion snapshot and triage follow-ups added on 2026-03-20
 - Issue `#116` (app-side logging) was closed after merge
 - Issues `#143` and `#145` were resolved and closed on 2026-03-20 after PR #144 and PR #146 merged
+- Issue `#10` was resolved and closed on 2026-03-20 after PR #148 merged
 - Open tracked work at repo level is now:
   - `#121` — device-testing docs/session prep cleanup follow-up
   - `#122` — missing visible app-side adb logs on Revvl Android 15
   - `#124` — coarse-only launch succeeds but scan retrieval still fails
   - `#125` — backgrounded / keyguard-visible app loses effective `getScanResults()` access
   - `#9` — Google Maps threat heatmap + scan history map
-  - `#10` — Kismet remote GPS endpoint (active PR `#148`)
 
 ### Verification status
 
@@ -122,7 +122,7 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 - Android app versioning has now moved off the scaffold placeholder:
   - `versionCode = 2`
   - `versionName = "0.1.0"`
-- Issue `#10` branch verification also completed successfully on 2026-03-20:
+- Issue `#10` verification completed successfully before PR `#148` merged on 2026-03-20:
   - `cmd /c gradlew.bat :core:test :app:testDebugUnitTest :app:assembleDebug --rerun-tasks`
   - `cmd /c gradlew.bat :core:ktlintCheck :app:ktlintCheck --rerun-tasks`
 - Current `#10` implementation direction is documented in [57_issue_10_kismet_web_gps_delivery_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/57_issue_10_kismet_web_gps_delivery_2026-03-20.md)
@@ -178,17 +178,16 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 
 ### Recommended next work
 
-1. Issue `#10` — complete review/merge flow for the active Kismet web GPS PR and preserve the current Android-only scope
-2. Issue `#9` — add Google Maps threat heatmap and GPS-tagged scan history map on top of the stored GPS fields from `#10`
-3. Resolve the remaining Android runtime issues already tracked:
+1. Issue `#9` — add Google Maps threat heatmap and GPS-tagged scan history map on top of the stored GPS fields implemented in PR `#148` (which closed issue `#10`)
+2. Resolve the remaining Android runtime issues already tracked:
    - `#125` re-test secure-lockscreen / stronger background cases on Revvl Android 15, because non-secure HOME and screen-off did not reproduce the earlier failure on current `main`
    - `#124` align issue/docs state with current behavior: coarse-only is now blocked before service startup on current `main`
    - `#122` app-side adb log visibility on Revvl Android 15
-4. Carry the documented adb install / permission / state checks into the later desktop companion implementation
-5. Read [docs/research/codex/54_review_triage_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/54_review_triage_2026-03-20.md) before changing scanner behavior, Windows wrapper behavior, or cross-repo hardening assumptions
-6. Read [docs/research/codex/55_open_issue_priority_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/55_open_issue_priority_2026-03-20.md) for the current research-backed priority order and source links
-7. Read [docs/research/codex/56_map_provider_options_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/56_map_provider_options_2026-03-20.md) before proposing any replacement or fallback for the locked Google Maps integration
-8. Read [docs/research/codex/57_issue_10_kismet_web_gps_delivery_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/57_issue_10_kismet_web_gps_delivery_2026-03-20.md) before changing the GPS/Kismet path or comparing the current branch against the earlier plan
+3. Carry the documented adb install / permission / state checks into the later desktop companion implementation
+4. Read [docs/research/codex/54_review_triage_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/54_review_triage_2026-03-20.md) before changing scanner behavior, Windows wrapper behavior, or cross-repo hardening assumptions
+5. Read [docs/research/codex/55_open_issue_priority_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/55_open_issue_priority_2026-03-20.md) for the current research-backed priority order and source links
+6. Read [docs/research/codex/56_map_provider_options_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/56_map_provider_options_2026-03-20.md) before proposing any replacement or fallback for the locked Google Maps integration
+7. Read [docs/research/codex/57_issue_10_kismet_web_gps_delivery_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/57_issue_10_kismet_web_gps_delivery_2026-03-20.md) before changing the GPS/Kismet path or comparing the current branch against the earlier plan
 
 ---
 
