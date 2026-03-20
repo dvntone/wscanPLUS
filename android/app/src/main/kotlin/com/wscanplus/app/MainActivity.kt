@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 class MainActivity : Activity() {
     private lateinit var statusView: TextView
     private lateinit var rootLayout: LinearLayout
+    private lateinit var actionButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,11 +32,16 @@ class MainActivity : Activity() {
                 text = "wscan+ needs Wi-Fi scan permissions to start the scanner."
                 textSize = 16f
             }
+        actionButton =
+            Button(this).apply {
+                visibility = Button.GONE
+            }
         rootLayout.addView(statusView)
+        rootLayout.addView(actionButton)
         setContentView(rootLayout)
 
         if (hasAllPermissions()) {
-            startWatchdog()
+            maybeStartWatchdog()
         } else {
             requestPermissions(requiredPermissions(), REQUEST_CODE)
         }
@@ -44,8 +50,8 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         // Re-check permissions when returning from Settings
-        if (hasAllPermissions() && scannerStarted.not()) {
-            startWatchdog()
+        if (hasAllPermissions()) {
+            maybeStartWatchdog()
         }
     }
 
@@ -62,7 +68,7 @@ class MainActivity : Activity() {
         val hasCoarse = hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
         Log.d(TAG, "Permissions granted: FINE=$hasFine, COARSE=$hasCoarse")
         if (hasAllPermissions()) {
-            startWatchdog()
+            maybeStartWatchdog()
         } else {
             showPermissionDenied()
         }
@@ -71,15 +77,7 @@ class MainActivity : Activity() {
     private fun showPermissionDenied() {
         statusView.text =
             "Scanning disabled. Grant Wi-Fi and location permissions in Settings to start."
-        val settingsButton =
-            Button(this).apply {
-                text = "Open Settings"
-                setOnClickListener { openAppSettings() }
-            }
-        // Avoid duplicate buttons on repeated denial
-        if (rootLayout.childCount == 1) {
-            rootLayout.addView(settingsButton)
-        }
+        configureActionButton("Open Settings") { openAppSettings() }
     }
 
     private fun openAppSettings() {
@@ -122,13 +120,40 @@ class MainActivity : Activity() {
 
     private var scannerStarted = false
 
+    private fun maybeStartWatchdog() {
+        if (requiresBackgroundLocationPrompt()) {
+            showBackgroundLocationRequired()
+            return
+        }
+        if (scannerStarted) return
+        startWatchdog()
+    }
+
+    private fun requiresBackgroundLocationPrompt(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) &&
+            hasPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION).not()
+
+    private fun showBackgroundLocationRequired() {
+        scannerStarted = false
+        statusView.text =
+            "Background and lock-screen scanning requires 'Allow all the time' location access."
+        configureActionButton("Open Settings") { openAppSettings() }
+    }
+
+    private fun configureActionButton(
+        text: String,
+        onClick: () -> Unit,
+    ) {
+        actionButton.text = text
+        actionButton.setOnClickListener { onClick() }
+        actionButton.visibility = Button.VISIBLE
+    }
+
     private fun startWatchdog() {
         scannerStarted = true
         statusView.text = "Starting scanner..."
-        // Remove settings button if it was shown
-        if (rootLayout.childCount > 1) {
-            rootLayout.removeViewAt(1)
-        }
+        actionButton.visibility = Button.GONE
         val intent = Intent(this, WatchdogService::class.java)
         ContextCompat.startForegroundService(this, intent)
     }

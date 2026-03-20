@@ -39,13 +39,13 @@ import java.util.concurrent.Future
 /**
  * WatchdogService manages the scanner chain and the ADB communication socket.
  *
- * Foreground service — foregroundServiceType="dataSync" (declared in AndroidManifest).
+ * Foreground service — foregroundServiceType includes location|dataSync.
  * Must call startForeground() within a few seconds of startForegroundService() or the
  * system throws ForegroundServiceDidNotStartInTimeException (API 31+).
  *
  * Serial number is the primary device key in all data structures.
  *
- * Android 15 constraint: dataSync foreground services have a 6-hour max runtime.
+ * Android 15 constraint: the retained dataSync role still has a 6-hour max runtime.
  * On API 35+, this service schedules a clean restart at 5h 50min to reset the timer.
  * On older APIs, no restart is needed (no runtime limit).
  *
@@ -83,7 +83,7 @@ class WatchdogService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    // FOREGROUND_SERVICE_TYPE_DATA_SYNC is API 29 — safe to inline: ServiceCompat.startForeground()
+    // FOREGROUND_SERVICE_TYPE_* constants are API 29 — safe to inline: ServiceCompat.startForeground()
     // guards the type parameter internally and falls back to startForeground(id, notification)
     // on API < 29. The constant value is copied at compile time and causes no runtime issue.
     @SuppressLint("InlinedApi")
@@ -102,7 +102,7 @@ class WatchdogService : Service() {
             this,
             NOTIFICATION_ID,
             buildNotification(),
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
         )
         if (scannerChain == null) {
             startTimeMillis = SystemClock.elapsedRealtime()

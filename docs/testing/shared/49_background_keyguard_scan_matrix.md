@@ -12,10 +12,11 @@ This matrix exists because foreground-service survival alone has proven insuffic
 ## Preconditions
 
 - latest debug build installed
-- `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`, and `NEARBY_WIFI_DEVICES` granted
+- `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`, `ACCESS_BACKGROUND_LOCATION`, and `NEARBY_WIFI_DEVICES` granted
 - device location services enabled
 - Wi-Fi enabled
 - `WatchdogService` confirmed foreground
+- confirm `adb shell settings get secure location_mode` is not `0` before concluding the app lacks scan access
 
 ## Matrix
 
@@ -95,7 +96,11 @@ adb logcat -d | Select-String -Pattern 'getScanResults uid=|Permission violation
 
 As of 2026-03-20:
 
-- Revvl Tab 2 (Android 15): unlocked foreground works; HOME and keyguard break app scan access
-- moto g play - 2024 (Android 14): unlocked foreground works; secure keyguard also breaks app scan access
+- pre-fix baseline:
+  - Revvl Tab 2 (Android 15): unlocked foreground worked; HOME and keyguard broke app scan access
+  - moto g play - 2024 (Android 14): unlocked foreground worked; secure keyguard broke app scan access
+- post-fix validation with `ACCESS_BACKGROUND_LOCATION` + `foregroundServiceType="location|dataSync"`:
+  - moto g play - 2024 (Android 14): secure keyguard now allows `getScanResults()` and `StandardScanner` receives fresh results again
+  - Revvl Tab 2 (Android 15): the previous `Permission violation - getScanResults not allowed ... has no location permission` signature no longer appears under keyguard, and the app UID reaches `getScanResults()`
 
-This is strong evidence that the current issue is not a single-device anomaly.
+This remains a cross-device issue area, but the current fix path now has positive evidence on both test devices.

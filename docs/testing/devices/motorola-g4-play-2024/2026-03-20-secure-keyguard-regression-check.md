@@ -27,7 +27,7 @@ Observed behavior:
 - app-side logs were visible in adb
 - `StandardScanner` started successfully
 
-### 2. Secure keyguard reproduces the same app-access failure seen on Revvl
+### 2. Pre-fix secure keyguard reproduced the same app-access failure seen on Revvl
 
 With:
 
@@ -49,26 +49,58 @@ WifiService: Permission violation - getScanResults not allowed ... UID 10407 has
 - `StandardScanner` received `0` results
 - `WatchdogService` emitted `Threats: 0 of 0`
 
+### 3. Post-fix secure keyguard now restores locked-screen scan retrieval
+
+With the updated build that adds:
+
+- `ACCESS_BACKGROUND_LOCATION`
+- `FOREGROUND_SERVICE_LOCATION`
+- `WatchdogService` foreground type `location|dataSync`
+
+and with device `location_mode=3` confirmed before the sample:
+
+Observed behavior under real secure keyguard:
+
+- `mBiometricState=STATE_KEYGUARD_AUTH`
+- `showing=true`
+- `mIsShowing=true`
+- `WatchdogService` remained foreground
+- shell `cmd wifi list-scan-results` returned populated data
+- app logcat showed:
+
+```text
+WifiService: getScanResults uid=10407
+StandardScanner: Received 24 scan results (24 after stale filter)
+WatchdogService: Threats: 8 of 17 signals passed policy gate
+```
+
+Observed behavior after unlock / foreground recovery:
+
+- `MainActivity` resumed
+- `StandardScanner` received `32` scan results
+- `WatchdogService` emitted `Threats: 9 of 19`
+
 ## Interpretation
 
-- The secure-lock failure is not limited to Revvl Tab 2 or Android 15.
-- The current app model loses effective scan-result access once the app is no longer actively foregrounded, even though:
-  - the foreground service survives
-  - shell-level Wi-Fi scans still work
+- The pre-fix failure was not limited to Revvl Tab 2 or Android 15.
+- The current fix path materially improves the Motorola locked-screen behavior.
+- The earlier “no location permission” failure is no longer the dominant result on this device once:
+  - background location is declared and granted
+  - the service runs as a location-typed foreground service
+  - device-wide location mode is actually enabled
 
 ## Conclusion
 
-Cross-device evidence now supports treating this as a product-level background collection gap:
+Cross-device evidence supported treating this as a product-level background collection gap, and the current implementation now has positive validation:
 
-- Revvl Tab 2 / Android 15 reproduces it
-- moto g play - 2024 / Android 14 reproduces it under a real secure keyguard state
+- moto g play - 2024 / Android 14 now recovers locked-screen scan access with the current implementation
+- Revvl Tab 2 / Android 15 no longer shows the prior background/keyguard permission-denial signature, though Revvl-specific observability remains weaker
 
-The next step is implementation, not more passive reproduction:
+The next step is broader validation, not re-proving the old failure:
 
-1. add `ACCESS_BACKGROUND_LOCATION`
-2. revisit `WatchdogService` foreground-service typing for location-sensitive work
-3. rebuild
-4. rerun the unlocked -> HOME -> secure keyguard matrix
+1. keep checking `location_mode` before drawing scan-access conclusions
+2. run the same matrix on the Pixel 10 Pro XL / Android 17 device
+3. decide whether "Allow all the time" should be enforced in the operator flow or exposed as a mode requirement
 
 ## Related tracking
 

@@ -41,7 +41,7 @@ Practical interpretation:
 - coarse-only is useful to avoid a dead-end permission flow
 - coarse-only is not enough to promise normal scanner behavior on targetSdk 36
 
-### 2. `ACCESS_BACKGROUND_LOCATION` is a product decision, not a default requirement
+### 2. `ACCESS_BACKGROUND_LOCATION` is part of the current long-running collection model
 
 Foreground/manual testing does not require background location.
 
@@ -51,11 +51,11 @@ However, wscan+ is not a casual consumer app. Its role is long-running defensive
 - maintaining reliable logging and evidence capture during prolonged field sessions
 - supporting foreground-service-driven operation as the primary operator model
 
-then `ACCESS_BACKGROUND_LOCATION` should remain under active consideration.
+then `ACCESS_BACKGROUND_LOCATION` should be treated as part of the implementation, not a speculative option.
 
 That is a technical capability question first, not a Play policy question.
 
-Current empirical signal on Revvl Tab 2 / Android 15:
+Pre-fix empirical signal on Revvl Tab 2 / Android 15:
 
 - visible `MainActivity` + fine location -> scan-result access works
 - HOME / screen-off / keyguard-visible state -> service survives, but app scan-result access is denied as lacking location permission
@@ -67,7 +67,16 @@ Cross-device confirmation as of 2026-03-20:
 - moto g play - 2024 / Android 14 reproduces the same failure under a real secure keyguard state
 - shell-level Wi-Fi scanning continues on both devices while app UID scan access fails
 
-This means the behavior is not yet explained as a single OEM anomaly.
+This means the behavior was not a single OEM anomaly.
+
+Post-fix validation on 2026-03-20:
+
+- the manifest now declares `ACCESS_BACKGROUND_LOCATION`
+- `WatchdogService` now runs as `foregroundServiceType="location|dataSync"`
+- moto g play - 2024 / Android 14 regained locked-screen scan access once device location mode was enabled
+- Revvl Tab 2 / Android 15 no longer emits the prior app-UID location-permission violation while backgrounded/keyguard-visible
+
+The current evidence supports keeping background location in scope for wscan+'s discreet / long-running field mode.
 
 ### 3. Background location is still not free
 
@@ -100,17 +109,17 @@ Near-term stance for wscan+:
 
 1. Keep foreground fine-location behavior as the known-good baseline.
 2. Keep coarse-only support documented as degraded and incomplete for scan retrieval.
-3. Evaluate `ACCESS_BACKGROUND_LOCATION` only as part of an explicit "field logging / long-running detection mode" design.
+3. Keep `ACCESS_BACKGROUND_LOCATION` tied to the explicit "field logging / long-running detection mode" design.
 4. Do not add phone permissions for scanner debugging.
 
 ## Next validation work
 
-Before requesting `ACCESS_BACKGROUND_LOCATION`, validate whether it actually improves the product on current hardware:
+Now that `ACCESS_BACKGROUND_LOCATION` is implemented, validate the remaining edge cases on current hardware:
 
-1. Run a foreground-to-background transition test on Android 15 with the current `WatchdogService`.
+1. Re-run the shared background/keyguard matrix on the Pixel 10 Pro XL / Android 17 strict-security device.
 2. Compare service survival, scan callbacks, and artifact generation with and without the activity visible.
 3. Measure practical battery cost during a fixed interval capture run.
-4. Only then decide whether background location belongs in the manifest and runtime flow.
+4. Decide whether the app should hard-require "Allow all the time" or expose a narrower foreground-only mode.
 
 ## Sources
 

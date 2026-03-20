@@ -173,6 +173,34 @@ Interpretation:
 - The tablet is capable of running a third-party Wi-Fi analysis app in the same environment.
 - That supports treating the wscan+ gaps as app/runtime-path issues rather than a total device inability to participate in Wi-Fi analysis.
 
+### 8. Background-location fix removes the previous keyguard permission failure signature
+
+With the updated build that adds:
+
+- `ACCESS_BACKGROUND_LOCATION`
+- `FOREGROUND_SERVICE_LOCATION`
+- `WatchdogService` foreground type `location|dataSync`
+
+Observed behavior during a backgrounded / screen-off sample:
+
+- `WatchdogService` remained foreground
+- `WifiService: getScanResults uid=10261` appeared for the app UID
+- the prior keyguard-era signature did not recur:
+
+```text
+WifiService: Permission violation - getScanResults not allowed ... UID 10261 has no location permission
+```
+
+- shell `cmd wifi list-scan-results` on this specific capture still returned `No scan results`
+
+Interpretation:
+
+- The fix changes the app-access behavior on the Revvl in the expected direction.
+- This does not fully resolve Revvl observability, because:
+  - app-side logs are still weak on this device
+  - this capture did not yield a populated shell scan list at the same moment
+- Even so, the important regression signal is that the app no longer hits the prior background/keyguard permission boundary.
+
 ## Conclusions
 
 1. The Revvl Tab 2 is a valid active test target, but it behaves differently from the previous Motorola baseline.
@@ -182,7 +210,8 @@ Interpretation:
    - service starts
    - scan retrieval still fails
 4. Full fine location restores the current scan path.
-5. App-side log visibility through adb is still missing and blocks the intended debugging workflow.
+5. The background-location / location-typed foreground-service fix removes the prior keyguard permission-denial signature on this device.
+6. App-side log visibility through adb is still missing and remains the main Revvl-specific debugging gap.
 
 ## Follow-up items
 
