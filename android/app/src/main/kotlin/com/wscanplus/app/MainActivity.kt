@@ -42,7 +42,7 @@ class MainActivity : Activity() {
         rootLayout.addView(actionButton)
         setContentView(rootLayout)
 
-        if (hasAllPermissions()) {
+        if (hasEntryPermissions()) {
             maybeStartWatchdog()
         } else {
             requestPermissions(requiredPermissions(), REQUEST_CODE)
@@ -52,11 +52,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         // Re-check permissions when returning from Settings
-        if (hasAllPermissions()) {
-            maybeStartWatchdog()
-        } else {
-            showPermissionDenied()
-        }
+        refreshScannerState()
     }
 
     override fun onRequestPermissionsResult(
@@ -71,16 +67,18 @@ class MainActivity : Activity() {
         val hasFine = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
         val hasCoarse = hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
         Log.d(TAG, "Permissions granted: FINE=$hasFine, COARSE=$hasCoarse")
-        if (hasAllPermissions()) {
-            maybeStartWatchdog()
-        } else {
-            showPermissionDenied()
-        }
+        refreshScannerState()
     }
 
     private fun showPermissionDenied() {
         statusView.text =
             "Scanning disabled. Grant Wi-Fi and location permissions in Settings to start."
+        configureActionButton("Open App Settings") { openAppSettings() }
+    }
+
+    private fun showPreciseLocationRequired() {
+        statusView.text =
+            "Approximate-only location is degraded. Enable precise location in App Settings to start scanning."
         configureActionButton("Open App Settings") { openAppSettings() }
     }
 
@@ -104,11 +102,13 @@ class MainActivity : Activity() {
         return base.toTypedArray()
     }
 
-    private fun hasAllPermissions(): Boolean = hasRequiredLocationPermission() && hasNonLocationPermissions()
+    private fun hasEntryPermissions(): Boolean = hasAnyLocationPermission() && hasNonLocationPermissions()
 
-    private fun hasRequiredLocationPermission(): Boolean =
-        hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) ||
-            hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+    private fun hasAnyLocationPermission(): Boolean = hasFineLocationPermission() || hasCoarseLocationPermission()
+
+    private fun hasFineLocationPermission(): Boolean = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+
+    private fun hasCoarseLocationPermission(): Boolean = hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
 
     private fun hasNonLocationPermissions(): Boolean =
         requiredPermissions()
@@ -124,8 +124,24 @@ class MainActivity : Activity() {
 
     private var scannerStarted = false
 
+    private fun refreshScannerState() {
+        if (hasFineLocationPermission().not() && hasCoarseLocationPermission() && hasNonLocationPermissions()) {
+            showPreciseLocationRequired()
+            return
+        }
+        if (hasEntryPermissions()) {
+            maybeStartWatchdog()
+        } else {
+            showPermissionDenied()
+        }
+    }
+
     private fun maybeStartWatchdog() {
         if (scannerStarted) return
+        if (hasFineLocationPermission().not()) {
+            showPreciseLocationRequired()
+            return
+        }
         if (isDeviceLocationEnabled().not()) {
             showLocationServicesRequired()
             return
@@ -144,7 +160,7 @@ class MainActivity : Activity() {
 
     private fun showBackgroundLocationRequired() {
         statusView.text =
-            "Scanning cannot start until you grant 'Allow all the time' location access in Settings."
+            "Field mode needs 'Allow all the time' location access. Without it, locked-screen and background scanning is unreliable."
         configureActionButton("Open App Settings") { openAppSettings() }
     }
 
