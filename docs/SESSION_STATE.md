@@ -125,7 +125,7 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 - Issue `#10` verification completed successfully before PR `#148` merged on 2026-03-20:
   - `cmd /c gradlew.bat :core:test :app:testDebugUnitTest :app:assembleDebug --rerun-tasks`
   - `cmd /c gradlew.bat :core:ktlintCheck :app:ktlintCheck --rerun-tasks`
-- Current `#10` implementation direction is documented in [57_issue_10_kismet_web_gps_delivery_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/57_issue_10_kismet_web_gps_delivery_2026-03-20.md)
+- Current `#10` implementation direction is documented in [57_issue_10_kismet_web_gps_delivery_2026-03-20.md](/docs/research/codex/57_issue_10_kismet_web_gps_delivery_2026-03-20.md)
 
 ### Cross-repo dependency
 
@@ -184,10 +184,10 @@ This section is the fast re-entry point for the next Claude/Copilot session.
    - `#124` align issue/docs state with current behavior: coarse-only is now blocked before service startup on current `main`
    - `#122` app-side adb log visibility on Revvl Android 15
 3. Carry the documented adb install / permission / state checks into the later desktop companion implementation
-4. Read [docs/research/codex/54_review_triage_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/54_review_triage_2026-03-20.md) before changing scanner behavior, Windows wrapper behavior, or cross-repo hardening assumptions
-5. Read [docs/research/codex/55_open_issue_priority_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/55_open_issue_priority_2026-03-20.md) for the current research-backed priority order and source links
-6. Read [docs/research/codex/56_map_provider_options_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/56_map_provider_options_2026-03-20.md) before proposing any replacement or fallback for the locked Google Maps integration
-7. Read [docs/research/codex/57_issue_10_kismet_web_gps_delivery_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/57_issue_10_kismet_web_gps_delivery_2026-03-20.md) before changing the GPS/Kismet path or comparing the current branch against the earlier plan
+4. Read [docs/research/codex/54_review_triage_2026-03-20.md](/docs/research/codex/54_review_triage_2026-03-20.md) before changing scanner behavior, Windows wrapper behavior, or cross-repo hardening assumptions
+5. Read [docs/research/codex/55_open_issue_priority_2026-03-20.md](/docs/research/codex/55_open_issue_priority_2026-03-20.md) for the current research-backed priority order and source links
+6. Read [docs/research/codex/56_map_provider_options_2026-03-20.md](/docs/research/codex/56_map_provider_options_2026-03-20.md) before proposing any replacement or fallback for the locked Google Maps integration
+7. Read [docs/research/codex/57_issue_10_kismet_web_gps_delivery_2026-03-20.md](/docs/research/codex/57_issue_10_kismet_web_gps_delivery_2026-03-20.md) before changing the GPS/Kismet path or comparing the current branch against the earlier plan
 
 ---
 
@@ -399,7 +399,7 @@ const val CTI_MISSING_FLAG = "cti_unavailable"
 - Both paths deliver `onResults()` off the main thread — consistent threading.
 - Legacy API 24–29 path now requests `startScan()` and logs when the request is rejected.
 - `@RequiresPermission`: `ACCESS_WIFI_STATE` + `ACCESS_FINE_LOCATION` + `CHANGE_WIFI_STATE` on both `StandardScanner.start()` and `ScannerChain.start()`.
-- Follow-up triage note: [docs/research/codex/54_review_triage_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/54_review_triage_2026-03-20.md) records the review history that led to the March 20 scanner and wrapper fixes.
+- Follow-up triage note: [docs/research/codex/54_review_triage_2026-03-20.md](/docs/research/codex/54_review_triage_2026-03-20.md) records the review history that led to the March 20 scanner and wrapper fixes.
 
 ---
 
