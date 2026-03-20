@@ -88,7 +88,7 @@ wscanplus/
 
 ## Phase
 
-**Phase 1 (Dev Tooling + Polish)** — scanner chain + scaffold complete. ktlint CI added. Remaining: app icon, dataExtractionRules, WatchdogService 6h restart, settings deep link, first unit tests. See docs/ROADMAP.md for revised 6-phase plan (2026-03-17 reassessment).
+**Phase 1 (Dev Tooling + Polish)** — complete. Scanner chain, ktlint CI, launcher icon, data extraction rules, Android 15 timeout handling, settings recovery links, and the `:core` unit-test baseline are now on `main`. See [docs/ROADMAP.md](/Users/Devia/Documents/GitHub/wscanplus/docs/ROADMAP.md) for the current phased plan.
 
 ---
 
@@ -162,17 +162,11 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 
 1. Issue `#10` — wire Android GPS output into the Kismet remote GPS endpoint
 2. Issue `#9` — add Google Maps threat heatmap and GPS-tagged scan history map
-3. Finish Phase 1 polish items still deferred in this repo:
-   - app icon
-   - `dataExtractionRules`
-   - WatchdogService Android 15 six-hour restart hardening
-   - settings deep link refinement
-   - first additional unit tests
-4. Turn the remaining permission-model questions into tracked work:
+3. Turn the remaining permission-model questions into tracked work:
    - decide whether coarse-only should remain a degraded path or redirect into explicit fine-location escalation in the app UX
    - design the operator flow so "Allow all the time" is explicit for field mode rather than implied
    - validate first-trust Pixel / Advanced Protection onboarding separately from already-trusted-host behavior
-5. Carry the documented adb install / permission / state checks into the later desktop companion implementation
+4. Carry the documented adb install / permission / state checks into the later desktop companion implementation
 
 ---
 
@@ -189,7 +183,7 @@ All PRs merged: #40, #43, #45, #47, #49, #51, #53, #55, #57
 
 ---
 
-## Phase 1 — In Progress
+## Phase 1 — Complete
 
 ### Confirmed Android build stack (on main)
 
@@ -289,7 +283,7 @@ All merged to main through PR #77 (last feature commit: `11e4a45`):
 |-------|--------|
 | `./gradlew assembleDebug` | ✅ BUILD SUCCESSFUL (Gradle 9.4.0) |
 | `npm test` (desktop) | ✅ Pass |
-| `./gradlew lint` | ✅ 0 errors, 2 warnings (icon + dataExtractionRules — Phase 2) |
+| `./gradlew lint` | ✅ 0 errors, 2 warnings at the time of the 2026-03-16 quality gate; those icon / data-extraction items were completed later in Phase 1 |
 | `./gradlew :core:ktlintCheck :app:ktlintCheck` | ✅ Added (issue #83) |
 
 ### WatchdogService notification (PR #72 — confirmed pattern)
@@ -369,13 +363,13 @@ data class CtiCacheEntry(
 const val CTI_MISSING_FLAG = "cti_unavailable"
 ```
 
-### Phase 1 Next
+### Phase 1 Closeout
 
 1. ~~**ktlint CI addition**~~ ✅ — `org.jlleitschuh.gradle.ktlint:14.2.0`, zero-config. CI: `./gradlew :core:ktlintCheck :app:ktlintCheck`. Detekt removed from planning (2026-03-17).
 2. **Phase reassessment docs** — ROADMAP.md update with revised phase structure (2026-03-17 reassessment)
-3. **Phase 1 remaining** — app icon, dataExtractionRules, settings deep link on permission denial, WatchdogService 6-hour dataSync restart (Android 15+). Biometric deferred to Phase 6.
+3. ~~**Phase 1 remaining**~~ ✅ app icon, `dataExtractionRules`, settings deep link on permission denial, and Android 15 timeout handling were completed in follow-on work through PR `#137` and PR `#135`.
 4. **eslint advisory dep PR** — eslint 9.x → 10.0.3 (no CVE, deferred)
-5. **First unit tests** — `:core` module pure-logic tests
+5. ~~**First unit tests**~~ ✅ `:core` module pure-logic test baseline already present on `main`
 
 ### StandardScanner (PR #76 — confirmed pattern)
 

@@ -54,8 +54,8 @@ All 9 tasks merged (PRs #96–#117). 7 WiFi threat heuristics, HeuristicEngine, 
 **Remaining advisory warnings (non-blocking):**
 - espresso-core 3.6.1 → 3.7.0 available
 - Gradle 9.3.1 → 9.4.0 available
-- Missing `android:icon` on `<application>` — Phase 2 UI work
-- `android:allowBackup` deprecated (Android 12+) — add `android:dataExtractionRules` — Phase 2 UI work
+- Missing `android:icon` on `<application>` — resolved in later Phase 1 follow-on work
+- `android:allowBackup` deprecated (Android 12+) — resolved by adding `android:dataExtractionRules` in later Phase 1 follow-on work
 
 ---
 
