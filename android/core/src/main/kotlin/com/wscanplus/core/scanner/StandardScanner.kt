@@ -22,7 +22,9 @@ import java.util.concurrent.Executors
  *   API 30+: registerScanResultsCallback() (non-deprecated, preferred)
  *   API 24–29: BroadcastReceiver for SCAN_RESULTS_AVAILABLE_ACTION + getScanResults()
  *
- * Note: WifiManager.startScan() is deprecated API 28 — only used on API < 28.
+ * Note: WifiManager.startScan() is deprecated API 28 and throttled on newer Android versions.
+ * It is still used on API 24–29 here to preserve an in-app active trigger on the legacy
+ * BroadcastReceiver path.
  *
  * Runtime permissions required (declared in Phase 1 permissions PR):
  *   ACCESS_FINE_LOCATION (all API levels), NEARBY_WIFI_DEVICES with neverForLocation (API 33+)
@@ -123,7 +125,7 @@ class StandardScanner(
             receiver,
             IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION),
         )
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+        if (shouldRequestLegacyScan(Build.VERSION.SDK_INT)) {
             @Suppress("DEPRECATION")
             wifiManager.startScan()
         }
@@ -190,5 +192,7 @@ class StandardScanner(
     companion object {
         private const val TAG = "StandardScanner"
         private const val STALE_THRESHOLD_US = 120_000_000L
+
+        internal fun shouldRequestLegacyScan(apiLevel: Int): Boolean = apiLevel < Build.VERSION_CODES.R
     }
 }
