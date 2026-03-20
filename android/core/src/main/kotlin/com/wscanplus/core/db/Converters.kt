@@ -45,7 +45,7 @@ class Converters {
     fun fromHeuristicType(value: HeuristicType?): String? = value?.name
 
     @TypeConverter
-    fun toHeuristicType(value: String?): HeuristicType? = value?.let { HeuristicType.valueOf(it) }
+    fun toHeuristicType(value: String?): HeuristicType? = value?.let { name: String -> HeuristicType.valueOf(name) }
 
     @TypeConverter
     fun fromEnvironmentType(value: EnvironmentType): String = value.name

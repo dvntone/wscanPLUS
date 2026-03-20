@@ -37,7 +37,7 @@ fun WifiScanResult.toScanInput(): ScanInput =
         rssiDbm = signalLevel,
         frequencyMhz = frequencyMhz,
         channelWidth = channelWidth,
-        timestamp = timestamp,
+        timestamp = timestamp / 1000,
     )
 
 fun interface ScanResultsListener {
