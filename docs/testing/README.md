@@ -6,6 +6,7 @@ This area separates repeatable test procedures from device-specific evidence.
 
 - `shared/` - reusable checklists and operator guidance that apply across devices
 - `shared/49_background_keyguard_scan_matrix.md` - repeatable unlocked / HOME / secure-keyguard / post-unlock matrix for scan continuity
+- `shared/50_desktop_adb_handoff.md` - host-side adb commands and data points the future desktop companion will need
 - `devices/motorola-g4-play-2024/` - archived findings from the previous Android test device
 - `devices/revvl-tab-2/` - active prep and session notes for the current Android 15 tablet target
 - `devices/pixel-10-pro-xl/` - latest beta-track Pixel target with Advanced Protection enabled

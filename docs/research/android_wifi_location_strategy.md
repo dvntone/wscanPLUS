@@ -23,7 +23,7 @@ For apps targeting Android 10+:
 - `ACCESS_COARSE_LOCATION` alone is not sufficient for the current scan-results path.
 - `NEARBY_WIFI_DEVICES` does not replace `ACCESS_FINE_LOCATION` for `getScanResults()`.
 
-This matches the current Revvl Tab 2 evidence:
+This matches the current Revvl Tab 2 and Pixel evidence:
 
 - coarse-only permission allows the app to launch and start the service
 - actual scan retrieval still fails on the current path
@@ -78,6 +78,8 @@ Post-fix validation on 2026-03-20:
 - `WatchdogService` now runs as `foregroundServiceType="location|dataSync"`
 - moto g play - 2024 / Android 14 regained locked-screen scan access once device location mode was enabled
 - Revvl Tab 2 / Android 15 no longer emits the prior app-UID location-permission violation while backgrounded/keyguard-visible
+- Pixel 10 Pro XL on the current beta track now passes foreground, true background, secure keyguard, and post-unlock recovery with fresh scan callbacks and threat output
+- Pixel coarse-only remains degraded: the app starts and logs the state, but did not produce usable scan-result callbacks during the clean matrix run
 
 The current evidence supports keeping background location in scope for wscan+'s discreet / long-running field mode.
 
@@ -119,10 +121,10 @@ Near-term stance for wscan+:
 
 Now that `ACCESS_BACKGROUND_LOCATION` is implemented, validate the remaining edge cases on current hardware:
 
-1. Re-run the shared background/keyguard matrix on the Pixel 10 Pro XL / Android 17 strict-security device.
-2. Compare service survival, scan callbacks, and artifact generation with and without the activity visible.
-3. Measure practical battery cost during a fixed interval capture run.
-4. Decide whether the app should hard-require "Allow all the time" or expose a narrower foreground-only mode.
+1. Measure practical battery cost during a fixed interval capture run on at least one Android 14+ phone and the Revvl tablet.
+2. Decide whether the app should hard-require "Allow all the time" or expose a narrower foreground-only mode.
+3. Decide whether coarse-only should remain an allowed degraded state or redirect operators into an explicit fine-location upgrade path.
+4. Validate first-trust host behavior separately from already-trusted-host behavior on the Pixel / Advanced Protection path.
 
 ## Sources
 

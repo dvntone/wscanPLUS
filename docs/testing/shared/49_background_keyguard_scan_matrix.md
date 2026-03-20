@@ -102,5 +102,10 @@ As of 2026-03-20:
 - post-fix validation with `ACCESS_BACKGROUND_LOCATION` + `foregroundServiceType="location|dataSync"`:
   - moto g play - 2024 (Android 14): secure keyguard now allows `getScanResults()` and `StandardScanner` receives fresh results again
   - Revvl Tab 2 (Android 15): the previous `Permission violation - getScanResults not allowed ... has no location permission` signature no longer appears under keyguard, and the app UID reaches `getScanResults()`
+  - Pixel 10 Pro XL beta-track device: unlocked foreground, true background, secure keyguard, and post-unlock recovery all pass with fresh scan results and threat output
+
+Related limitation that remains outside the background/keyguard fix:
+
+- coarse-only permission on the Pixel still launches the app and service, but did not produce usable scan-result callbacks during the full matrix run
 
 This remains a cross-device issue area, but the current fix path now has positive evidence on both test devices.

@@ -131,8 +131,8 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 - Current active Android target is `Revvl Tab 2` (Android 15)
 - Previous archived device-testing baseline is `moto g play - 2024`
 - Latest strict-environment target is `Pixel 10 Pro XL` on the current beta track
-- First Revvl baseline result is documented in `docs/testing/devices/revvl-tab-2/2026-03-20-baseline-smoke-test.md`
-- Pixel beta / Advanced Protection install baseline is documented in `docs/testing/devices/pixel-10-pro-xl/README.md`
+  - First Revvl baseline result is documented in `docs/testing/devices/revvl-tab-2/2026-03-20-baseline-smoke-test.md`
+  - Pixel beta / Advanced Protection install baseline is documented in `docs/testing/devices/pixel-10-pro-xl/README.md`
 - Runtime discrepancy from that baseline is tracked in issue `#122` (missing visible app-side adb logs on Revvl Android 15)
 - Android 15 permission strategy note is documented in `docs/research/android_wifi_location_strategy.md`
 - Current technical stance:
@@ -144,11 +144,14 @@ This section is the fast re-entry point for the next Claude/Copilot session.
   - `#125` - backgrounded / keyguard-visible app loses effective `getScanResults()` access while shell scans still work
 - Cross-device validation status:
   - baseline: Revvl Tab 2 / Android 15 and moto g play - 2024 / Android 14 both reproduced the background / keyguard scan-access failure
-  - fix validation in progress on issue `#126`: `ACCESS_BACKGROUND_LOCATION` + `foregroundServiceType="location|dataSync"`
+  - issue `#126` fix is now merged: `ACCESS_BACKGROUND_LOCATION` + `foregroundServiceType="location|dataSync"`
   - moto g play - 2024 / Android 14 now regains locked-screen scan access with the current fix when device location mode is enabled
   - Revvl Tab 2 / Android 15 no longer emits the prior app-UID location-permission violation under keyguard
   - Pixel 10 Pro XL beta-track baseline: trusted-host `adb install -r` (install/update) succeeded with Advanced Protection still enabled, including a repeat install with the lockscreen showing
-  - next validation target should be the full shared matrix on Pixel 10 Pro XL under its current beta / Advanced Protection posture
+  - Pixel 10 Pro XL full matrix is now documented in `docs/testing/devices/pixel-10-pro-xl/2026-03-20-full-adb-matrix.md`
+  - Pixel 10 Pro XL now passes foreground, true background, secure keyguard, and post-unlock recovery on the current fix
+  - coarse-only remains degraded/incomplete on the Pixel path and should be treated as an explicit product decision area
+  - future desktop implementation should reuse the host-side adb checks captured in `docs/testing/shared/50_desktop_adb_handoff.md`
 
 ### Local workspace caution
 
@@ -165,10 +168,11 @@ This section is the fast re-entry point for the next Claude/Copilot session.
    - WatchdogService Android 15 six-hour restart hardening
    - settings deep link refinement
    - first additional unit tests
-4. Finish issue `#126` validation and then move to the Pixel 10 Pro XL / Android 17 device:
-   - confirm post-unlock recovery on Revvl and Motorola with the current fix
-   - run `shared/49_background_keyguard_scan_matrix.md` on Pixel 10 Pro XL
-   - assess whether the app should enforce "Allow all the time" in its operator flow or keep it mode-specific
+4. Turn the remaining permission-model questions into tracked work:
+   - decide whether coarse-only should remain a degraded path or redirect into explicit fine-location escalation
+   - decide whether the app should enforce "Allow all the time" in its operator flow or keep it mode-specific
+   - validate first-trust Pixel / Advanced Protection onboarding separately from already-trusted-host behavior
+5. Carry the documented adb install / permission / state checks into the later desktop companion implementation
 
 ---
 
