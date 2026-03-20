@@ -49,7 +49,7 @@ Interpretation:
 - This Revvl Tab 2 does not mirror the earlier Motorola behavior where Wi-Fi-off plus scan-always-on still yielded shell scan results.
 - That is a hardware/OEM baseline difference, not an app-only signal.
 
-### 3. Coarse-only launch no longer hard-blocks, but scanning is still impaired
+### 3. Original coarse-only finding from the first Revvl pass
 
 With:
 
@@ -72,8 +72,8 @@ WifiService: Permission violation - getScanResults not allowed ... has no locati
 
 Interpretation:
 
-- The coarse-only fallback is partially effective: the app no longer dead-ends at launch.
-- It is not fully effective on this device because actual scan retrieval still fails without effective fine location.
+- This was the observed behavior during the earlier Revvl pass.
+- Treat it as historical evidence only until compared against current `main`.
 
 ### 4. Full-fine path enables scanner registration
 
@@ -99,7 +99,7 @@ Interpretation:
 - Full-fine permission is operationally required for the current scan path on this tablet.
 - This is the strongest evidence from the session because it isolates the difference from the coarse-only path.
 
-### 4a. Backgrounding and keyguard break scan retrieval even when full-fine is granted
+### 4a. Original background/keyguard finding from the first Revvl pass
 
 With:
 
@@ -133,8 +133,8 @@ Observed behavior on keyguard with screen on and lockscreen showing:
 
 Interpretation:
 
-- On this Android 15 device, foreground-service status alone is not enough to preserve scan-result access once the UI is no longer actively foregrounded.
-- For wscan+'s discreet or long-running field-collection role, background location handling must be treated as an active product/implementation question rather than a policy afterthought.
+- This was the observed behavior during the earlier Revvl pass.
+- Treat it as historical evidence only until compared against current `main`.
 
 ### 5. App-side logs are still not visible in adb logcat
 
@@ -173,7 +173,7 @@ Interpretation:
 - The tablet is capable of running a third-party Wi-Fi analysis app in the same environment.
 - That supports treating the wscan+ gaps as app/runtime-path issues rather than a total device inability to participate in Wi-Fi analysis.
 
-### 8. Background-location fix removes the previous keyguard permission failure signature
+### 8. Historical note from the earlier permission/service fix pass
 
 With the updated build that adds:
 
@@ -195,26 +195,63 @@ WifiService: Permission violation - getScanResults not allowed ... UID 10261 has
 
 Interpretation:
 
-- The fix changes the app-access behavior on the Revvl in the expected direction.
-- This does not fully resolve Revvl observability, because:
-  - app-side logs are still weak on this device
-  - this capture did not yield a populated shell scan list at the same moment
-- Even so, the important regression signal is that the app no longer hits the prior background/keyguard permission boundary.
+- This was an earlier positive signal, but it was not enough on its own to close the Revvl questions.
+- Treat it as historical evidence only until compared against current `main`.
+
+### 9. Current-main re-test on 2026-03-20
+
+Environment for the re-test:
+
+- current build installed from local `main`: `versionCode=2`, `versionName=0.1.0`
+- Developer mode enabled
+- screen unlocked for the clean foreground log pass
+- no secure lockscreen configured on the device
+
+Observed behavior with full-fine permissions:
+
+- `MainActivity` launches successfully
+- `WatchdogService` starts as a foreground service
+- app-side debug tags are visible in `adb logcat` when the device is unlocked and the app is foregrounded:
+  - `D/WatchdogService: Service created`
+  - `D/WatchdogService: Service started`
+  - `D/ScannerChain: Using Standard scanner`
+  - `D/StandardScanner: Scanner started (API 35)`
+
+Observed behavior after `HOME` and after screen-off in the non-secure-lockscreen scenario:
+
+- `WatchdogService` remained foreground
+- the earlier Revvl signature below was not reproduced in that non-secure pass:
+
+```text
+WifiService: Permission violation - getScanResults not allowed ... UID has no location permission
+```
+
+Observed behavior in coarse-only on current `main`:
+
+- `ACCESS_FINE_LOCATION=false`
+- `ACCESS_COARSE_LOCATION=true`
+- `ACCESS_BACKGROUND_LOCATION=true`
+- `NEARBY_WIFI_DEVICES=true`
+- `MainActivity` still launches
+- `WatchdogService` does not start
+
+Interpretation:
+
+- On current `main`, coarse-only no longer reaches the old “service starts, then scan retrieval fails” state on this device.
+- The remaining background question on Revvl is now the stronger secure-lockscreen / stricter background case, not the basic non-secure HOME or screen-off path.
+- The logging issue is narrower than originally phrased: app tags are visible when the device is truly unlocked and the app is on the successful foreground path.
 
 ## Conclusions
 
 1. The Revvl Tab 2 is a valid active test target, but it behaves differently from the previous Motorola baseline.
 2. The app's no-permission guard is working.
-3. The coarse-only fallback is incomplete on this Android 15 OEM build:
-   - launch succeeds
-   - service starts
-   - scan retrieval still fails
-4. Full fine location restores the current scan path.
-5. The background-location / location-typed foreground-service fix removes the prior keyguard permission-denial signature on this device.
-6. App-side log visibility through adb is still missing and remains the main Revvl-specific debugging gap.
+3. The original coarse-only and background/keyguard findings must now be read as historical evidence, not final current-main behavior.
+4. Current `main` blocks coarse-only before `WatchdogService` startup on this device.
+5. The non-secure Revvl background re-test did not reproduce the earlier permission-denial signature on current `main`.
+6. App-side adb logging is state-sensitive on this device, not completely absent; the clean unlocked foreground path now shows the expected app tags.
 
 ## Follow-up items
 
-- `#122` - missing visible app-side adb logs on Revvl Android 15
-- `#124` - coarse-only fallback remains operationally broken on Revvl Android 15
-- `#125` - backgrounded / keyguard scan path loses effective location access on Android 15
+- `#122` - narrow the issue to state-sensitive log visibility / repeatable operator procedure on Revvl Android 15
+- `#124` - align issue/docs state with current `main`, which now blocks coarse-only before service startup
+- `#125` - re-test the stronger secure-lockscreen background case on current `main`

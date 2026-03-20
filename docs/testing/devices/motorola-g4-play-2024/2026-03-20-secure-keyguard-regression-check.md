@@ -94,7 +94,7 @@ Observed behavior after unlock / foreground recovery:
 Cross-device evidence supported treating this as a product-level background collection gap, and the current implementation now has positive validation:
 
 - moto g play - 2024 / Android 14 now recovers locked-screen scan access with the current implementation
-- Revvl Tab 2 / Android 15 no longer shows the prior background/keyguard permission-denial signature, though Revvl-specific observability remains weaker
+- Revvl Tab 2 / Android 15 has now been re-tested on current `main` for the non-secure path; keep its secure-lockscreen/background findings open until a post-fix secure-keyguard Revvl validation run happens
 
 The next step is broader validation, not re-proving the old failure:
 

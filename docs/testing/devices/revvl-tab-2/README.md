@@ -12,7 +12,7 @@ Current active Android tablet target for on-device verification.
 
 - Developer mode enabled
 - `WiFiAnalyzer` installed as `com.vrem.wifianalyzer` (`versionName=3.2.2`)
-- `com.wscanplus.app` not yet installed on this device at prep time
+- `com.wscanplus.app` is now installed for current-main validation
 - `settings get global wifi_scan_always_enabled` returned `0`
 - `settings get global wifi_scan_throttle_enabled` returned `null`, so OEM behavior must be verified from runtime results rather than that flag alone
 
@@ -47,6 +47,10 @@ The first session goal is not full heuristic validation in the field. It is to c
 
 - See `2026-03-20-baseline-smoke-test.md` for the first Revvl Tab 2 run against the current debug build.
 - See `2026-03-20-full-adb-matrix.md` for the broader Wi-Fi, location, permissions, and runtime validation pass.
+- The latest live re-test on current `main` is summarized in the same full matrix note and narrows the remaining concerns to:
+  - secure-lockscreen / stricter background validation
+  - repeatable app-log visibility procedure
+  - issue/docs alignment for coarse-only behavior
 
 ## Suggested ADB checks
 
@@ -60,4 +64,3 @@ adb -s <redacted-device> logcat -d | Select-String -Pattern "MainActivity|Watchd
 ## WiFiAnalyzer comparison note
 
 ADB cannot directly read WiFiAnalyzer's rendered scan list, but it can confirm the package, launch state, and UI hierarchy captures if needed during the session. Treat WiFiAnalyzer as an operator-visible reference point, not an API source.
-

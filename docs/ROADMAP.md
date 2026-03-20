@@ -49,7 +49,7 @@ On-device heuristics engine is now live on Android and runs without third-party 
   7. BSSID fingerprinting
 - [x] Policy gate wired into the watchdog path
 - [x] App-side logging added for adb/runtime verification
-- [x] Device validation completed across Revvl Tab 2, moto g play - 2024, and Pixel 10 Pro XL for the current permission/service model
+- [x] Device validation completed across Revvl Tab 2, moto g play - 2024, and Pixel 10 Pro XL for the pre-fix and mixed-fix permission/service work to date; Revvl still needs a post-fix re-test on current main
 
 Delivered through PRs `#96-#117`, `#127`, and follow-on device-validation/docs work on 2026-03-20.
 

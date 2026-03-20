@@ -17,6 +17,59 @@ All 9 tasks merged (PRs #96–#117). 7 WiFi threat heuristics, HeuristicEngine, 
 - `signalLevel` → `rssiDbm` field rename in WifiScanResult (cosmetic)
 - first-trust Pixel / Advanced Protection onboarding still needs its own validation path; current evidence covers already-trusted host behavior
 
+### Additional review triage recorded on 2026-03-20
+
+- Cross-repo review note added at [docs/research/codex/54_review_triage_2026-03-20.md](docs/research/codex/54_review_triage_2026-03-20.md)
+
+---
+
+## 2026-03-20: Windows `gradlew.bat` quoting with spaced `JAVA_HOME` — resolved locally
+
+**Issue:** `android/gradlew.bat` invoked `%JAVA_EXE%` without quotes and built `JAVA_EXE` from `%JAVA_HOME%/bin/java.exe`. On Windows machines where `JAVA_HOME` contained spaces, the wrapper failed before Gradle startup even though Java was installed.
+
+**Resolution:** Updated `android/gradlew.bat` to:
+- quote `%JAVA_EXE%` for the Java probe and Gradle wrapper launch
+- use `\bin\java.exe` when building the Windows Java executable path
+
+**Verification (local, 2026-03-20):**
+- `cmd /c gradlew.bat :core:test` ✅
+- `cmd /c gradlew.bat :core:ktlintCheck :app:ktlintCheck` ✅
+- `git ls-files .env android/local.properties` returned no tracked files ✅
+
+**Status:** ✅ RESOLVED in local worktree during triage follow-up. Keep the review note for historical context.
+
+---
+
+## 2026-03-20: `StandardScanner.stop()` teardown exceptions were not logged — resolved locally
+
+**Issue:** `StandardScanner.stop()` defensively caught `IllegalArgumentException` during receiver teardown and `Exception` during scan callback teardown, but emitted no logs. This conflicted with repo policy requiring caught exceptions to be logged.
+
+**Resolution:** Added `Log.w(...)` in both catch paths in `android/core/src/main/kotlin/com/wscanplus/core/scanner/StandardScanner.kt` while preserving the existing defensive behavior.
+
+**Verification (local, 2026-03-20):**
+- `cmd /c gradlew.bat :core:test` ✅
+- `cmd /c gradlew.bat :core:ktlintCheck :app:ktlintCheck` ✅
+
+**Status:** ✅ RESOLVED in local worktree during triage follow-up. Keep the review note for historical context.
+
+---
+
+## 2026-03-20: StandardScanner lacked an active scan trigger on API 28-29 — resolved locally
+
+**Issue:** `StandardScanner` was documented as the guaranteed baseline scanner across supported API levels, but the legacy API 24–29 path only called `WifiManager.startScan()` on API `< 28`. That left API 28–29 with no in-repo active trigger path.
+
+**Resolution:** Updated `android/core/src/main/kotlin/com/wscanplus/core/scanner/StandardScanner.kt` to:
+- keep API 30+ on `registerScanResultsCallback()`
+- keep API 24–29 on the legacy BroadcastReceiver path
+- request `startScan()` across the full legacy path
+- log when the scan request is rejected, which is important on throttled Android 9/10+ devices
+
+**Verification (local, 2026-03-20):**
+- `cmd /c gradlew.bat :core:test` ✅
+- `cmd /c gradlew.bat :core:ktlintCheck :app:ktlintCheck` ✅
+
+**Status:** ✅ RESOLVED in local worktree during triage follow-up and later merged via [PR #146](https://github.com/dvntone/wscanplus/pull/146).
+
 ---
 
 ## 2026-03-17: StandardScanner Copilot review fixes — resolved PR #76
