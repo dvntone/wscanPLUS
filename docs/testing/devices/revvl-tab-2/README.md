@@ -46,6 +46,7 @@ The first session goal is not full heuristic validation in the field. It is to c
 ## Latest baseline result
 
 - See `2026-03-20-baseline-smoke-test.md` for the first Revvl Tab 2 run against the current debug build.
+- See `2026-03-20-full-adb-matrix.md` for the broader Wi-Fi, location, permissions, and runtime validation pass.
 
 ## Suggested ADB checks
 
