@@ -5,6 +5,11 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.wscanplus.core.db.dao.BssidFingerprintDao
+import com.wscanplus.core.db.dao.CtiCacheDao
+import com.wscanplus.core.db.dao.ScanResultDao
+import com.wscanplus.core.db.dao.ScanSessionDao
+import com.wscanplus.core.db.dao.ThreatSignalDao
 import com.wscanplus.core.db.entity.BssidFingerprintEntity
 import com.wscanplus.core.db.entity.CtiCacheEntity
 import com.wscanplus.core.db.entity.ScanResultEntity
@@ -24,6 +29,16 @@ import com.wscanplus.core.db.entity.ThreatSignalEntity
 )
 @TypeConverters(Converters::class)
 abstract class WscanDatabase : RoomDatabase() {
+    abstract fun scanSessionDao(): ScanSessionDao
+
+    abstract fun scanResultDao(): ScanResultDao
+
+    abstract fun bssidFingerprintDao(): BssidFingerprintDao
+
+    abstract fun threatSignalDao(): ThreatSignalDao
+
+    abstract fun ctiCacheDao(): CtiCacheDao
+
     companion object {
         @Volatile
         private var instance: WscanDatabase? = null
@@ -43,7 +58,7 @@ abstract class WscanDatabase : RoomDatabase() {
                     context.applicationContext,
                     WscanDatabase::class.java,
                     "wscan.db",
-                ).fallbackToDestructiveMigration(dropAllTables = true)
+                ).fallbackToDestructiveMigration()
                 .build()
     }
 }
