@@ -37,13 +37,16 @@ class ScannerChain(
     )
     fun start() {
         if (usbScanner.isAvailable()) {
+            Log.d(TAG, "Using USB scanner")
             try {
                 usbScanner.start()
                 return
             } catch (e: Exception) {
-                Log.e(TAG, "USB scanner start failed, falling back to standard scanner", e)
+                Log.d(TAG, "USB failed, falling back to Standard")
+                Log.w(TAG, "USB scanner start failed", e)
             }
         }
+        Log.d(TAG, "Using Standard scanner")
         standardScanner.start()
     }
 

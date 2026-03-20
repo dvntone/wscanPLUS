@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -57,6 +58,9 @@ class MainActivity : Activity() {
         if (requestCode != REQUEST_CODE) {
             return
         }
+        val hasFine = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+        val hasCoarse = hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+        Log.d(TAG, "Permissions granted: FINE=$hasFine, COARSE=$hasCoarse")
         if (hasAllPermissions()) {
             startWatchdog()
         } else {
@@ -130,6 +134,7 @@ class MainActivity : Activity() {
     }
 
     companion object {
+        private const val TAG = "MainActivity"
         private const val REQUEST_CODE = 1001
     }
 }
