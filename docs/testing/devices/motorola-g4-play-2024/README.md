@@ -1,0 +1,20 @@
+# Motorola G4 Play 2024 Archive
+
+This folder archives the prior physical-device verification work completed before the Revvl Tab 2 session started.
+
+## Device
+
+- Model: `moto g play - 2024`
+- Role: previous baseline Android phone used for ADB, permissions, scan-behavior, Bluetooth, and export validation
+
+## Contents
+
+- `findings/` contains the durable markdown summaries from the Motorola session.
+- `artifacts/` contains raw local captures that remain git-ignored.
+
+## Notes
+
+- Treat the findings here as historical evidence, not proof that OEM-specific behavior will match on the Revvl Tab 2.
+- 2026-03-20 regression re-checks were added against the current Phase 2 build.
+- The Motorola is no longer only historical context; it now also confirms that secure keyguard can break app scan access while shell Wi-Fi scans still work.
+- See `2026-03-20-secure-keyguard-regression-check.md`.

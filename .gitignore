@@ -185,3 +185,9 @@ android/.idea/
 # Local planning/agent handoff notes
 plans/
 !docs/superpowers/plans/
+
+# Local research backlog and ad hoc source dumps
+docs/local/
+
+# Raw per-device capture artifacts stay local; summarized findings live in tracked markdown
+docs/testing/devices/*/artifacts/
