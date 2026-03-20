@@ -85,6 +85,11 @@ External API calls require consent framework first. GDPR/CCPA compliance before 
 
 Gemini integration for natural language threat assessment + user-facing results.
 
+Current sequencing note:
+
+- The active `#10` work establishes Android-side fused location sampling, GPS-tagged scan persistence, and Kismet `web GPS` upload first.
+- The Google Maps feature in `#9` should build on that stored GPS data rather than introducing a second location pipeline.
+
 - [ ] Gemini/firebase-ai runtime integration (prompt builder consuming ThreatSignal list)
 - [ ] Incident Narrative generator (Gemini converts events to plain English)
 - [ ] Baseline vs. Now visual (normal network count vs. incident density)

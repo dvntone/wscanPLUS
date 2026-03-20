@@ -127,11 +127,18 @@ Recommended fix direction:
   - one outbound GPS transport path
   - clear payload mapping from Android location data
   - no combined map/history UI in the same PR
-- Decide early whether the Android app should post to `web/update.cmd` or provision a GPS/meta-GPS entry and then update it consistently.
+- Chosen direction for the first delivery:
+  - Android fused location as the shared location source
+  - nullable per-scan GPS persistence in Room
+  - Kismet `web GPS` via `/gps/web/update.cmd`
+  - operator-configured base URL + token
+  - direct host/LAN URL first, `adb reverse` as the preferred USB fallback
+- Defer `/gps/add_gps.cmd`, datasource-linked `meta-gps`, and TCP NMEA output to later work.
 
 Compatibility note:
 
 - Prefer an HTTP/REST path that works with the existing desktop/host assumptions and does not require Android-side native Kismet dependencies.
+- Keep Kismet delivery Android-only. Do not mix in Google Maps UI or alternate map-provider work in the same PR.
 
 ### 5. `#9` Google Maps threat heatmap + scan history map
 
@@ -149,6 +156,7 @@ Recommended fix direction:
 
 - Implement this as a presentation layer on top of already-stored GPS-tagged scan data.
 - Use marker/clustering for discrete events and heatmaps for dense distributions, rather than trying to force one visualization for both.
+- Assume issue `#10` provides the shared location/persistence foundation first; do not reopen the GPS storage design while implementing the map.
 
 Compatibility note:
 

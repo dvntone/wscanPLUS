@@ -20,6 +20,7 @@ class MainActivity : Activity() {
     private lateinit var statusView: TextView
     private lateinit var rootLayout: LinearLayout
     private lateinit var actionButton: Button
+    private lateinit var settingsButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,8 +39,14 @@ class MainActivity : Activity() {
             Button(this).apply {
                 visibility = View.GONE
             }
+        settingsButton =
+            Button(this).apply {
+                text = "Kismet Settings"
+                setOnClickListener { openKismetSettings() }
+            }
         rootLayout.addView(statusView)
         rootLayout.addView(actionButton)
+        rootLayout.addView(settingsButton)
         setContentView(rootLayout)
 
         if (hasEntryPermissions()) {
@@ -173,6 +180,10 @@ class MainActivity : Activity() {
     private fun openLocationSettings() {
         val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
         startActivity(intent)
+    }
+
+    private fun openKismetSettings() {
+        startActivity(Intent(this, KismetSettingsActivity::class.java))
     }
 
     private fun isDeviceLocationEnabled(): Boolean {

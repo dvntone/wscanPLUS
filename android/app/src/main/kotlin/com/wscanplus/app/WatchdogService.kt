@@ -11,9 +11,18 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import com.wscanplus.app.kismet.KismetConfigStore
+import com.wscanplus.app.kismet.KismetGpsClient
+import com.wscanplus.app.location.FusedLocationSampler
+import com.wscanplus.app.location.LocationSample
+import com.wscanplus.core.db.WscanDatabase
+import com.wscanplus.core.db.entity.ScanResultEntity
+import com.wscanplus.core.db.entity.ScanSessionEntity
+import com.wscanplus.core.db.entity.ThreatSignalEntity
 import com.wscanplus.core.scanner.ScannerChain
 import com.wscanplus.core.scanner.WifiScanResult
 import com.wscanplus.core.scanner.toScanInput
@@ -56,7 +65,13 @@ class WatchdogService : Service() {
     private var scannerChain: ScannerChain? = null
     private var scannerExecutor: ExecutorService? = null
     private var startFuture: Future<*>? = null
+    private var locationSampler: FusedLocationSampler? = null
     private var startTimeMillis: Long = 0L
+    private var latestLocationSample: LocationSample? = null
+    private var currentSessionId: Long? = null
+    private var lastKismetSendAtMillis: Long = 0L
+    private lateinit var database: WscanDatabase
+    private lateinit var kismetGpsClient: KismetGpsClient
     private val engine =
         HeuristicEngine(
             listOf(
@@ -74,6 +89,8 @@ class WatchdogService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        database = WscanDatabase.getInstance(applicationContext)
+        kismetGpsClient = KismetGpsClient(KismetConfigStore(applicationContext))
         Log.d(TAG, "Service created")
     }
 
@@ -107,6 +124,11 @@ class WatchdogService : Service() {
                     Thread(runnable, "wscanplus-watchdog")
                 }
             scannerExecutor = executor
+            locationSampler =
+                FusedLocationSampler(applicationContext, executor) { sample ->
+                    latestLocationSample = sample
+                    maybeSendKismetUpdate(sample)
+                }
             scannerChain =
                 ScannerChain(applicationContext) { results: List<WifiScanResult> ->
                     val scanInputs: List<ScanInput> =
@@ -127,8 +149,17 @@ class WatchdogService : Service() {
                         "WatchdogService",
                         "Threats: ${filtered.size} of ${rawSignals.size} signals passed policy gate",
                     )
+                    persistResults(
+                        results = results,
+                        filteredSignals = filtered,
+                    )
                 }
-            startFuture = executor.submit { startChain(scannerChain!!) }
+            startFuture =
+                executor.submit {
+                    currentSessionId = createSession()
+                    locationSampler?.start()
+                    startChain(scannerChain!!)
+                }
         }
         return START_STICKY
     }
@@ -148,10 +179,87 @@ class WatchdogService : Service() {
         val chain = scannerChain
         scannerChain = null
         scannerExecutor = null
+        locationSampler?.stop()
+        locationSampler = null
+        val sessionId = currentSessionId
+        currentSessionId = null
         // stop() must run on a background thread per ScannerChain/StandardScanner threading rule.
-        executor?.execute { chain?.stop() }
+        executor?.execute {
+            chain?.stop()
+            sessionId?.let {
+                database.scanSessionDao().markCompleted(it, System.currentTimeMillis())
+            }
+        }
         executor?.shutdown()
         // TODO (Phase 3): close ServerSocket
+    }
+
+    private fun createSession(): Long =
+        database.scanSessionDao().insert(
+            ScanSessionEntity(
+                startedAt = System.currentTimeMillis(),
+                endedAt = null,
+                environmentType = EnvironmentType.RESIDENTIAL,
+                deviceSerial = buildDeviceIdentifier(),
+            ),
+        )
+
+    private fun buildDeviceIdentifier(): String = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown-device"
+
+    private fun persistResults(
+        results: List<WifiScanResult>,
+        filteredSignals: List<com.wscanplus.core.threat.ThreatSignal>,
+    ) {
+        val sessionId = currentSessionId ?: return
+        val locationSample = latestLocationSample
+        database.scanResultDao().insertAll(
+            results.map { result ->
+                ScanResultEntity(
+                    sessionId = sessionId,
+                    bssid = result.bssid,
+                    ssid = result.ssid,
+                    capabilities = result.capabilities,
+                    rssiDbm = result.signalLevel,
+                    frequencyMhz = result.frequencyMhz,
+                    channelWidth = result.channelWidth,
+                    timestamp = result.timestamp / 1000,
+                    isHidden = result.ssid.isBlank(),
+                    latitude = locationSample?.latitude,
+                    longitude = locationSample?.longitude,
+                    accuracyMeters = locationSample?.accuracyMeters,
+                    altitudeMeters = locationSample?.altitudeMeters,
+                    speedKph = locationSample?.speedKph,
+                    locationTimestamp = locationSample?.capturedAt,
+                    locationProvider = locationSample?.provider,
+                    isMockLocation = locationSample?.isMock,
+                )
+            },
+        )
+        if (filteredSignals.isNotEmpty()) {
+            database.threatSignalDao().insertAll(
+                filteredSignals.map { signal ->
+                    ThreatSignalEntity(
+                        sessionId = sessionId,
+                        bssid = signal.bssid,
+                        confidence = signal.confidence,
+                        source = signal.source,
+                        heuristicType = signal.heuristicType,
+                        reasons = signal.reasons,
+                        detectedAt = signal.detectedAt,
+                        schemaVersion = signal.schemaVersion,
+                    )
+                },
+            )
+        }
+    }
+
+    private fun maybeSendKismetUpdate(sample: LocationSample) {
+        val now = System.currentTimeMillis()
+        if (!sample.isFresh(now)) return
+        if (now - lastKismetSendAtMillis < KISMET_SEND_INTERVAL_MS) return
+        if (kismetGpsClient.send(sample)) {
+            lastKismetSendAtMillis = now
+        }
     }
 
     // onStartCommand() re-validates runtime location permission before invoking the chain.
@@ -191,22 +299,22 @@ class WatchdogService : Service() {
                 ).apply {
                     description = "Active while the WiFi scanner chain is running"
                 }
-            getSystemService(NotificationManager::class.java)
-                .createNotificationChannel(channel)
+            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
     }
 
-    private fun buildNotification() =
-        NotificationCompat
-            .Builder(this, CHANNEL_ID)
-            .setContentTitle("wscan+ scanning")
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setOngoing(true)
-            .build()
+    private fun buildNotification(): android.app.Notification {
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+        builder.setContentTitle("wscan+ scanning")
+        builder.setSmallIcon(R.mipmap.ic_launcher)
+        builder.setOngoing(true)
+        return builder.build()
+    }
 
     companion object {
         private const val TAG = "WatchdogService"
         private const val CHANNEL_ID = "wscanplus_watchdog"
         private const val NOTIFICATION_ID = 1
+        private const val KISMET_SEND_INTERVAL_MS = 10_000L
     }
 }

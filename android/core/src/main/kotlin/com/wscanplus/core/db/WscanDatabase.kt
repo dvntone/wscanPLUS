@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.wscanplus.core.db.dao.BssidFingerprintDao
 import com.wscanplus.core.db.dao.CtiCacheDao
 import com.wscanplus.core.db.dao.ScanResultDao
@@ -24,7 +26,7 @@ import com.wscanplus.core.db.entity.ThreatSignalEntity
         ThreatSignalEntity::class,
         CtiCacheEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -58,7 +60,21 @@ abstract class WscanDatabase : RoomDatabase() {
                     context.applicationContext,
                     WscanDatabase::class.java,
                     "wscan.db",
-                ).fallbackToDestructiveMigration(dropAllTables = true)
+                ).addMigrations(MIGRATION_1_2)
                 .build()
+
+        private val MIGRATION_1_2 =
+            object : Migration(1, 2) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE scan_results ADD COLUMN latitude REAL")
+                    db.execSQL("ALTER TABLE scan_results ADD COLUMN longitude REAL")
+                    db.execSQL("ALTER TABLE scan_results ADD COLUMN accuracyMeters REAL")
+                    db.execSQL("ALTER TABLE scan_results ADD COLUMN altitudeMeters REAL")
+                    db.execSQL("ALTER TABLE scan_results ADD COLUMN speedKph REAL")
+                    db.execSQL("ALTER TABLE scan_results ADD COLUMN locationTimestamp INTEGER")
+                    db.execSQL("ALTER TABLE scan_results ADD COLUMN locationProvider TEXT")
+                    db.execSQL("ALTER TABLE scan_results ADD COLUMN isMockLocation INTEGER")
+                }
+            }
     }
 }
