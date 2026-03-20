@@ -1,5 +1,18 @@
 # Known Issues
 
+## Phase 2: Local Threat Intelligence — COMPLETE (2026-03-20)
+
+All 9 tasks merged (PRs #96–#117). 7 WiFi threat heuristics, HeuristicEngine, PolicyGate, Room database (5 entities, 5 DAOs), OUI vendor lookup, and app-side logging are live.
+
+### Known items deferred to Phase 3
+- `knownProfiles` and `baselineNetworkCount` not populated — needs scan history accumulation
+- OUI lookup wired as `null` in BssidFingerprintHeuristic — needs OuiAssetLoader integration in WatchdogService
+- `falsePositiveBrakes` stub in PolicyGate — needs CTI data
+- No DAO instrumentation tests — needs Android emulator
+- `signalLevel` → `rssiDbm` field rename in WifiScanResult (cosmetic)
+
+---
+
 ## 2026-03-17: StandardScanner Copilot review fixes — resolved PR #76
 
 **Issues identified and resolved across PR #75 → #76:**
