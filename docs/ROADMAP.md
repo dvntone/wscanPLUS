@@ -32,27 +32,42 @@ PRs: #62-#77 (scanner chain), #84 (ktlint)
 
 > **Scanner chain:** USB > Standard. Root = dev opt-in stub only. Nexmon removed (Broadcom-only). Shizuku removed (zero scanning capability).
 
-## Phase 2 — Local Threat Intelligence (Android)
+## Phase 2 — Local Threat Intelligence (Android) ✅ Complete baseline
 
-On-device heuristics engine — no API calls, no privacy concerns, runs every scan.
+On-device heuristics engine is now live on Android and runs without third-party API calls.
 
-- [ ] ThreatSignal + ThreatSource data model (shape locked in SESSION_STATE)
-- [ ] Room database for scan history + BSSID fingerprinting (first-seen/last-seen)
-- [ ] OUI database — bundle IEEE `oui.csv` for vendor identification
-- [ ] Heuristic engine:
-  1. WEP/Open network detection (parse `capabilities` string)
-  2. Evil twin (duplicate SSID, different BSSID + OUI vendor mismatch)
-  3. Encryption downgrade (known WPA3/WPA2 now broadcasting Open/WEP)
-  4. Karma attack (multiple SSIDs sharing single BSSID or same channel+RSSI)
-  5. SSID flooding (abnormally high network count vs. stored baseline)
-  6. RSSI delta anomaly (signal > -30dBm in residential = proximity alert)
-  7. BSSID fingerprinting (track attacker hardware across SSID rotations)
-- [ ] Policy gate — score-based escalation thresholds
-- [ ] False-positive brakes — known corp ASN + clean signals = suppress
-- [ ] Unit tests for each heuristic (pure logic, no Android deps)
-- [ ] Wire into WatchdogService
+- [x] ThreatSignal + ThreatSource-oriented heuristic pipeline shape locked
+- [x] Room database baseline added for scan history accumulation
+- [x] OUI asset support scaffolded for vendor identification
+- [x] Heuristic engine:
+  1. WEP/Open network detection
+  2. Evil twin detection
+  3. Encryption downgrade detection
+  4. Karma-style multi-SSID / single-BSSID detection
+  5. SSID flooding detection
+  6. RSSI anomaly detection
+  7. BSSID fingerprinting
+- [x] Policy gate wired into the watchdog path
+- [x] App-side logging added for adb/runtime verification
+- [x] Device validation completed across Revvl Tab 2, moto g play - 2024, and Pixel 10 Pro XL for the current permission/service model
 
-~8-10 PRs
+Delivered through PRs `#96-#117`, `#127`, and follow-on device-validation/docs work on 2026-03-20.
+
+### Phase 2 follow-on items deferred beyond the baseline
+
+These are real remaining tasks, but they are no longer reasons to treat Phase 2 as mostly incomplete:
+
+- [ ] Scan history accumulation to populate `knownProfiles` and network baselines
+- [ ] OuiAssetLoader integration in `WatchdogService` so BSSID vendor lookup is no longer wired as `null`
+- [ ] False-positive brakes backed by real CTI/context instead of stub logic
+- [ ] DAO instrumentation tests using an Android emulator path
+- [ ] Additional pure-logic unit tests around heuristic edge cases
+
+### Locked permission stance from device validation
+
+- `ACCESS_FINE_LOCATION` is the required scan-capable path on current Android targets.
+- `ACCESS_COARSE_LOCATION` remains supported only as degraded onboarding / limited mode, not normal scan-capable operation.
+- `ACCESS_BACKGROUND_LOCATION` is required for the intended field / long-running detection mode because foreground-only access is not sufficient for reliable background and keyguard continuity.
 
 ## Phase 3 — Privacy + CTI Integration (Android)
 
@@ -123,6 +138,15 @@ Companion app, not a network monitor. Revisit only if product direction changes.
 - `WRITE_SECURE_SETTINGS` — disable scan throttling, force Private DNS
 - `DUMP` — `dumpsys wifi` for roaming history, RSSI polling
 - Not Play Store compatible — F-Droid/sideload distribution only
+
+### Pixel / Advanced Protection First-Trust Onboarding
+
+- Current evidence covers an already-trusted host only
+- Still needs a dedicated validation pass for:
+  - first host authorization
+  - install/update behavior before trust is established
+  - operator guidance around trusted hosts and USB debugging prompts
+- Important for the later desktop companion onboarding flow, but not a blocker for the current Android scanner architecture
 
 ### On-Device ML (LiteRT / Offline LLM)
 
