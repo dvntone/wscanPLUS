@@ -92,6 +92,54 @@ wscanplus/
 
 ---
 
+## 2026-03-20 Handoff Snapshot
+
+This section is the fast re-entry point for the next Claude/Copilot session.
+
+### Remote repo state
+
+- `main` is current and there are **no open PRs** in `dvntone/wscanplus`
+- `KNOWN_ISSUES.md` records the Phase 2 completion snapshot added on 2026-03-20
+- Issue `#116` (app-side logging) was closed after merge
+- The only open tracked work at repo level is:
+  - `#9` — Google Maps threat heatmap + scan history map
+  - `#10` — Kismet remote GPS endpoint
+
+### Verification status
+
+- Latest local Android verification completed successfully on 2026-03-20:
+  - `./gradlew :core:test`
+  - `./gradlew :core:ktlintCheck :app:ktlintCheck`
+- `.env` / `local.properties` remain untracked
+
+### Cross-repo dependency
+
+- Companion desktop repo `dvntone/wscanplus_desktop` was audited and hardened on 2026-03-20
+- Result: no open PRs, no open issues, CI includes `npm test` + `npm run lint`, and `npm audit` is clean after `electron-builder` upgrade
+- Treat the desktop repo as aligned with current Android handoff assumptions
+
+### Local workspace caution
+
+- The local checkout may contain **unrelated, intentionally uncommitted files** that are not part of repo truth:
+  - `.vscode/extensions.json`
+  - `docs/REFERENCES2.md`
+  - `docs/REFERENCES3.md`
+  - `docs/codex_findings_gaps/`
+- Do not stage or revert those files blindly in future sessions
+
+### Recommended next work
+
+1. Issue `#10` — wire Android GPS output into the Kismet remote GPS endpoint
+2. Issue `#9` — add Google Maps threat heatmap and GPS-tagged scan history map
+3. Finish Phase 1 polish items still deferred in this repo:
+   - app icon
+   - `dataExtractionRules`
+   - WatchdogService Android 15 six-hour restart hardening
+   - settings deep link refinement
+   - first additional unit tests
+
+---
+
 ## Phase 0 — Complete ✅
 
 All PRs merged: #40, #43, #45, #47, #49, #51, #53, #55, #57
