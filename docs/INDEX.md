@@ -4,8 +4,18 @@
 - docs/SESSION_STATE.md — architecture decisions, locked choices, current phase + next steps
 - [docs/SESSION_STATE.md#2026-03-20-handoff-snapshot](docs/SESSION_STATE.md#2026-03-20-handoff-snapshot) — fastest re-entry point for the next AI session
 
+## Device Testing
+- docs/testing/README.md — testing layout, rules, and per-device organization
+- docs/testing/shared/38_operational_checklist.md — repeatable adb/device validation checklist
+- docs/testing/devices/motorola-g4-play-2024/README.md — archived prior-device testing context
+- docs/testing/devices/revvl-tab-2/README.md — current Android 15 device prep and test entry point
+
 ## Roadmap
 - docs/ROADMAP.md — phases and priorities
+
+## Research
+- docs/research/README.md — tracked research/doc standards and where local-only backlog belongs
+- docs/research/verified_sources.md — curated verified external sources
 
 ## Tooling / Setup
 - docs/DEPENDENCIES.md — required tools + versions + pinning policy + verification commands

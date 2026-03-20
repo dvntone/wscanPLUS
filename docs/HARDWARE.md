@@ -20,10 +20,10 @@ This document describes the hardware available for development and testing of ws
 
 | Device | Role |
 |--------|------|
-| **OnePlus 10T** | Primary Android app dev + test device |
+| **OnePlus 10T** | Android phone available for development, not the archived device-evidence baseline |
 | **Pixel 10 Pro XL** | High-end test target, latest Android |
-| **Motorola G4 Play 2024** | Low-end test target, budget Android |
-| **Revvl Tab 2** | Tablet UI testing |
+| **Motorola G4 Play 2024** | Previous verified ADB/device-testing baseline |
+| **Revvl Tab 2** | Current Android 15 active test target |
 
 ---
 

@@ -118,14 +118,22 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 - Result: no open PRs, no open issues, CI includes `npm test` + `npm run lint`, and `npm audit` is clean after `electron-builder` upgrade
 - Treat the desktop repo as aligned with current Android handoff assumptions
 
+### Device-testing docs standard
+
+- Device-testing material is now split by purpose:
+  - `docs/testing/shared/` for repeatable procedures
+  - `docs/testing/devices/<device>/` for device-specific summaries
+  - `docs/research/` for durable non-device research notes
+- Raw captures and scratch reference dumps belong under git-ignored local paths, not top-level `docs/`
+- Current active Android target is `Revvl Tab 2` (`FMTO5TSKOFFMPZZL`, Android 15)
+- Previous archived device-testing baseline is `moto g play - 2024`
+- First Revvl baseline result is documented in `docs/testing/devices/revvl-tab-2/2026-03-20-baseline-smoke-test.md`
+- Runtime discrepancy from that baseline is tracked in issue `#122` (missing visible app-side adb logs on Revvl Android 15)
+
 ### Local workspace caution
 
-- The local checkout may contain **unrelated, intentionally uncommitted files** that are not part of repo truth:
-  - `.vscode/extensions.json`
-  - `docs/REFERENCES2.md`
-  - `docs/REFERENCES3.md`
-  - `docs/codex_findings_gaps/`
-- Do not stage or revert those files blindly in future sessions
+- The local checkout may still contain intentional local-only files such as `.vscode/extensions.json`
+- Do not stage or revert local editor settings blindly in future sessions
 
 ### Recommended next work
 
