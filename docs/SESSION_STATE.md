@@ -178,7 +178,7 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 
 ### Recommended next work
 
-1. Issue `#9` — add Google Maps threat heatmap and GPS-tagged scan history map on top of the stored GPS fields from merged issue `#10`
+1. Issue `#9` — add Google Maps threat heatmap and GPS-tagged scan history map on top of the stored GPS fields implemented in PR `#148` (which closed issue `#10`)
 2. Resolve the remaining Android runtime issues already tracked:
    - `#125` re-test secure-lockscreen / stronger background cases on Revvl Android 15, because non-secure HOME and screen-off did not reproduce the earlier failure on current `main`
    - `#124` align issue/docs state with current behavior: coarse-only is now blocked before service startup on current `main`
