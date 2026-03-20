@@ -147,7 +147,7 @@ This section is the fast re-entry point for the next Claude/Copilot session.
   - fix validation in progress on issue `#126`: `ACCESS_BACKGROUND_LOCATION` + `foregroundServiceType="location|dataSync"`
   - moto g play - 2024 / Android 14 now regains locked-screen scan access with the current fix when device location mode is enabled
   - Revvl Tab 2 / Android 15 no longer emits the prior app-UID location-permission violation under keyguard
-  - Pixel 10 Pro XL beta-track baseline: trusted-host adb sideload succeeded with Advanced Protection still enabled, including a repeat install with the lockscreen showing
+  - Pixel 10 Pro XL beta-track baseline: trusted-host `adb install -r` (install/update) succeeded with Advanced Protection still enabled, including a repeat install with the lockscreen showing
   - next validation target should be the full shared matrix on Pixel 10 Pro XL under its current beta / Advanced Protection posture
 
 ### Local workspace caution

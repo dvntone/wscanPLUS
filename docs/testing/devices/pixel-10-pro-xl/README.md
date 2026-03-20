@@ -22,7 +22,7 @@ This device is useful because it combines:
 
 - Developer options enabled
 - Wi-Fi scan throttling disabled
-- device-wide location mode observed as `0` at first connection and must be explicitly checked before drawing scan conclusions
+- device-wide location mode observed as `0` via `adb shell settings get secure location_mode` (`0` = location off; `1` = device only; `2` = Wi-Fi/cell; `3` = high accuracy) at first connection and must be explicitly re-checked before drawing scan conclusions
 
 ## Current adb / Advanced Protection baseline
 
@@ -34,7 +34,7 @@ Observed on 2026-03-20:
 
 Interpretation:
 
-- For the current trusted-host setup, Advanced Protection does not appear to require disabling before adb sideload of the test app
+- For the current trusted-host setup, Advanced Protection does not appear to require disabling before `adb install -r` (install/update) of the test app
 - future testing should still distinguish:
   - trusted already-authorized host vs new host
   - unlocked vs locked device state
