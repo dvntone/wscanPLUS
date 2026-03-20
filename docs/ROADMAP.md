@@ -12,9 +12,9 @@
 
 PRs: #40, #43, #45, #47, #49, #51, #53, #55, #57
 
-## Phase 1 — Dev Tooling + Polish — In Progress
+## Phase 1 — Dev Tooling + Polish ✅ Complete
 
-Scanner chain + Android scaffold complete. Now: quality tooling + remaining polish.
+Scanner chain + Android scaffold delivered, along with quality tooling and final polish.
 
 - [x] WatchdogService + scanner chain (USB > Standard; Root dev-opt-in stub)
 - [x] AndroidManifest permissions (full set for API 24-36)
@@ -23,12 +23,12 @@ Scanner chain + Android scaffold complete. Now: quality tooling + remaining poli
 - [x] StandardScanner full implementation (API 24-29 + API 30+)
 - [x] Wire scanner results into WatchdogService
 - [x] ktlint 14.2.0 CI (`:core` + `:app`)
-- [ ] App icon + `android:dataExtractionRules`
-- [ ] WatchdogService 6-hour restart (Android 15+ dataSync limit)
-- [ ] Settings deep link on permission denial
-- [ ] First unit tests for `:core` module
+- [x] App icon + `android:dataExtractionRules`
+- [x] WatchdogService 6-hour restart handling (Android 15+ dataSync limit)
+- [x] Settings deep link on permission denial
+- [x] `:core` unit test baseline
 
-PRs: #62-#77 (scanner chain), #84 (ktlint)
+PRs: #62-#77 (scanner chain), #84 (ktlint), #135, #137
 
 > **Scanner chain:** USB > Standard. Root = dev opt-in stub only. Nexmon removed (Broadcom-only). Shizuku removed (zero scanning capability).
 
