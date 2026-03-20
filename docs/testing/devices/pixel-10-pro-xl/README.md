@@ -42,6 +42,11 @@ Interpretation:
 
 ## Next validation
 
-- run `shared/49_background_keyguard_scan_matrix.md`
-- verify whether app-side log visibility on Pixel is closer to Motorola or Revvl behavior
-- evaluate whether Advanced Protection changes any install/update or runtime permission prompts compared with prior devices
+- Full matrix result is now documented in `2026-03-20-full-adb-matrix.md`.
+- Current conclusions:
+  - full-permission foreground, true background, secure keyguard, and post-unlock recovery all pass on the current Pixel setup
+  - coarse-only still behaves as degraded/incomplete rather than fully scan-capable
+  - `location_mode` must still be checked before drawing scan conclusions
+- Post-session state after the full matrix:
+  - device location returned to off
+  - test app removed from the device

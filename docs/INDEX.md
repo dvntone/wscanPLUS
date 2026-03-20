@@ -7,8 +7,11 @@
 ## Device Testing
 - docs/testing/README.md — testing layout, rules, and per-device organization
 - docs/testing/shared/38_operational_checklist.md — repeatable adb/device validation checklist
+- docs/testing/shared/50_desktop_adb_handoff.md — host-side adb commands and state checks for future desktop integration
 - docs/testing/devices/motorola-g4-play-2024/README.md — archived prior-device testing context
 - docs/testing/devices/revvl-tab-2/README.md — current Android 15 device prep and test entry point
+- docs/testing/devices/pixel-10-pro-xl/README.md — strict-environment Pixel target and install baseline
+- docs/testing/devices/pixel-10-pro-xl/2026-03-20-full-adb-matrix.md — full Pixel permission/background/keyguard matrix result
 
 ## Roadmap
 - docs/ROADMAP.md — phases and priorities
