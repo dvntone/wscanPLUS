@@ -16,6 +16,20 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.wscanplus.core.scanner.ScannerChain
+import com.wscanplus.core.scanner.WifiScanResult
+import com.wscanplus.core.scanner.toScanInput
+import com.wscanplus.core.threat.BssidFingerprintHeuristic
+import com.wscanplus.core.threat.EncryptionDowngradeHeuristic
+import com.wscanplus.core.threat.EnvironmentType
+import com.wscanplus.core.threat.EvilTwinHeuristic
+import com.wscanplus.core.threat.HeuristicEngine
+import com.wscanplus.core.threat.KarmaHeuristic
+import com.wscanplus.core.threat.PolicyGate
+import com.wscanplus.core.threat.RssiAnomalyHeuristic
+import com.wscanplus.core.threat.ScanContext
+import com.wscanplus.core.threat.ScanInput
+import com.wscanplus.core.threat.SsidFloodingHeuristic
+import com.wscanplus.core.threat.WepOpenHeuristic
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -45,6 +59,19 @@ class WatchdogService : Service() {
     private var startTimeMillis: Long = 0L
     private val handler = Handler(Looper.getMainLooper())
     private val restartRunnable = Runnable { performScheduledRestart() }
+    private val engine =
+        HeuristicEngine(
+            listOf(
+                WepOpenHeuristic(),
+                EvilTwinHeuristic(),
+                EncryptionDowngradeHeuristic(),
+                KarmaHeuristic(),
+                SsidFloodingHeuristic(),
+                RssiAnomalyHeuristic(),
+                BssidFingerprintHeuristic(ouiLookup = null),
+            ),
+        )
+    private val policyGate = PolicyGate()
 
     override fun onCreate() {
         super.onCreate()
@@ -76,8 +103,25 @@ class WatchdogService : Service() {
                 }
             scannerExecutor = executor
             scannerChain =
-                ScannerChain(applicationContext) { _ ->
-                    // Phase 1 stub — TODO (Phase 2): forward results to data layer / ADB channel.
+                ScannerChain(applicationContext) { results: List<WifiScanResult> ->
+                    val scanInputs: List<ScanInput> =
+                        results.map { result: WifiScanResult ->
+                            result.toScanInput()
+                        }
+                    val context =
+                        ScanContext(
+                            currentResults = scanInputs,
+                            knownProfiles = emptyMap(),
+                            baselineNetworkCount = null,
+                            baselineStdDev = null,
+                            environmentType = EnvironmentType.RESIDENTIAL,
+                        )
+                    val rawSignals = engine.analyze(context)
+                    val filtered = policyGate.filter(rawSignals)
+                    Log.d(
+                        "WatchdogService",
+                        "Threats: ${filtered.size} of ${rawSignals.size} signals passed policy gate",
+                    )
                 }
             startFuture = executor.submit { startChain(scannerChain!!) }
             scheduleDataSyncRestart()

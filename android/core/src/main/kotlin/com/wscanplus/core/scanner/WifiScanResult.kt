@@ -1,5 +1,7 @@
 package com.wscanplus.core.scanner
 
+import com.wscanplus.core.threat.ScanInput
+
 /**
  * Phase 1 Wi-Fi scan result model.
  *
@@ -25,6 +27,18 @@ data class WifiScanResult(
     val centerFreq0: Int,
     val centerFreq1: Int,
 )
+
+fun WifiScanResult.toScanInput(): ScanInput =
+    ScanInput(
+        bssid = bssid,
+        ssid = ssid,
+        isHidden = ssid.isBlank(),
+        capabilities = capabilities,
+        rssiDbm = signalLevel,
+        frequencyMhz = frequencyMhz,
+        channelWidth = channelWidth,
+        timestamp = timestamp,
+    )
 
 fun interface ScanResultsListener {
     fun onResults(results: List<WifiScanResult>)

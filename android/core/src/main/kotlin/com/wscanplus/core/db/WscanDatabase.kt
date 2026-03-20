@@ -58,7 +58,7 @@ abstract class WscanDatabase : RoomDatabase() {
                     context.applicationContext,
                     WscanDatabase::class.java,
                     "wscan.db",
-                ).fallbackToDestructiveMigration()
+                ).fallbackToDestructiveMigration(dropAllTables = true)
                 .build()
     }
 }
