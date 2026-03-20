@@ -99,7 +99,7 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 ### Remote repo state
 
 - `main` is current and there are **no open PRs** in `dvntone/wscanplus`
-- The Phase 2 completion note is now recorded in `KNOWN_ISSUES.md`
+- `KNOWN_ISSUES.md` records the Phase 2 completion snapshot added on 2026-03-20
 - Issue `#116` (app-side logging) was closed after merge
 - The only open tracked work at repo level is:
   - `#9` — Google Maps threat heatmap + scan history map
