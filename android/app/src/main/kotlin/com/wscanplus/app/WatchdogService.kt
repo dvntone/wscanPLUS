@@ -9,14 +9,11 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import androidx.core.content.ContextCompat
 import com.wscanplus.core.scanner.ScannerChain
 import com.wscanplus.core.scanner.WifiScanResult
 import com.wscanplus.core.scanner.toScanInput
@@ -45,9 +42,10 @@ import java.util.concurrent.Future
  *
  * Serial number is the primary device key in all data structures.
  *
- * Android 15 constraint: the retained dataSync role still has a 6-hour max runtime.
- * On API 35+, this service schedules a clean restart at 5h 50min to reset the timer.
- * On older APIs, no restart is needed (no runtime limit).
+ * Android 15 constraint: the retained dataSync role still has a 6-hour runtime budget in a
+ * rolling 24-hour window. On API 35+, the service must handle onTimeout() and stop cleanly.
+ * A pre-timeout restart does not reset that budget unless the user brings the app foreground,
+ * so the correct hardening behavior is graceful shutdown rather than a restart loop.
  *
  * Threading rule: scanner chain and ServerSocket operations MUST run on background
  * threads. Never call scanners or socket operations on the main thread.
@@ -59,8 +57,6 @@ class WatchdogService : Service() {
     private var scannerExecutor: ExecutorService? = null
     private var startFuture: Future<*>? = null
     private var startTimeMillis: Long = 0L
-    private val handler = Handler(Looper.getMainLooper())
-    private val restartRunnable = Runnable { performScheduledRestart() }
     private val engine =
         HeuristicEngine(
             listOf(
@@ -133,7 +129,6 @@ class WatchdogService : Service() {
                     )
                 }
             startFuture = executor.submit { startChain(scannerChain!!) }
-            scheduleDataSyncRestart()
         }
         return START_STICKY
     }
@@ -145,7 +140,6 @@ class WatchdogService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "Service destroyed")
-        handler.removeCallbacks(restartRunnable)
         // Cancel any queued start task before submitting stop, so a pending start cannot
         // race with or follow the stop on the executor queue.
         startFuture?.cancel(true)
@@ -166,25 +160,20 @@ class WatchdogService : Service() {
     private fun startChain(chain: ScannerChain) = chain.start()
 
     /**
-     * Android 15+ (API 35): dataSync foreground services have a 6-hour max runtime.
-     * Schedule a clean restart 10 minutes before the limit to avoid being killed.
-     * On older APIs, this is a no-op.
+     * Android 15+ (API 35): dataSync foreground services receive onTimeout() once their
+     * rolling 24-hour budget is exhausted. Stop within the grace window so the system
+     * does not terminate the process with a timeout failure.
      */
-    private fun scheduleDataSyncRestart() {
-        if (Build.VERSION.SDK_INT < ANDROID_15_API) return
-        handler.postDelayed(restartRunnable, RESTART_DELAY_MS)
-        Log.d(TAG, "Scheduled dataSync restart in ${RESTART_DELAY_MS / 1000 / 60} minutes")
-    }
-
-    /**
-     * Performs a clean restart: stops the scanner chain, stops self, then starts a new
-     * service instance. The new instance gets a fresh 6-hour runtime window.
-     */
-    private fun performScheduledRestart() {
-        Log.d(TAG, "Performing scheduled dataSync restart after ${uptimeMinutes()} minutes")
-        val restartIntent = Intent(this, WatchdogService::class.java)
+    override fun onTimeout(
+        startId: Int,
+        fgsType: Int,
+    ) {
+        Log.w(
+            TAG,
+            "Foreground service timeout after ${uptimeMinutes()} minutes " +
+                "(startId=$startId, fgsType=0x${fgsType.toString(16)}), stopping service",
+        )
         stopSelf()
-        ContextCompat.startForegroundService(this, restartIntent)
     }
 
     private fun uptimeMinutes(): Long {
@@ -219,9 +208,5 @@ class WatchdogService : Service() {
         private const val TAG = "WatchdogService"
         private const val CHANNEL_ID = "wscanplus_watchdog"
         private const val NOTIFICATION_ID = 1
-        private const val ANDROID_15_API = 35
-
-        // 5 hours 50 minutes in milliseconds — restart 10 min before 6h limit
-        private const val RESTART_DELAY_MS = 5L * 60 * 60 * 1000 + 50 * 60 * 1000
     }
 }
