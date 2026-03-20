@@ -111,6 +111,9 @@ This section is the fast re-entry point for the next Claude/Copilot session.
   - `./gradlew :core:test`
   - `./gradlew :core:ktlintCheck :app:ktlintCheck`
 - `.env` / `local.properties` remain untracked
+- Android app versioning has now moved off the scaffold placeholder:
+  - `versionCode = 2`
+  - `versionName = "0.1.0"`
 
 ### Cross-repo dependency
 
@@ -127,7 +130,9 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 - Raw captures and scratch reference dumps belong under git-ignored local paths, not top-level `docs/`
 - Current active Android target is `Revvl Tab 2` (Android 15)
 - Previous archived device-testing baseline is `moto g play - 2024`
+- Latest strict-environment target is `Pixel 10 Pro XL` on the current beta track
 - First Revvl baseline result is documented in `docs/testing/devices/revvl-tab-2/2026-03-20-baseline-smoke-test.md`
+- Pixel beta / Advanced Protection install baseline is documented in `docs/testing/devices/pixel-10-pro-xl/README.md`
 - Runtime discrepancy from that baseline is tracked in issue `#122` (missing visible app-side adb logs on Revvl Android 15)
 - Android 15 permission strategy note is documented in `docs/research/android_wifi_location_strategy.md`
 - Current technical stance:
@@ -142,7 +147,8 @@ This section is the fast re-entry point for the next Claude/Copilot session.
   - fix validation in progress on issue `#126`: `ACCESS_BACKGROUND_LOCATION` + `foregroundServiceType="location|dataSync"`
   - moto g play - 2024 / Android 14 now regains locked-screen scan access with the current fix when device location mode is enabled
   - Revvl Tab 2 / Android 15 no longer emits the prior app-UID location-permission violation under keyguard
-  - next validation target should be Pixel 10 Pro XL / Android 17 under advanced security
+  - Pixel 10 Pro XL beta-track baseline: trusted-host `adb install -r` (install/update) succeeded with Advanced Protection still enabled, including a repeat install with the lockscreen showing
+  - next validation target should be the full shared matrix on Pixel 10 Pro XL under its current beta / Advanced Protection posture
 
 ### Local workspace caution
 
