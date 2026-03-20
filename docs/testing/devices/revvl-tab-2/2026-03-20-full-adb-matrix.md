@@ -220,13 +220,11 @@ Observed behavior with full-fine permissions:
 Observed behavior after `HOME` and after screen-off in the non-secure-lockscreen scenario:
 
 - `WatchdogService` remained foreground
-- the old Revvl signature
+- the earlier Revvl signature below was not reproduced in that non-secure pass:
 
 ```text
 WifiService: Permission violation - getScanResults not allowed ... UID has no location permission
 ```
-
-was not reproduced in that non-secure pass
 
 Observed behavior in coarse-only on current `main`:
 

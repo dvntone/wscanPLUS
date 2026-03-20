@@ -41,7 +41,7 @@ What:
 
 Where:
 
-- [StandardScanner.kt](/Users/Devia/Documents/GitHub/wscanplus/android/core/src/main/kotlin/com/wscanplus/core/scanner/StandardScanner.kt)
+- [StandardScanner.kt](../../../android/core/src/main/kotlin/com/wscanplus/core/scanner/StandardScanner.kt)
 - `startWithBroadcastReceiver()` registers `SCAN_RESULTS_AVAILABLE_ACTION`
 - `wifiManager.startScan()` is guarded behind `Build.VERSION.SDK_INT < Build.VERSION_CODES.P`
 
@@ -53,8 +53,8 @@ Why this matters:
 
 Repo-doc status:
 
-- Partially reflected in [docs/SESSION_STATE.md](/Users/Devia/Documents/GitHub/wscanplus/docs/SESSION_STATE.md): the current project memory explicitly says `startScan()` is only used on API `< 28`.
-- Not recorded as a known limitation or product decision in [KNOWN_ISSUES.md](/Users/Devia/Documents/GitHub/wscanplus/KNOWN_ISSUES.md).
+- Partially reflected in [docs/SESSION_STATE.md](../../SESSION_STATE.md): the current project memory explicitly says `startScan()` is only used on API `< 28`.
+- Not recorded as a known limitation or product decision in [KNOWN_ISSUES.md](../../../KNOWN_ISSUES.md).
 
 Direct evidence:
 
@@ -90,7 +90,7 @@ What:
 
 Where:
 
-- [gradlew.bat](/Users/Devia/Documents/GitHub/wscanplus/android/gradlew.bat)
+- [gradlew.bat](../../../android/gradlew.bat)
 
 Why this matters:
 
@@ -100,7 +100,7 @@ Why this matters:
 
 Repo-doc status:
 
-- Not documented in [KNOWN_ISSUES.md](/Users/Devia/Documents/GitHub/wscanplus/KNOWN_ISSUES.md).
+- Not documented in [KNOWN_ISSUES.md](../../../KNOWN_ISSUES.md).
 - Not reflected in the current handoff, which notes successful wrapper-based verification in a prior environment.
 
 Assessment:
@@ -135,7 +135,7 @@ What:
 
 Where:
 
-- [StandardScanner.kt](/Users/Devia/Documents/GitHub/wscanplus/android/core/src/main/kotlin/com/wscanplus/core/scanner/StandardScanner.kt)
+- [StandardScanner.kt](../../../android/core/src/main/kotlin/com/wscanplus/core/scanner/StandardScanner.kt)
 
 Why this matters:
 
@@ -145,7 +145,7 @@ Why this matters:
 Repo-doc status:
 
 - Not listed as a known issue.
-- Directly conflicts with [docs/SECURITY.md](/Users/Devia/Documents/GitHub/wscanplus/docs/SECURITY.md).
+- Directly conflicts with [docs/SECURITY.md](../../SECURITY.md).
 
 Assessment:
 
@@ -169,7 +169,7 @@ Priority:
 
 Electron-specific hardening findings for the companion desktop repo are recorded separately in:
 
-- [docs/REVIEW_TRIAGE_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus_desktop/docs/REVIEW_TRIAGE_2026-03-20.md)
+- `wscanplus_desktop/docs/REVIEW_TRIAGE_2026-03-20.md`
 
 The key desktop item is missing explicit `sandbox: true` plus missing CSP for the current local renderer shell.
 

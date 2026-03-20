@@ -81,7 +81,7 @@ Current code-and-test state on 2026-03-20:
 - `WatchdogService` runs as `foregroundServiceType="location|dataSync"`
 - `MainActivity` now blocks scanner startup without precise location and prompts for background location before starting field mode
 - moto g play - 2024 / Android 14 showed an improved locked-screen result in one validation pass once device location mode was enabled
-- Revvl Tab 2 / Android 15 has not yet been re-tested after those permission/service changes landed, so issues `#124` and `#125` still represent pre-fix evidence rather than current-main validation
+- Revvl Tab 2 / Android 15 has now been re-tested on current `main` for the non-secure foreground/background path, so issues `#124` and `#125` should now be read as narrowed follow-ups rather than untouched pre-fix validation
 - Pixel 10 Pro XL has its own documented matrix, but that result set should not be generalized onto the Revvl path
 
 The current evidence supports keeping background location in scope for wscan+'s discreet / long-running field mode, but not treating it as fully solved across all Android 15 / OEM paths.

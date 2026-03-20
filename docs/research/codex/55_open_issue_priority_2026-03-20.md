@@ -8,7 +8,7 @@ Current open issues at time of writing:
 
 - `#121` docs/session cleanup follow-up
 - `#122` missing visible app-side adb logs on Revvl Android 15
-- `#124` coarse-only launch succeeds but scan retrieval still fails
+- `#124` coarse-only behavior now blocks before service startup on current `main`
 - `#125` backgrounded / keyguard-visible app loses effective `getScanResults()` access
 - `#9` Google Maps threat heatmap + scan history map
 - `#10` Kismet remote GPS endpoint
@@ -58,7 +58,7 @@ Why second:
 
 - The repo already documents that coarse-only is degraded-only, not fully scan-capable.
 - Android’s Wi-Fi scanning docs say Android 10+ `startScan()` requirements differ by target SDK and permission state, while the background-location docs say approximate choice also affects background accuracy.
-- Current main already reflects that stance in code by stopping before scanner startup when precise location is missing. Because the Revvl path has not yet been re-tested after that change, this issue is partly a re-verification and docs/UX alignment task, not just a scanner backend task.
+- Current main already reflects that stance in code by stopping before scanner startup when precise location is missing. The Revvl has now been re-tested on current `main`, so this issue is primarily docs/UX alignment unless another device still reaches an active scanner state without fine location.
 - Product-wise, a normal coarse-only scanner mode would cut against the app's main purpose. At most, it belongs in a later optional degraded-function path with clear user notice.
 - Live Revvl re-test update from this session: with `ACCESS_FINE_LOCATION` absent and `COARSE` + `BACKGROUND` + `NEARBY` granted, current `main` launched `MainActivity` but did not start `WatchdogService`. That means the old “service starts then scan retrieval fails” symptom is no longer the current-main behavior.
 
@@ -86,7 +86,7 @@ Why third:
 - This is important for diagnostics and CI-style field verification, but it is not the primary product behavior.
 - Android’s logcat docs note that multiple buffers exist and not all messages are visible in the default view, so the first step should be verification of the logging path, buffers, tag filtering, and priority levels before changing app code.
 - Current code already logs from `MainActivity`, `WatchdogService`, and `StandardScanner`, so the issue still looks like an observability/runtime problem first.
-- Live Revvl re-test update from this session: even when foreground launch and `WatchdogService` startup succeeded on current `main`, expected app debug tags still did not reliably surface in `adb logcat`. System lifecycle and foreground-service lines were visible, so this remains a real app-observability gap rather than an ADB connectivity failure.
+- Live Revvl re-test update from this session: app debug tags were visible on current `main` once the device was truly unlocked, the app was foregrounded, and tag priority was raised for capture. The remaining gap is a repeatable operator procedure for this OEM path, not proof that ADB cannot see app logs.
 
 Verified source notes:
 

@@ -19,7 +19,7 @@ All 9 tasks merged (PRs #96–#117). 7 WiFi threat heuristics, HeuristicEngine, 
 
 ### Additional review triage recorded on 2026-03-20
 
-- Cross-repo review note added at [docs/research/codex/54_review_triage_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/54_review_triage_2026-03-20.md)
+- Cross-repo review note added at [docs/research/codex/54_review_triage_2026-03-20.md](docs/research/codex/54_review_triage_2026-03-20.md)
 
 ---
 
@@ -68,7 +68,7 @@ All 9 tasks merged (PRs #96–#117). 7 WiFi threat heuristics, HeuristicEngine, 
 - `cmd /c gradlew.bat :core:test` ✅
 - `cmd /c gradlew.bat :core:ktlintCheck :app:ktlintCheck` ✅
 
-**Status:** ✅ RESOLVED in local worktree during triage follow-up and merged as PR #146.
+**Status:** ✅ RESOLVED in local worktree during triage follow-up and later merged via [PR #146](https://github.com/dvntone/wscanplus/pull/146).
 
 ---
 
