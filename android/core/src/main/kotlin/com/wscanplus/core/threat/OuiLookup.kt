@@ -49,7 +49,7 @@ class OuiLookup(
                 .replace(":", "")
                 .replace("-", "")
         if (cleaned.length < 6) return null
-        if (cleaned.any { it !in '0'..'9' && it !in 'A'..'F' }) return null
+        if (cleaned.any { ch: Char -> ch !in '0'..'9' && ch !in 'A'..'F' }) return null
         return cleaned
     }
 }
