@@ -138,7 +138,7 @@ class StandardScanner(
             try {
                 appContext.unregisterReceiver(it)
             } catch (e: IllegalArgumentException) {
-                // Receiver was not registered — log in future when logging is available
+                Log.w(TAG, "Receiver teardown skipped because it was not registered", e)
             }
             receiver = null
         }
@@ -150,7 +150,7 @@ class StandardScanner(
                     fun unregister() = wifiManager.unregisterScanResultsCallback(callback)
                     unregister()
                 } catch (e: Exception) {
-                    // Callback not registered or already unregistered — log in future when logging is available
+                    Log.w(TAG, "Scan callback teardown did not complete cleanly", e)
                 }
             }
         }
