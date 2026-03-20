@@ -36,12 +36,12 @@ Connectivity State (dumpsys connectivity)
 - Active default network: Wi-Fi (network id 119)
 - Transport: WIFI
 - NetworkCapabilities: NOT_METERED, INTERNET, NOT_RESTRICTED, TRUSTED, NOT_VPN, VALIDATED, NOT_ROAMING
-- Link info: SSID "Cox Mobile", BSSID e4:bf:fa:63:34:d8, RSSI -52, frequency 5785 MHz
+- Link info: SSID "<redacted-ssid>", BSSID <redacted-bssid>, RSSI -52, frequency 5785 MHz
 
 ## What Produced Data
 
 - Wi-Fi scan stats and scheduling come from dumpsys wifi
-- Network transport, capabilities, and SSID/BSSID come from dumpsys connectivity
+- Network transport, capabilities, and redacted SSID/BSSID fields come from dumpsys connectivity
 
 ## What Requires More Research (Non-Play-Store OK)
 
@@ -52,5 +52,5 @@ Connectivity State (dumpsys connectivity)
 
 - All commands were read-only
 - Output reflects current device state only
-- This document assumes non-Play-Store policy per docs/codex_findings_gaps/10_non_playstore_policy.md
+- This document assumes non-Play-Store policy per docs/research/codex/10_non_playstore_policy.md
 

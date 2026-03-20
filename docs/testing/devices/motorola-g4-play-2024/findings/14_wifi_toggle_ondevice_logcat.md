@@ -10,11 +10,11 @@ Scope: On-device logcat capture while Wi-Fi was toggled via adb
 - adb shell svc wifi disable
 - adb shell svc wifi enable
 - adb shell pkill logcat
-- adb pull /sdcard/wscan_toggle_logcat.txt C:\Users\Devia\Documents\GitHub\wscanplus\docs\codex_findings_gaps\wscan_toggle_logcat.txt
+- adb pull /sdcard/wscan_toggle_logcat.txt docs\testing\devices\motorola-g4-play-2024\artifacts\wscan_toggle_logcat.txt
 
 ## File Location
 
-- C:\Users\Devia\Documents\GitHub\wscanplus\docs\codex_findings_gaps\wscan_toggle_logcat.txt
+- docs\testing\devices\motorola-g4-play-2024\artifacts\wscan_toggle_logcat.txt
 
 ## Observed In File
 
