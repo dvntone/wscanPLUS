@@ -41,6 +41,8 @@ Practical interpretation:
 - coarse-only is useful to avoid a dead-end permission flow
 - coarse-only is not enough to promise normal scanner behavior on targetSdk 36
 - app UX should treat it as a fallback / limited mode, not the default or recommended operating mode
+- because wscan+ is primarily a scan-driven defensive tool, coarse-only should not become the main product path
+- if retained at all in future builds, coarse-only should be an explicitly optional degraded function with operator-facing notice about reduced capability
 
 ### 2. `ACCESS_BACKGROUND_LOCATION` is part of the current long-running collection model
 
@@ -73,16 +75,16 @@ Cross-device confirmation as of 2026-03-20:
 
 This means the behavior was not a single OEM anomaly.
 
-Post-fix validation on 2026-03-20:
+Current code-and-test state on 2026-03-20:
 
-- the manifest now declares `ACCESS_BACKGROUND_LOCATION`
-- `WatchdogService` now runs as `foregroundServiceType="location|dataSync"`
-- moto g play - 2024 / Android 14 regained locked-screen scan access once device location mode was enabled
-- Revvl Tab 2 / Android 15 no longer emits the prior app-UID location-permission violation while backgrounded/keyguard-visible
-- Pixel 10 Pro XL on the current beta track now passes foreground, true background, secure keyguard, and post-unlock recovery with fresh scan callbacks and threat output
-- Pixel coarse-only remains degraded: the app starts and logs the state, but did not produce usable scan-result callbacks during the clean matrix run
+- the manifest declares `ACCESS_BACKGROUND_LOCATION`
+- `WatchdogService` runs as `foregroundServiceType="location|dataSync"`
+- `MainActivity` now blocks scanner startup without precise location and prompts for background location before starting field mode
+- moto g play - 2024 / Android 14 showed an improved locked-screen result in one validation pass once device location mode was enabled
+- Revvl Tab 2 / Android 15 has not yet been re-tested after those permission/service changes landed, so issues `#124` and `#125` still represent pre-fix evidence rather than current-main validation
+- Pixel 10 Pro XL has its own documented matrix, but that result set should not be generalized onto the Revvl path
 
-The current evidence supports keeping background location in scope for wscan+'s discreet / long-running field mode.
+The current evidence supports keeping background location in scope for wscan+'s discreet / long-running field mode, but not treating it as fully solved across all Android 15 / OEM paths.
 
 ### 3. Background location is still not free
 
@@ -116,8 +118,9 @@ Near-term stance for wscan+:
 1. Keep foreground fine-location behavior as the known-good baseline.
 2. Keep coarse-only support documented as degraded and incomplete for scan retrieval.
 3. Treat `ACCESS_BACKGROUND_LOCATION` as required for the explicit field logging / long-running detection mode.
-4. Do not add phone permissions for scanner debugging.
-5. Separate already-trusted-host adb behavior from first-trust onboarding claims on strict-security Pixel devices.
+4. Treat any future coarse-only path as optional degraded mode only, with explicit notice that it is not the core scanner mode.
+5. Do not add phone permissions for scanner debugging.
+6. Separate already-trusted-host adb behavior from first-trust onboarding claims on strict-security Pixel devices.
 
 ## Next validation work
 

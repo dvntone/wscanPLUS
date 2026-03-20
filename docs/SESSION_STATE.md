@@ -99,9 +99,14 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 ### Remote repo state
 
 - `main` is current and there are **no open PRs** in `dvntone/wscanplus`
-- `KNOWN_ISSUES.md` records the Phase 2 completion snapshot added on 2026-03-20
+- `KNOWN_ISSUES.md` records the Phase 2 completion snapshot and triage follow-ups added on 2026-03-20
 - Issue `#116` (app-side logging) was closed after merge
-- The only open tracked work at repo level is:
+- Issues `#143` and `#145` were resolved and closed on 2026-03-20 after PR #144 and PR #146 merged
+- Open tracked work at repo level is now:
+  - `#121` — device-testing docs/session prep cleanup follow-up
+  - `#122` — missing visible app-side adb logs on Revvl Android 15
+  - `#124` — coarse-only launch succeeds but scan retrieval still fails
+  - `#125` — backgrounded / keyguard-visible app loses effective `getScanResults()` access
   - `#9` — Google Maps threat heatmap + scan history map
   - `#10` — Kismet remote GPS endpoint
 
@@ -110,6 +115,9 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 - Latest local Android verification completed successfully on 2026-03-20:
   - `./gradlew :core:test`
   - `./gradlew :core:ktlintCheck :app:ktlintCheck`
+- Additional local Android verification completed successfully on 2026-03-20 during follow-up fixes:
+  - `cmd /c gradlew.bat :core:test`
+  - `cmd /c gradlew.bat :core:ktlintCheck :app:ktlintCheck`
 - `.env` / `local.properties` remain untracked
 - Android app versioning has now moved off the scaffold placeholder:
   - `versionCode = 2`
@@ -137,20 +145,26 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 - Android 15 permission strategy note is documented in `docs/research/android_wifi_location_strategy.md`
 - Current technical stance:
   - `ACCESS_FINE_LOCATION` remains the known-good requirement for scan retrieval on targetSdk 36
-  - coarse-only is degraded-only, not full scan capability
-  - `ACCESS_BACKGROUND_LOCATION` is now the required path for intended long-running field/detection mode
+  - coarse-only is not part of the app's main intended operating mode and must not be treated as normal scan capability
+  - any future coarse-only fallback should be an explicit optional degraded mode with clear user notice, not the default scanner path
+  - `ACCESS_BACKGROUND_LOCATION` is the intended field-mode requirement, but current Android 15/OEM behavior still needs re-verification before treating it as sufficient everywhere
 - Additional Revvl findings now tracked:
   - `#124` - coarse-only launch succeeds but scan retrieval still fails
   - `#125` - backgrounded / keyguard-visible app loses effective `getScanResults()` access while shell scans still work
 - Cross-device validation status:
   - baseline: Revvl Tab 2 / Android 15 and moto g play - 2024 / Android 14 both reproduced the background / keyguard scan-access failure
   - issue `#126` fix is now merged: `ACCESS_BACKGROUND_LOCATION` + `foregroundServiceType="location|dataSync"`
-  - moto g play - 2024 / Android 14 now regains locked-screen scan access with the current fix when device location mode is enabled
-  - Revvl Tab 2 / Android 15 no longer emits the prior app-UID location-permission violation under keyguard
+  - moto g play - 2024 / Android 14 showed improved locked-screen recovery with the current fix when device location mode was enabled, but that result must not be generalized to other OEM paths
+  - Revvl Tab 2 / Android 15 received a non-secure-lockscreen re-test on current `main` during this session:
+    - foreground launch works on build `0.1.0` / `versionCode=2`
+    - `WatchdogService` starts and remains foreground after `HOME`
+    - `WatchdogService` also remained foreground after screen-off in the non-secure-lockscreen scenario
+    - the previous Revvl `getScanResults not allowed ... has no location permission` signature was not reproduced in that non-secure pass
+    - coarse-only re-test on current `main` no longer reaches scanner startup; `MainActivity` blocks before `WatchdogService` when `ACCESS_FINE_LOCATION` is absent
+    - secure-lockscreen behavior on Revvl still needs its own current-main validation
   - Pixel 10 Pro XL beta-track baseline: trusted-host `adb install -r` (install/update) succeeded with Advanced Protection still enabled, including a repeat install with the lockscreen showing
-  - Pixel 10 Pro XL full matrix is now documented in `docs/testing/devices/pixel-10-pro-xl/2026-03-20-full-adb-matrix.md`
-  - Pixel 10 Pro XL now passes foreground, true background, secure keyguard, and post-unlock recovery on the current fix
-  - coarse-only remains degraded/incomplete on the Pixel path and should be treated as an explicit product decision area
+  - Pixel 10 Pro XL full matrix is documented in `docs/testing/devices/pixel-10-pro-xl/2026-03-20-full-adb-matrix.md`, but its results should not be generalized onto Revvl-specific behavior
+  - coarse-only remains degraded/incomplete and should be treated as an explicit product decision area unless re-verified per device path
   - future desktop implementation should reuse the host-side adb checks captured in `docs/testing/shared/50_desktop_adb_handoff.md`
 
 ### Local workspace caution
@@ -162,11 +176,14 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 
 1. Issue `#10` — wire Android GPS output into the Kismet remote GPS endpoint
 2. Issue `#9` — add Google Maps threat heatmap and GPS-tagged scan history map
-3. Turn the remaining permission-model questions into tracked work:
-   - decide whether coarse-only should remain a degraded path or redirect into explicit fine-location escalation in the app UX
-   - design the operator flow so "Allow all the time" is explicit for field mode rather than implied
-   - validate first-trust Pixel / Advanced Protection onboarding separately from already-trusted-host behavior
+3. Resolve the remaining Android runtime issues already tracked:
+   - `#125` re-test secure-lockscreen / stronger background cases on Revvl Android 15, because non-secure HOME and screen-off did not reproduce the earlier failure on current `main`
+   - `#124` align issue/docs state with current behavior: coarse-only is now blocked before service startup on current `main`
+   - `#122` app-side adb log visibility on Revvl Android 15
 4. Carry the documented adb install / permission / state checks into the later desktop companion implementation
+5. Read [docs/research/codex/54_review_triage_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/54_review_triage_2026-03-20.md) before changing scanner behavior, Windows wrapper behavior, or cross-repo hardening assumptions
+6. Read [docs/research/codex/55_open_issue_priority_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/55_open_issue_priority_2026-03-20.md) for the current research-backed priority order and source links
+7. Read [docs/research/codex/56_map_provider_options_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/56_map_provider_options_2026-03-20.md) before proposing any replacement or fallback for the locked Google Maps integration
 
 ---
 
@@ -371,13 +388,14 @@ const val CTI_MISSING_FLAG = "cti_unavailable"
 4. **eslint advisory dep PR** — eslint 9.x → 10.0.3 (no CVE, deferred)
 5. ~~**First unit tests**~~ ✅ `:core` module pure-logic test baseline already present on `main`
 
-### StandardScanner (PR #76 — confirmed pattern)
+### StandardScanner (current main pattern)
 
 - API 30+: `registerScanResultsCallback()` with `Executors.newSingleThreadExecutor()`. Fields assigned after registration; executor shut down on registration failure.
 - API 24–29: `BroadcastReceiver` + `getScanResults()`. Results dispatched via same executor (`executor.execute {}`).
 - Both paths deliver `onResults()` off the main thread — consistent threading.
-- `startScan()` only on API < 28.
+- Legacy API 24–29 path now requests `startScan()` and logs when the request is rejected.
 - `@RequiresPermission`: `ACCESS_WIFI_STATE` + `ACCESS_FINE_LOCATION` + `CHANGE_WIFI_STATE` on both `StandardScanner.start()` and `ScannerChain.start()`.
+- Follow-up triage note: [docs/research/codex/54_review_triage_2026-03-20.md](/Users/Devia/Documents/GitHub/wscanplus/docs/research/codex/54_review_triage_2026-03-20.md) records the review history that led to the March 20 scanner and wrapper fixes.
 
 ---
 
