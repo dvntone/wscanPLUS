@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -34,7 +35,7 @@ class MainActivity : Activity() {
             }
         actionButton =
             Button(this).apply {
-                visibility = Button.GONE
+                visibility = View.GONE
             }
         rootLayout.addView(statusView)
         rootLayout.addView(actionButton)
@@ -121,11 +122,11 @@ class MainActivity : Activity() {
     private var scannerStarted = false
 
     private fun maybeStartWatchdog() {
+        if (scannerStarted) return
         if (requiresBackgroundLocationPrompt()) {
             showBackgroundLocationRequired()
             return
         }
-        if (scannerStarted) return
         startWatchdog()
     }
 
@@ -135,9 +136,8 @@ class MainActivity : Activity() {
             hasPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION).not()
 
     private fun showBackgroundLocationRequired() {
-        scannerStarted = false
         statusView.text =
-            "Background and lock-screen scanning requires 'Allow all the time' location access."
+            "Scanning cannot start until you grant 'Allow all the time' location access in Settings."
         configureActionButton("Open Settings") { openAppSettings() }
     }
 
@@ -147,13 +147,13 @@ class MainActivity : Activity() {
     ) {
         actionButton.text = text
         actionButton.setOnClickListener { onClick() }
-        actionButton.visibility = Button.VISIBLE
+        actionButton.visibility = View.VISIBLE
     }
 
     private fun startWatchdog() {
         scannerStarted = true
         statusView.text = "Starting scanner..."
-        actionButton.visibility = Button.GONE
+        actionButton.visibility = View.GONE
         val intent = Intent(this, WatchdogService::class.java)
         ContextCompat.startForegroundService(this, intent)
     }

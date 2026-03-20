@@ -43,7 +43,10 @@ Practical interpretation:
 
 ### 2. `ACCESS_BACKGROUND_LOCATION` is part of the current long-running collection model
 
-Foreground/manual testing does not require background location.
+Conceptually, a purely foreground/manual test flow could operate without background location,
+but on Android 10+ the current operator flow intentionally blocks scanner startup until
+`ACCESS_BACKGROUND_LOCATION` is granted so the same session can survive background and
+lock-screen transitions.
 
 However, wscan+ is not a casual consumer app. Its role is long-running defensive detection, logging, and field collection. If the intended product behavior is:
 
