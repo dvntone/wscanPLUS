@@ -23,7 +23,7 @@ This document describes the hardware available for development and testing of ws
 |--------|------|
 | **OnePlus 10T** | Android phone available for development, not the archived device-evidence baseline |
 | **Pixel 10 Pro XL** | High-end test target, latest Android |
-| **Motorola G4 Play 2024** | Previous verified ADB/device-testing baseline — ADB over TCP via `adb connect 127.0.0.1:5555` (WSL2 mirrored networking, no usbipd required) |
+| **Motorola G4 Play 2024** | Previous verified ADB/device-testing baseline — ADB over TCP via device LAN IP (e.g. `adb connect <phone-ip>:5555`). On LG Gram with WSL2 mirrored networking, `adb` runs on Windows and WSL2 reaches it via `127.0.0.1` — no `usbipd-win` required. |
 | **Revvl Tab 2** | Current Android 15 active test target |
 
 ---
