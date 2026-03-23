@@ -70,6 +70,18 @@ This document captures the threat model and the product requirements it implies.
 
 ---
 
+## Device-Level Threat Vectors (Observed / Suspected)
+
+These are local device behaviours that correlate with the wireless threat pattern and represent candidate detection signals for future phases.
+
+- **Camera / microphone access on untrusted SSIDs:** Apps with legitimate camera permissions can silently stream outbound while connected to a rogue AP or evil-twin. The OS firewall blocks inbound camera connections but does not restrict outbound exfiltration by apps with existing permissions. Detection signal: apps opening camera/mic handles while the device is connected to an anomalous SSID.
+- **Sustained CPU/radio activity:** Phones becoming unusually hot during network anomaly windows is consistent with forced reconnect loops, sustained wireless scanning, or active background data exfiltration.
+- **ADB-exposed devices:** Devices with USB debugging enabled and connected to a shared or untrusted network may be reachable via ADB over TCP (port 5555). Detection signal: unexpected inbound connection attempts to ADB port on-device.
+
+> These vectors are documented for detection scope planning only. wscan+ does not exploit or actively probe them.
+
+---
+
 ## Non-goals / Safety
 
 - wscan+ must not encourage illegal activity or active wireless interference.
