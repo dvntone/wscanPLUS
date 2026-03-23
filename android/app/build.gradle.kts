@@ -56,7 +56,7 @@ dependencies {
     // BOM manages all firebase-* versions. Do NOT pin firebase-ai explicitly.
     // google-services plugin + google-services.json required before Firebase
     // initialises at runtime — see KNOWN_ISSUES.md.
-    implementation(platform("com.google.firebase:firebase-bom:35.5.0"))
+    implementation(platform("com.google.firebase:firebase-bom:34.10.0"))
     implementation("com.google.firebase:firebase-ai")
 
     // Google Maps SDK — scan history heatmap + GPS-tagged scan visualisation
