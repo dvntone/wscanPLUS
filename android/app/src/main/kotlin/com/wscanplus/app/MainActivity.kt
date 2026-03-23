@@ -73,7 +73,7 @@ class MainActivity : Activity() {
         }
         val hasFine = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
         val hasCoarse = hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
-        Log.d(TAG, "Permissions granted: FINE=$hasFine, COARSE=$hasCoarse")
+        Log.i(TAG, "Permissions granted: FINE=$hasFine, COARSE=$hasCoarse")
         refreshScannerState()
     }
 

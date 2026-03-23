@@ -38,7 +38,7 @@ class FusedLocationSampler(
                 .apply {
                     setMinUpdateIntervalMillis(5_000L)
                     setWaitForAccurateLocation(false)
-                    setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+                    setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY)
                 }.build()
         fusedLocationClient
             .lastLocation
