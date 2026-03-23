@@ -8,11 +8,12 @@ This document describes the hardware available for development and testing of ws
 
 | Adapter | Chipset | Monitor Mode | Packet Injection | Best Use |
 |---------|---------|-------------|-----------------|----------|
-| **Panda PAU0B** | Realtek (AC600) | ✅ Linux | ✅ Linux | RPi 5 passive scanning |
+| **Panda PAU0B** | MediaTek MT7610U (`0E8D:7610`) | ✅ Linux | ✅ Linux | RPi 5 passive scanning |
 | **Alfa AWUS036ACS** | RTL8811AU | ✅ Linux | ✅ Linux | Primary attack simulation adapter |
 
 > Both adapters work best on native Linux. Android monitor mode requires custom kernel — not reliable for current phases.
-> On LG Gram (WSL2): requires `usbipd-win` for USB passthrough. RPi 5 is the preferred node for adapter work.
+> On LG Gram (WSL2 mirrored networking, Windows 11 Insiders): ADB works via `127.0.0.1` directly — no `usbipd-win` required. RPi 5 is the preferred node for adapter work.
+> WSL2 kernel (6.6.x-microsoft) has `CONFIG_MT76x0U` disabled — PAU0B requires custom kernel build or RPi 5 for monitor mode. Driver: `mt76x0u` (in-kernel on native Linux, no DKMS needed).
 
 ---
 
@@ -22,7 +23,7 @@ This document describes the hardware available for development and testing of ws
 |--------|------|
 | **OnePlus 10T** | Android phone available for development, not the archived device-evidence baseline |
 | **Pixel 10 Pro XL** | High-end test target, latest Android |
-| **Motorola G4 Play 2024** | Previous verified ADB/device-testing baseline |
+| **Motorola G4 Play 2024** | Previous verified ADB/device-testing baseline — ADB over TCP via `adb connect 127.0.0.1:5555` (WSL2 mirrored networking, no usbipd required) |
 | **Revvl Tab 2** | Current Android 15 active test target |
 
 ---
@@ -95,4 +96,4 @@ No hardware or techniques documented here are used offensively or against networ
 
 ---
 
-*Last updated: 2026-03-14*
+*Last updated: 2026-03-23*
