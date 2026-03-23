@@ -32,6 +32,8 @@ import com.wscanplus.core.threat.EnvironmentType
 import com.wscanplus.core.threat.EvilTwinHeuristic
 import com.wscanplus.core.threat.HeuristicEngine
 import com.wscanplus.core.threat.KarmaHeuristic
+import com.wscanplus.core.threat.OuiAssetLoader
+import com.wscanplus.core.threat.OuiLookup
 import com.wscanplus.core.threat.PolicyGate
 import com.wscanplus.core.threat.RssiAnomalyHeuristic
 import com.wscanplus.core.threat.ScanContext
@@ -41,6 +43,7 @@ import com.wscanplus.core.threat.WepOpenHeuristic
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * WatchdogService manages the scanner chain and the ADB communication socket.
@@ -62,6 +65,7 @@ import java.util.concurrent.Future
  * TODO (Phase 3): open ServerSocket(9000) on a background thread for ADB comms.
  */
 class WatchdogService : Service() {
+    private val ouiLookupRef = AtomicReference<OuiLookup?>(null)
     private var scannerChain: ScannerChain? = null
     private var scannerExecutor: ExecutorService? = null
     private var startFuture: Future<*>? = null
@@ -81,7 +85,7 @@ class WatchdogService : Service() {
                 KarmaHeuristic(),
                 SsidFloodingHeuristic(),
                 RssiAnomalyHeuristic(),
-                BssidFingerprintHeuristic(ouiLookup = null),
+                BssidFingerprintHeuristic(ouiLookup = { bssid -> ouiLookupRef.get()?.lookup(bssid) }),
             ),
         )
     private val policyGate = PolicyGate()
@@ -156,6 +160,7 @@ class WatchdogService : Service() {
                 }
             startFuture =
                 executor.submit {
+                    ouiLookupRef.set(OuiAssetLoader.load(applicationContext))
                     currentSessionId = createSession()
                     locationSampler?.start()
                     startChain(scannerChain!!)
