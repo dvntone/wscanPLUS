@@ -88,7 +88,53 @@ wscanplus/
 
 ## Phase
 
-**Phase 1 (Dev Tooling + Polish)** — complete. Scanner chain, ktlint CI, launcher icon, data extraction rules, Android 15 timeout handling, settings recovery links, and the `:core` unit-test baseline are now on `main`. See [docs/ROADMAP.md](/docs/ROADMAP.md) for the current phased plan.
+**Phase 1 + Phase 2 — complete.** Phase 3 planning next.
+
+**Phase 2 (Local Threat Intelligence) complete as of 2026-03-20:**
+- 7 WiFi threat heuristics live (WEP/Open, Evil Twin, Encryption Downgrade, Karma, SSID Flooding, RSSI Anomaly, BSSID Fingerprint)
+- HeuristicEngine + PolicyGate wired into WatchdogService
+- Room DB (5 entities, 5 DAOs) + OUI asset loader
+- ~100+ unit tests passing
+
+See [docs/ROADMAP.md](/docs/ROADMAP.md) for the full phased plan.
+
+---
+
+## 2026-03-23 Handoff Snapshot
+
+This section is the fast re-entry point for the next session.
+
+### Remote repo state (2026-03-23)
+
+- `main` is current — latest merge: PR `#158` (docs: Copilot review followup)
+- No open PRs
+- Open issues: `#9`, `#121`, `#122`, `#124`, `#125`, `#156`
+- P1 bugs `#122`, `#124`, `#125` block new feature work
+
+### Immediate action needed (before next session)
+
+**`gh auth refresh -s workflow`** — run this once to add workflow scope to gh CLI token.
+Required to push fixes to `.github/workflows/` files on desktop and webui repos.
+See memory file `project_codeql_fixes_pending.md` for exact steps.
+
+### Copilot quota
+
+Copilot at 110%+ usage. Resets the 9th. Merge on green CI only until then.
+
+### Desktop and webui repo status
+
+- `wscanplus_desktop`: CodeQL workflow broken (actions not pinned to SHAs). Fix documented in memory.
+- `wscanplus_webui`: CodeQL workflow broken (no JS source yet). Fix documented in memory.
+- Both fixes blocked by missing `workflow` scope on gh CLI token.
+
+### Phase 3 scope (when P1 bugs resolved)
+
+1. File 5 code bugs from Codex findings as issues
+2. Timestamp µs→ms fix in WifiScanResult.toScanInput()
+3. OuiAssetLoader integration in WatchdogService
+4. CTI client (CrowdSec API) + Room cache layer
+5. Scan history accumulation + baseline population
+6. Gemini firebase-ai threat narrative layer
 
 ---
 
