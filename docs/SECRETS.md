@@ -15,7 +15,7 @@ All secrets must be configured in GitHub repository settings before CI/CD can ru
 | `ANDROID_STORE_PASSWORD` | Password for the keystore itself |
 
 **Status:** ✅ All 4 secrets configured in GitHub (2026-03-15).
-Keystore file: `android/keystore/wscanplus-release.jks` — gitignored (`*.jks` in `.gitignore`), never committed. Back up securely.
+Keystore file: stored outside the repository (e.g. `C:\Users\Devia\Documents\wscanplus-keystore\wscanplus-release.jks`). Never committed. If a local `android/keystore/` directory exists for convenience, it is gitignored via `*.jks` — but the keystore must be backed up externally and must never be committed. Back up securely.
 Generated via keytool (RSA 4096, validity 10000 days). Keep this file backed up securely.
 
 **Rotation:** Rotate freely before any Play Store submission. After first submission, the upload key is tied to the app — replacing it requires Google Play App Signing enrollment and a key upgrade request. Do not rotate post-submission without a tracked plan.
