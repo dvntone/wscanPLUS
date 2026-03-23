@@ -58,7 +58,7 @@ class StandardScanner(
     fun start() {
         // idempotent — already started
         if (receiver != null || scanResultsCallback != null) return
-        Log.d(TAG, "Scanner started (API ${Build.VERSION.SDK_INT})")
+        Log.i(TAG, "Scanner started (API ${Build.VERSION.SDK_INT})")
         if (usesLegacyBroadcastPath(Build.VERSION.SDK_INT)) {
             startWithBroadcastReceiver()
         } else {
@@ -78,7 +78,7 @@ class StandardScanner(
                 override fun onScanResultsAvailable() {
                     val results = wifiManager.scanResults
                     val freshResults = freshScanResults(results)
-                    Log.d(TAG, "Received ${results.size} scan results (${freshResults.size} after stale filter)")
+                    Log.i(TAG, "Received ${results.size} scan results (${freshResults.size} after stale filter)")
                     resultsListener.onResults(freshResults.map { it.toWifiScanResult() })
                 }
             }
@@ -116,7 +116,7 @@ class StandardScanner(
                     executor.execute {
                         val results = wifiManager.scanResults
                         val freshResults = freshScanResults(results)
-                        Log.d(TAG, "Received ${results.size} scan results (${freshResults.size} after stale filter)")
+                        Log.i(TAG, "Received ${results.size} scan results (${freshResults.size} after stale filter)")
                         resultsListener.onResults(freshResults.map { it.toWifiScanResult() })
                     }
                 }
@@ -139,7 +139,7 @@ class StandardScanner(
     }
 
     fun stop() {
-        Log.d(TAG, "Scanner stopped")
+        Log.i(TAG, "Scanner stopped")
         // Balanced: receiver is only set by startWithBroadcastReceiver(), cleared here.
         // IllegalArgumentException should not occur given idempotent start(), but caught
         // defensively in case of unexpected lifecycle edge cases.

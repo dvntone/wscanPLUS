@@ -91,7 +91,7 @@ class WatchdogService : Service() {
         createNotificationChannel()
         database = WscanDatabase.getInstance(applicationContext)
         kismetGpsClient = KismetGpsClient(KismetConfigStore(applicationContext))
-        Log.d(TAG, "Service created")
+        Log.i(TAG, "Service created")
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -110,7 +110,7 @@ class WatchdogService : Service() {
             stopSelfResult(startId)
             return START_NOT_STICKY
         }
-        Log.d(TAG, "Service started")
+        Log.i(TAG, "Service started")
         ServiceCompat.startForeground(
             this,
             NOTIFICATION_ID,
@@ -145,7 +145,7 @@ class WatchdogService : Service() {
                         )
                     val rawSignals = engine.analyze(context)
                     val filtered = policyGate.filter(rawSignals)
-                    Log.d(
+                    Log.i(
                         "WatchdogService",
                         "Threats: ${filtered.size} of ${rawSignals.size} signals passed policy gate",
                     )
@@ -165,12 +165,11 @@ class WatchdogService : Service() {
     }
 
     private fun hasLocationPermission(): Boolean =
-        checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-            checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d(TAG, "Service destroyed")
+        Log.i(TAG, "Service destroyed")
         // Cancel any queued start task before submitting stop, so a pending start cannot
         // race with or follow the stop on the executor queue.
         startFuture?.cancel(true)
