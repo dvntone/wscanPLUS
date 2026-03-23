@@ -1,4 +1,4 @@
 # .github/CODEOWNERS
 # @dvntone is the human owner and required reviewer on all PRs.
 # @apps/anthropic-code-agent (Claude) is the primary coding agent and required reviewer.
-* @dvntone @apps/anthropic-code-agent
+* @dvntone @apps/anthropic-code-agent @claude
