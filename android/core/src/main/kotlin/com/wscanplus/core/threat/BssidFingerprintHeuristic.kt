@@ -50,17 +50,20 @@ class BssidFingerprintHeuristic(
         if (ouiLookup != null && rotationFired && oldBssid != null && reasons.size < 3) {
             val newVendor: String? = ouiLookup.invoke(input.bssid)
             val oldVendor: String? = ouiLookup.invoke(oldBssid)
-            val vendorSignal: Float =
-                if (newVendor != null && oldVendor != null && newVendor == oldVendor) {
-                    reasons.add("OUI vendor unchanged after rotation: $newVendor")
-                    0.15f
-                } else {
-                    reasons.add(
-                        "OUI vendor mismatch after rotation: $oldVendor -> $newVendor",
-                    )
-                    0.40f
-                }
-            subSignals.add(vendorSignal)
+            // Skip if OUI data is not yet loaded (both lookups return null).
+            if (newVendor != null || oldVendor != null) {
+                val vendorSignal: Float =
+                    if (newVendor != null && oldVendor != null && newVendor == oldVendor) {
+                        reasons.add("OUI vendor unchanged after rotation: $newVendor")
+                        0.15f
+                    } else {
+                        reasons.add(
+                            "OUI vendor mismatch after rotation: $oldVendor -> $newVendor",
+                        )
+                        0.40f
+                    }
+                subSignals.add(vendorSignal)
+            }
         }
 
         if (subSignals.isEmpty()) return null

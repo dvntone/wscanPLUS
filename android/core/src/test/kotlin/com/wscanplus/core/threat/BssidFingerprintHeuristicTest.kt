@@ -195,6 +195,25 @@ class BssidFingerprintHeuristicTest {
     }
 
     @Test
+    fun `non-null ouiLookup returning null for both skips vendor sub-signal`() {
+        val oldBssid = "00:11:22:33:44:55"
+        val newBssid = "00:AA:BB:CC:DD:EE"
+        val input: ScanInput = scan(bssid = newBssid, ssid = "HomeNet")
+        val profiles: Map<String, BssidProfile> =
+            mapOf(
+                oldBssid to profile(bssid = oldBssid, ssid = "HomeNet"),
+            )
+        val ctx: ScanContext = context(input = input, knownProfiles = profiles)
+        // Simulates AtomicReference<OuiLookup> not yet loaded — lambda wired but returns null
+        val heuristic = BssidFingerprintHeuristic(ouiLookup = { _: String -> null })
+        val signal: ThreatSignal? = heuristic.evaluate(input, ctx)
+        assertNotNull(signal)
+        // Only rotation sub-signal: 1 - (1-0.35) = 0.35 — same as null ouiLookup
+        assertEquals(0.35f, signal!!.confidence, 0.001f)
+        assertTrue(signal.reasons.none { reason: String -> reason.contains("vendor") || reason.contains("OUI") })
+    }
+
+    @Test
     fun `heuristic type is BSSID_FINGERPRINT`() {
         val input: ScanInput = scan(bssid = "02:AA:BB:CC:DD:EE")
         val ctx: ScanContext = context(input = input)
