@@ -18,4 +18,7 @@ interface ScanResultDao {
         bssid: String,
         limit: Int = 100,
     ): List<ScanResultEntity>
+
+    @Query("SELECT * FROM scan_results WHERE latitude IS NOT NULL AND longitude IS NOT NULL ORDER BY timestamp DESC LIMIT :limit")
+    fun getGpsTagged(limit: Int = 500): List<ScanResultEntity>
 }

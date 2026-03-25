@@ -44,9 +44,15 @@ class MainActivity : Activity() {
                 text = "Kismet Settings"
                 setOnClickListener { openKismetSettings() }
             }
+        val mapButton =
+            Button(this).apply {
+                text = "View Scan Map"
+                setOnClickListener { openScanMap() }
+            }
         rootLayout.addView(statusView)
         rootLayout.addView(actionButton)
         rootLayout.addView(settingsButton)
+        rootLayout.addView(mapButton)
         setContentView(rootLayout)
 
         if (hasEntryPermissions()) {
@@ -183,6 +189,10 @@ class MainActivity : Activity() {
 
     private fun openKismetSettings() {
         startActivity(Intent(this, KismetSettingsActivity::class.java))
+    }
+
+    private fun openScanMap() {
+        startActivity(Intent(this, ScanMapActivity::class.java))
     }
 
     private fun isDeviceLocationEnabled(): Boolean {

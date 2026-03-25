@@ -26,7 +26,7 @@ import com.wscanplus.core.db.entity.ThreatSignalEntity
         ThreatSignalEntity::class,
         CtiCacheEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -60,7 +60,7 @@ abstract class WscanDatabase : RoomDatabase() {
                     context.applicationContext,
                     WscanDatabase::class.java,
                     "wscan.db",
-                ).addMigrations(MIGRATION_1_2)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
 
         private val MIGRATION_1_2 =
@@ -74,6 +74,13 @@ abstract class WscanDatabase : RoomDatabase() {
                     db.execSQL("ALTER TABLE scan_results ADD COLUMN locationTimestamp INTEGER")
                     db.execSQL("ALTER TABLE scan_results ADD COLUMN locationProvider TEXT")
                     db.execSQL("ALTER TABLE scan_results ADD COLUMN isMockLocation INTEGER")
+                }
+            }
+
+        private val MIGRATION_2_3 =
+            object : Migration(2, 3) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_scan_results_timestamp ON scan_results (timestamp)")
                 }
             }
     }

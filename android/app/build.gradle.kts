@@ -62,6 +62,8 @@ dependencies {
     // Google Maps SDK — scan history heatmap + GPS-tagged scan visualisation
     // API key injected from local.properties via secrets-gradle-plugin (GOOGLE_MAPS_API_KEY)
     implementation("com.google.android.gms:play-services-maps:20.0.0")
+    // Maps utility library — HeatmapTileProvider for threat-weighted GPS heatmap (#9)
+    implementation("com.google.maps.android:android-maps-utils:3.8.2")
 
     // Keystore-backed EncryptedSharedPreferences for Kismet config at rest
     implementation("androidx.security:security-crypto:1.0.0")
