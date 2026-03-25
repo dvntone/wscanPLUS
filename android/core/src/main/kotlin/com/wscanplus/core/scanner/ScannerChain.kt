@@ -42,8 +42,7 @@ class ScannerChain(
                 usbScanner.start()
                 return
             } catch (e: Exception) {
-                Log.i(TAG, "USB failed, falling back to Standard")
-                Log.w(TAG, "USB scanner start failed", e)
+                Log.w(TAG, "USB scanner start failed, falling back to Standard scanner", e)
             }
         }
         Log.i(TAG, "Using Standard scanner")

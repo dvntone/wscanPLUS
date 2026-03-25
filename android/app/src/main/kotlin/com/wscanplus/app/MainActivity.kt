@@ -83,12 +83,6 @@ class MainActivity : Activity() {
         configureActionButton("Open App Settings") { openAppSettings() }
     }
 
-    private fun showPreciseLocationRequired() {
-        statusView.text =
-            "Approximate-only location is degraded. Enable precise location in App Settings to start scanning."
-        configureActionButton("Open App Settings") { openAppSettings() }
-    }
-
     private fun openAppSettings() {
         val intent =
             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -132,10 +126,6 @@ class MainActivity : Activity() {
     private var scannerStarted = false
 
     private fun refreshScannerState() {
-        if (hasFineLocationPermission().not() && hasCoarseLocationPermission() && hasNonLocationPermissions()) {
-            showPreciseLocationRequired()
-            return
-        }
         if (hasEntryPermissions()) {
             maybeStartWatchdog()
         } else {
@@ -145,8 +135,15 @@ class MainActivity : Activity() {
 
     private fun maybeStartWatchdog() {
         if (scannerStarted) return
-        if (hasFineLocationPermission().not()) {
-            showPreciseLocationRequired()
+        val hasFine = hasFineLocationPermission()
+        val hasCoarse = hasCoarseLocationPermission()
+        if (!hasFine && !hasCoarse) {
+            showPermissionDenied()
+            return
+        }
+        // Coarse-only: start in degraded mode (no GPS sampling, basic scan results).
+        if (!hasFine) {
+            startWatchdog(degraded = true)
             return
         }
         if (isDeviceLocationEnabled().not()) {
@@ -157,7 +154,7 @@ class MainActivity : Activity() {
             showBackgroundLocationRequired()
             return
         }
-        startWatchdog()
+        startWatchdog(degraded = false)
     }
 
     private fun requiresBackgroundLocationPrompt(): Boolean =
@@ -209,11 +206,15 @@ class MainActivity : Activity() {
         actionButton.visibility = View.VISIBLE
     }
 
-    private fun startWatchdog() {
+    private fun startWatchdog(degraded: Boolean = false) {
         scannerStarted = true
-        statusView.text = "Starting scanner..."
+        statusView.text =
+            if (degraded) "Starting scanner (degraded — coarse location only)..." else "Starting scanner..."
         actionButton.visibility = View.GONE
-        val intent = Intent(this, WatchdogService::class.java)
+        val intent =
+            Intent(this, WatchdogService::class.java).apply {
+                putExtra(WatchdogService.EXTRA_DEGRADED, degraded)
+            }
         ContextCompat.startForegroundService(this, intent)
     }
 

@@ -48,6 +48,9 @@
     <!-- Required for ServerSocket(9000) ADB communication (Phase 3) -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Required API 33+ to post notifications (e.g. permission-revoked alert from WatchdogService) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- ================================================================
          Biometric authentication
          HARD RULE: NEVER remove USE_BIOMETRIC — silent crash on Android 14+
