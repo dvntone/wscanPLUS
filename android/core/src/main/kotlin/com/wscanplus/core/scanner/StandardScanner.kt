@@ -14,17 +14,19 @@ import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 /**
  * StandardScanner is the guaranteed baseline scanner — works on all devices, all API levels.
  *
  * Pattern:
- *   API 30+: registerScanResultsCallback() (non-deprecated, preferred)
- *   API 24–29: BroadcastReceiver for SCAN_RESULTS_AVAILABLE_ACTION + getScanResults()
+ *   API 30+: registerScanResultsCallback() for result delivery + periodic startScan() requests
+ *   API 24–29: BroadcastReceiver for SCAN_RESULTS_AVAILABLE_ACTION + periodic startScan() requests
  *
  * Note: WifiManager.startScan() is deprecated API 28 and throttled on newer Android versions.
- * It is still used on API 24–29 here to preserve an in-app active trigger on the legacy
- * BroadcastReceiver path.
+ * Both paths still require explicit startScan() requests — registerScanResultsCallback() delivers
+ * results but does not itself trigger scans. Without active requests the scanner is passive.
  *
  * Runtime permissions required (declared in Phase 1 permissions PR):
  *   ACCESS_FINE_LOCATION (all API levels), NEARBY_WIFI_DEVICES with neverForLocation (API 33+)
@@ -47,6 +49,7 @@ class StandardScanner(
     private var receiver: BroadcastReceiver? = null
     private var scanResultsCallback: WifiManager.ScanResultsCallback? = null
     private var scanCallbackExecutor: ExecutorService? = null
+    private var scanScheduler: ScheduledExecutorService? = null
 
     @RequiresPermission(
         allOf = [
@@ -57,13 +60,14 @@ class StandardScanner(
     )
     fun start() {
         // idempotent — already started
-        if (receiver != null || scanResultsCallback != null) return
+        if (receiver != null || scanResultsCallback != null || scanScheduler != null) return
         Log.i(TAG, "Scanner started (API ${Build.VERSION.SDK_INT})")
         if (usesLegacyBroadcastPath(Build.VERSION.SDK_INT)) {
             startWithBroadcastReceiver()
         } else {
             startWithScanResultsCallback()
         }
+        scheduleActiveScans()
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
@@ -125,17 +129,35 @@ class StandardScanner(
             receiver,
             IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION),
         )
-        if (usesLegacyBroadcastPath(Build.VERSION.SDK_INT)) {
-            @Suppress("DEPRECATION")
-            val scanStarted = wifiManager.startScan()
-            if (!scanStarted) {
-                Log.w(
-                    TAG,
-                    "WifiManager.startScan() request was not accepted (API ${Build.VERSION.SDK_INT}); " +
-                        "legacy scan may be throttled or otherwise rejected",
-                )
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun scheduleActiveScans() {
+        val scheduler =
+            Executors.newSingleThreadScheduledExecutor { runnable ->
+                Thread(runnable, "wscanplus-standard-scanner-scan")
             }
-        }
+        scanScheduler = scheduler
+        scheduler.scheduleWithFixedDelay(
+            {
+                try {
+                    @Suppress("DEPRECATION")
+                    val accepted = wifiManager.startScan()
+                    if (!accepted) {
+                        Log.w(
+                            TAG,
+                            "WifiManager.startScan() request was not accepted " +
+                                "(API ${Build.VERSION.SDK_INT}); scan may be throttled or rejected",
+                        )
+                    }
+                } catch (e: RuntimeException) {
+                    Log.w(TAG, "WifiManager.startScan() failed", e)
+                }
+            },
+            0L,
+            SCAN_REQUEST_INTERVAL_SECONDS,
+            TimeUnit.SECONDS,
+        )
     }
 
     fun stop() {
@@ -164,7 +186,9 @@ class StandardScanner(
             }
         }
         scanResultsCallback = null
-        scanCallbackExecutor?.shutdown()
+        scanScheduler?.shutdownNow()
+        scanScheduler = null
+        scanCallbackExecutor?.shutdownNow()
         scanCallbackExecutor = null
     }
 
@@ -199,6 +223,7 @@ class StandardScanner(
     companion object {
         private const val TAG = "StandardScanner"
         private const val STALE_THRESHOLD_US = 120_000_000L
+        private const val SCAN_REQUEST_INTERVAL_SECONDS = 30L
 
         internal fun usesLegacyBroadcastPath(apiLevel: Int): Boolean = apiLevel < Build.VERSION_CODES.R
     }
