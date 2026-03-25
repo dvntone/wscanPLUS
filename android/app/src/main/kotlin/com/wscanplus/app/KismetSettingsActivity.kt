@@ -81,7 +81,12 @@ class KismetSettingsActivity : Activity() {
                 baseUrl = baseUrlInput.text.toString().trim(),
                 apiToken = tokenInput.text.toString().trim(),
             )
-        KismetConfigStore(this).save(config)
-        statusView.text = "Saved. Restart field mode if it is already running."
+        val saved = KismetConfigStore(this).save(config)
+        statusView.text =
+            if (saved) {
+                "Saved. Changes apply the next time field mode starts."
+            } else {
+                "Save failed. Encrypted storage is unavailable on this device."
+            }
     }
 }

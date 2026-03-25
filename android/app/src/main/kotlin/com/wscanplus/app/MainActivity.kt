@@ -135,8 +135,6 @@ class MainActivity : Activity() {
     private fun hasPermission(permission: String): Boolean =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
-    private var scannerStarted = false
-
     private fun refreshScannerState() {
         if (hasFineLocationPermission().not() && hasCoarseLocationPermission() && hasNonLocationPermissions()) {
             showPreciseLocationRequired()
@@ -150,7 +148,6 @@ class MainActivity : Activity() {
     }
 
     private fun maybeStartWatchdog() {
-        if (scannerStarted) return
         if (hasFineLocationPermission().not()) {
             showPreciseLocationRequired()
             return
@@ -219,9 +216,12 @@ class MainActivity : Activity() {
     }
 
     private fun startWatchdog(degraded: Boolean = false) {
-        scannerStarted = true
         statusView.text =
-            if (degraded) "Starting scanner (degraded — coarse location only)..." else "Starting scanner..."
+            if (degraded) {
+                "Starting scanner (degraded — fine location only, without background location)..."
+            } else {
+                "Starting scanner..."
+            }
         actionButton.visibility = View.GONE
         val intent =
             Intent(this, WatchdogService::class.java).apply {
