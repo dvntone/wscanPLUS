@@ -43,55 +43,74 @@ class ScanMapActivity :
 
     override fun onMapReady(map: GoogleMap) {
         executor.execute {
-            val db = WscanDatabase.getInstance(applicationContext)
-            val scanResults = db.scanResultDao().getGpsTagged(limit = 500)
-            if (scanResults.isEmpty()) {
+            try {
+                loadAndRender(map)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load scan map data", e)
+                if (!isDestroyed) {
+                    runOnUiThread {
+                        Toast.makeText(this, "Failed to load map data.", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun loadAndRender(map: GoogleMap) {
+        val db = WscanDatabase.getInstance(applicationContext)
+        val scanResults = db.scanResultDao().getGpsTagged(limit = 500)
+        if (scanResults.isEmpty()) {
+            if (!isDestroyed) {
                 runOnUiThread {
                     Toast.makeText(this, "No GPS-tagged scan data yet.", Toast.LENGTH_LONG).show()
                 }
-                return@execute
+            }
+            return
+        }
+
+        // BSSID → max threat confidence from stored high-confidence signals.
+        val rawSignals = db.threatSignalDao().getHighConfidence(minConfidence = 0.3f, limit = 1000)
+        val threatMap =
+            rawSignals
+                .groupBy { signal -> signal.bssid }
+                .mapValues { (_, signalList) -> signalList.maxOf { signal -> signal.confidence } }
+
+        // Keep LatLng alongside weight so bounds can be built without re-deriving coordinates.
+        data class MapPoint(
+            val latLng: LatLng,
+            val weight: Double,
+        )
+
+        val points =
+            scanResults.mapNotNull { result ->
+                val lat = result.latitude ?: return@mapNotNull null
+                val lng = result.longitude ?: return@mapNotNull null
+                // Threat BSSIDs weighted by confidence (0.3–1.0); clean BSSIDs at 0.1.
+                val weight = (threatMap[result.bssid] ?: 0.1f).toDouble()
+                MapPoint(LatLng(lat, lng), weight)
             }
 
-            // BSSID → max threat confidence from stored high-confidence signals.
-            val rawSignals = db.threatSignalDao().getHighConfidence(minConfidence = 0.3f, limit = 1000)
-            val threatMap =
-                rawSignals
-                    .groupBy { signal -> signal.bssid }
-                    .mapValues { (_, signalList) -> signalList.maxOf { signal -> signal.confidence } }
-
-            // Keep LatLng alongside weight so bounds can be built without re-deriving coordinates.
-            data class MapPoint(
-                val latLng: LatLng,
-                val weight: Double,
-            )
-
-            val points =
-                scanResults.mapNotNull { result ->
-                    val lat = result.latitude ?: return@mapNotNull null
-                    val lng = result.longitude ?: return@mapNotNull null
-                    // Threat BSSIDs weighted by confidence (0.3–1.0); clean BSSIDs at 0.1.
-                    val weight = (threatMap[result.bssid] ?: 0.1f).toDouble()
-                    MapPoint(LatLng(lat, lng), weight)
-                }
-
-            if (points.isEmpty()) {
+        if (points.isEmpty()) {
+            if (!isDestroyed) {
                 runOnUiThread {
                     Toast.makeText(this, "Scan results have no GPS coordinates.", Toast.LENGTH_LONG).show()
                 }
-                return@execute
             }
+            return
+        }
 
-            val weightedPoints = points.map { p -> WeightedLatLng(p.latLng, p.weight) }
+        val weightedPoints = points.map { p -> WeightedLatLng(p.latLng, p.weight) }
 
-            val heatmapBuilder = HeatmapTileProvider.Builder()
-            heatmapBuilder.weightedData(weightedPoints)
-            heatmapBuilder.radius(50)
-            val provider = heatmapBuilder.build()
+        val heatmapBuilder = HeatmapTileProvider.Builder()
+        heatmapBuilder.weightedData(weightedPoints)
+        heatmapBuilder.radius(50)
+        val provider = heatmapBuilder.build()
 
-            val boundsBuilder = LatLngBounds.Builder()
-            points.forEach { p -> boundsBuilder.include(p.latLng) }
-            val bounds = boundsBuilder.build()
+        val boundsBuilder = LatLngBounds.Builder()
+        points.forEach { p -> boundsBuilder.include(p.latLng) }
+        val bounds = boundsBuilder.build()
 
+        if (!isDestroyed) {
             runOnUiThread {
                 map.addTileOverlay(TileOverlayOptions().tileProvider(provider))
                 try {
@@ -105,7 +124,9 @@ class ScanMapActivity :
 
     override fun onDestroy() {
         super.onDestroy()
-        executor.shutdown()
+        // shutdownNow() interrupts any in-flight task; isDestroyed guards prevent
+        // runOnUiThread calls from reaching a destroyed activity.
+        executor.shutdownNow()
     }
 
     companion object {

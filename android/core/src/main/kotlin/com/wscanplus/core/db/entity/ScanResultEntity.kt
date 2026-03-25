@@ -18,6 +18,7 @@ import androidx.room.PrimaryKey
     indices = [
         Index(value = ["sessionId"]),
         Index(value = ["bssid"]),
+        Index(value = ["timestamp"]),
     ],
 )
 data class ScanResultEntity(
