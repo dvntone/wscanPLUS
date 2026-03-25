@@ -85,7 +85,7 @@ class MainActivity : Activity() {
 
     private fun showPreciseLocationRequired() {
         statusView.text =
-            "Approximate-only location is degraded. Enable precise location in App Settings to start scanning."
+            "Precise location is required for Wi-Fi scanning. Enable it in App Settings."
         configureActionButton("Open App Settings") { openAppSettings() }
     }
 
@@ -153,11 +153,10 @@ class MainActivity : Activity() {
             showLocationServicesRequired()
             return
         }
-        if (requiresBackgroundLocationPrompt()) {
-            showBackgroundLocationRequired()
-            return
-        }
-        startWatchdog()
+        // Background location missing: start in degraded mode (no GPS sampler, limited to
+        // foreground sessions). Scanner chain still runs with ACCESS_FINE_LOCATION.
+        val degraded = requiresBackgroundLocationPrompt()
+        startWatchdog(degraded = degraded)
     }
 
     private fun requiresBackgroundLocationPrompt(): Boolean =
@@ -209,11 +208,15 @@ class MainActivity : Activity() {
         actionButton.visibility = View.VISIBLE
     }
 
-    private fun startWatchdog() {
+    private fun startWatchdog(degraded: Boolean = false) {
         scannerStarted = true
-        statusView.text = "Starting scanner..."
+        statusView.text =
+            if (degraded) "Starting scanner (degraded — coarse location only)..." else "Starting scanner..."
         actionButton.visibility = View.GONE
-        val intent = Intent(this, WatchdogService::class.java)
+        val intent =
+            Intent(this, WatchdogService::class.java).apply {
+                putExtra(WatchdogService.EXTRA_DEGRADED, degraded)
+            }
         ContextCompat.startForegroundService(this, intent)
     }
 

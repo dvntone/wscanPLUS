@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -74,6 +75,7 @@ class WatchdogService : Service() {
     private var latestLocationSample: LocationSample? = null
     private var currentSessionId: Long? = null
     private var lastKismetSendAtMillis: Long = 0L
+    private var degradedMode = false
     private lateinit var database: WscanDatabase
     private lateinit var kismetGpsClient: KismetGpsClient
     private val engine =
@@ -109,12 +111,15 @@ class WatchdogService : Service() {
         flags: Int,
         startId: Int,
     ): Int {
-        if (hasLocationPermission().not()) {
-            Log.w(TAG, "Permission denied, stopping")
+        val degraded = intent?.getBooleanExtra(EXTRA_DEGRADED, false) ?: false
+        if (!hasStartPermission(degraded)) {
+            Log.w(TAG, "Required permission missing on (re)start — stopping and notifying user")
+            showPermissionRevokedNotification()
             stopSelfResult(startId)
             return START_NOT_STICKY
         }
-        Log.i(TAG, "Service started")
+        degradedMode = degraded
+        Log.i(TAG, "Service started (degraded=$degradedMode)")
         ServiceCompat.startForeground(
             this,
             NOTIFICATION_ID,
@@ -128,13 +133,18 @@ class WatchdogService : Service() {
                     Thread(runnable, "wscanplus-watchdog")
                 }
             scannerExecutor = executor
-            locationSampler =
-                FusedLocationSampler(applicationContext, executor) { sample ->
-                    latestLocationSample = sample
-                    maybeSendKismetUpdate(sample)
-                }
+            if (!degradedMode) {
+                locationSampler =
+                    FusedLocationSampler(applicationContext, executor) { sample ->
+                        latestLocationSample = sample
+                        maybeSendKismetUpdate(sample)
+                    }
+            }
             scannerChain =
                 ScannerChain(applicationContext) { results: List<WifiScanResult> ->
+                    // StandardScanner already filters stale results at its own threshold before
+                    // delivering here; no duplicate filter needed at this layer (#165).
+                    Log.i(TAG, "Scan batch: ${results.size} result(s), session=$currentSessionId")
                     val scanInputs: List<ScanInput> =
                         results.map { result: WifiScanResult ->
                             result.toScanInput()
@@ -150,8 +160,9 @@ class WatchdogService : Service() {
                     val rawSignals = engine.analyze(context)
                     val filtered = policyGate.filter(rawSignals)
                     Log.i(
-                        "WatchdogService",
-                        "Threats: ${filtered.size} of ${rawSignals.size} signals passed policy gate",
+                        TAG,
+                        "PolicyGate: ${filtered.size} of ${rawSignals.size} signals passed " +
+                            "(min confidence ${filtered.minOfOrNull { signal -> signal.confidence } ?: 0f})",
                     )
                     persistResults(
                         results = results,
@@ -166,15 +177,69 @@ class WatchdogService : Service() {
                         Log.e(TAG, "OUI asset load failed; vendor signals will be skipped", e)
                     }
                     currentSessionId = createSession()
-                    locationSampler?.start()
+                    Log.i(TAG, "Scan session created: id=$currentSessionId")
+                    if (!degradedMode) {
+                        locationSampler?.start()
+                    }
                     startChain(scannerChain!!)
                 }
         }
         return START_STICKY
     }
 
-    private fun hasLocationPermission(): Boolean =
-        checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    /**
+     * Returns true if the service has the permissions needed to start.
+     *
+     * Both modes require ACCESS_FINE_LOCATION — the scanner stack cannot function with
+     * coarse-only location. Degraded mode (degraded=true) skips ACCESS_BACKGROUND_LOCATION
+     * and the GPS sampler, allowing the service to run without "Allow all the time" access.
+     * Full mode (degraded=false) additionally requires ACCESS_BACKGROUND_LOCATION on API 29+.
+     */
+    private fun hasStartPermission(degraded: Boolean): Boolean {
+        val hasFine =
+            checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+        if (!hasFine) return false
+        if (degraded) return true
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
+            checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+    }
+
+    /**
+     * Fires a non-ongoing notification prompting the user to re-grant location permission.
+     * On API 33+, silently skips if POST_NOTIFICATIONS was not granted.
+     */
+    private fun showPermissionRevokedNotification() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w(TAG, "Cannot show revoked-permission notification — POST_NOTIFICATIONS not granted")
+            return
+        }
+        // Explicit intent to MainActivity — avoids implicit-intent PendingIntent warning.
+        // MainActivity.onResume() calls refreshScannerState() which surfaces the re-grant prompt.
+        val relaunchIntent =
+            Intent(applicationContext, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+        val pendingIntent =
+            PendingIntent.getActivity(
+                this,
+                0,
+                relaunchIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID_ALERT)
+        notificationBuilder.setContentTitle("wscan+ scanning paused")
+        notificationBuilder.setContentText("Location permission was revoked. Tap to re-grant.")
+        notificationBuilder.setSmallIcon(R.mipmap.ic_launcher)
+        notificationBuilder.setContentIntent(pendingIntent)
+        notificationBuilder.setAutoCancel(true)
+        getSystemService(NotificationManager::class.java)
+            .notify(NOTIFICATION_ID_REVOKED, notificationBuilder.build())
+    }
 
     override fun onDestroy() {
         super.onDestroy()
@@ -195,6 +260,7 @@ class WatchdogService : Service() {
         executor?.execute {
             chain?.stop()
             sessionId?.let {
+                Log.i(TAG, "Scan session closed: id=$it")
                 database.scanSessionDao().markCompleted(it, System.currentTimeMillis())
             }
         }
@@ -299,7 +365,7 @@ class WatchdogService : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel =
+            val scannerChannel =
                 NotificationChannel(
                     CHANNEL_ID,
                     "wscan+ Scanner",
@@ -307,13 +373,23 @@ class WatchdogService : Service() {
                 ).apply {
                     description = "Active while the WiFi scanner chain is running"
                 }
-            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+            val alertChannel =
+                NotificationChannel(
+                    CHANNEL_ID_ALERT,
+                    "wscan+ Alerts",
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                ).apply {
+                    description = "Permission and service alerts requiring user action"
+                }
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(scannerChannel)
+            manager.createNotificationChannel(alertChannel)
         }
     }
 
     private fun buildNotification(): android.app.Notification {
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-        builder.setContentTitle("wscan+ scanning")
+        builder.setContentTitle(if (degradedMode) "wscan+ scanning (degraded)" else "wscan+ scanning")
         builder.setSmallIcon(R.mipmap.ic_launcher)
         builder.setOngoing(true)
         return builder.build()
@@ -322,7 +398,15 @@ class WatchdogService : Service() {
     companion object {
         private const val TAG = "WatchdogService"
         private const val CHANNEL_ID = "wscanplus_watchdog"
+        private const val CHANNEL_ID_ALERT = "wscanplus_alerts"
         private const val NOTIFICATION_ID = 1
+        private const val NOTIFICATION_ID_REVOKED = 2
         private const val KISMET_SEND_INTERVAL_MS = 10_000L
+
+        /**
+         * Pass true to start in degraded mode: ACCESS_FINE_LOCATION is required but
+         * ACCESS_BACKGROUND_LOCATION is not checked, and the GPS location sampler is skipped.
+         */
+        const val EXTRA_DEGRADED = "extra_degraded"
     }
 }
