@@ -83,6 +83,12 @@ class MainActivity : Activity() {
         configureActionButton("Open App Settings") { openAppSettings() }
     }
 
+    private fun showPreciseLocationRequired() {
+        statusView.text =
+            "Precise location is required for Wi-Fi scanning. Enable it in App Settings."
+        configureActionButton("Open App Settings") { openAppSettings() }
+    }
+
     private fun openAppSettings() {
         val intent =
             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -126,6 +132,10 @@ class MainActivity : Activity() {
     private var scannerStarted = false
 
     private fun refreshScannerState() {
+        if (hasFineLocationPermission().not() && hasCoarseLocationPermission() && hasNonLocationPermissions()) {
+            showPreciseLocationRequired()
+            return
+        }
         if (hasEntryPermissions()) {
             maybeStartWatchdog()
         } else {
@@ -135,26 +145,18 @@ class MainActivity : Activity() {
 
     private fun maybeStartWatchdog() {
         if (scannerStarted) return
-        val hasFine = hasFineLocationPermission()
-        val hasCoarse = hasCoarseLocationPermission()
-        if (!hasFine && !hasCoarse) {
-            showPermissionDenied()
-            return
-        }
-        // Coarse-only: start in degraded mode (no GPS sampling, basic scan results).
-        if (!hasFine) {
-            startWatchdog(degraded = true)
+        if (hasFineLocationPermission().not()) {
+            showPreciseLocationRequired()
             return
         }
         if (isDeviceLocationEnabled().not()) {
             showLocationServicesRequired()
             return
         }
-        if (requiresBackgroundLocationPrompt()) {
-            showBackgroundLocationRequired()
-            return
-        }
-        startWatchdog(degraded = false)
+        // Background location missing: start in degraded mode (no GPS sampler, limited to
+        // foreground sessions). Scanner chain still runs with ACCESS_FINE_LOCATION.
+        val degraded = requiresBackgroundLocationPrompt()
+        startWatchdog(degraded = degraded)
     }
 
     private fun requiresBackgroundLocationPrompt(): Boolean =

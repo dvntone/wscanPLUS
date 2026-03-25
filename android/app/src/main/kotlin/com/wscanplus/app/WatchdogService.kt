@@ -9,7 +9,6 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
-import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
@@ -143,20 +142,11 @@ class WatchdogService : Service() {
             }
             scannerChain =
                 ScannerChain(applicationContext) { results: List<WifiScanResult> ->
-                    // Filter stale results before heuristic analysis (#165).
-                    // WifiScanResult.timestamp is microseconds since boot; elapsedRealtime() is ms.
-                    val nowMs = SystemClock.elapsedRealtime()
-                    val freshResults =
-                        results.filter { result: WifiScanResult ->
-                            (nowMs - result.timestamp / 1000) <= MAX_RESULT_AGE_MS
-                        }
-                    val staleCount = results.size - freshResults.size
-                    if (staleCount > 0) {
-                        Log.d(TAG, "Discarded $staleCount stale scan result(s) (age > ${MAX_RESULT_AGE_MS}ms)")
-                    }
-                    Log.i(TAG, "Scan batch: ${freshResults.size} result(s), session=$currentSessionId")
+                    // StandardScanner already filters stale results at its own threshold before
+                    // delivering here; no duplicate filter needed at this layer (#165).
+                    Log.i(TAG, "Scan batch: ${results.size} result(s), session=$currentSessionId")
                     val scanInputs: List<ScanInput> =
-                        freshResults.map { result: WifiScanResult ->
+                        results.map { result: WifiScanResult ->
                             result.toScanInput()
                         }
                     val context =
@@ -175,7 +165,7 @@ class WatchdogService : Service() {
                             "(min confidence ${filtered.minOfOrNull { signal -> signal.confidence } ?: 0f})",
                     )
                     persistResults(
-                        results = freshResults,
+                        results = results,
                         filteredSignals = filtered,
                     )
                 }
@@ -200,23 +190,17 @@ class WatchdogService : Service() {
     /**
      * Returns true if the service has the permissions needed to start.
      *
-     * Full mode (degraded=false): requires ACCESS_FINE_LOCATION, plus
-     * ACCESS_BACKGROUND_LOCATION on API 29+.
-     *
-     * Degraded mode (degraded=true): requires at least ACCESS_COARSE_LOCATION
-     * or ACCESS_FINE_LOCATION. Location sampler is skipped in this mode.
+     * Both modes require ACCESS_FINE_LOCATION — the scanner stack cannot function with
+     * coarse-only location. Degraded mode (degraded=true) skips ACCESS_BACKGROUND_LOCATION
+     * and the GPS sampler, allowing the service to run without "Allow all the time" access.
+     * Full mode (degraded=false) additionally requires ACCESS_BACKGROUND_LOCATION on API 29+.
      */
     private fun hasStartPermission(degraded: Boolean): Boolean {
         val hasFine =
             checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED
-        val hasCoarse =
-            checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) ==
-                PackageManager.PERMISSION_GRANTED
-        if (degraded) {
-            return hasFine || hasCoarse
-        }
         if (!hasFine) return false
+        if (degraded) return true
         return Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
             checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) ==
             PackageManager.PERMISSION_GRANTED
@@ -234,19 +218,20 @@ class WatchdogService : Service() {
             Log.w(TAG, "Cannot show revoked-permission notification — POST_NOTIFICATIONS not granted")
             return
         }
-        val settingsIntent =
-            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.fromParts("package", packageName, null)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        // Explicit intent to MainActivity — avoids implicit-intent PendingIntent warning.
+        // MainActivity.onResume() calls refreshScannerState() which surfaces the re-grant prompt.
+        val relaunchIntent =
+            Intent(applicationContext, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
         val pendingIntent =
             PendingIntent.getActivity(
                 this,
                 0,
-                settingsIntent,
+                relaunchIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
-        val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
+        val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID_ALERT)
         notificationBuilder.setContentTitle("wscan+ scanning paused")
         notificationBuilder.setContentText("Location permission was revoked. Tap to re-grant.")
         notificationBuilder.setSmallIcon(R.mipmap.ic_launcher)
@@ -380,7 +365,7 @@ class WatchdogService : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel =
+            val scannerChannel =
                 NotificationChannel(
                     CHANNEL_ID,
                     "wscan+ Scanner",
@@ -388,7 +373,17 @@ class WatchdogService : Service() {
                 ).apply {
                     description = "Active while the WiFi scanner chain is running"
                 }
-            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+            val alertChannel =
+                NotificationChannel(
+                    CHANNEL_ID_ALERT,
+                    "wscan+ Alerts",
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                ).apply {
+                    description = "Permission and service alerts requiring user action"
+                }
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(scannerChannel)
+            manager.createNotificationChannel(alertChannel)
         }
     }
 
@@ -403,12 +398,15 @@ class WatchdogService : Service() {
     companion object {
         private const val TAG = "WatchdogService"
         private const val CHANNEL_ID = "wscanplus_watchdog"
+        private const val CHANNEL_ID_ALERT = "wscanplus_alerts"
         private const val NOTIFICATION_ID = 1
         private const val NOTIFICATION_ID_REVOKED = 2
         private const val KISMET_SEND_INTERVAL_MS = 10_000L
-        private const val MAX_RESULT_AGE_MS = 60_000L
 
-        /** Pass true to start in degraded mode (coarse location only, no GPS sampling). */
+        /**
+         * Pass true to start in degraded mode: ACCESS_FINE_LOCATION is required but
+         * ACCESS_BACKGROUND_LOCATION is not checked, and the GPS location sampler is skipped.
+         */
         const val EXTRA_DEGRADED = "extra_degraded"
     }
 }
