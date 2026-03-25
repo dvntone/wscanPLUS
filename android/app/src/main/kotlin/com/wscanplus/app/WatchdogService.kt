@@ -160,7 +160,11 @@ class WatchdogService : Service() {
                 }
             startFuture =
                 executor.submit {
-                    ouiLookupRef.set(OuiAssetLoader.load(applicationContext))
+                    try {
+                        ouiLookupRef.set(OuiAssetLoader.load(applicationContext))
+                    } catch (e: Exception) {
+                        Log.e(TAG, "OUI asset load failed; vendor signals will be skipped", e)
+                    }
                     currentSessionId = createSession()
                     locationSampler?.start()
                     startChain(scannerChain!!)
