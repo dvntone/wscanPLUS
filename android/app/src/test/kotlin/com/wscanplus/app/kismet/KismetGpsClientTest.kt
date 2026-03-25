@@ -48,12 +48,21 @@ class KismetGpsClientTest {
     }
 
     @Test
-    fun `buildEndpointUrl appends kismet token when present`() {
+    fun `buildEndpointUrl returns update cmd path`() {
         val client = KismetGpsClient(FakeStore())
 
-        val endpoint = client.buildEndpointUrl("http://127.0.0.1:2501", "abc 123")
+        val endpoint = client.buildEndpointUrl("http://127.0.0.1:2501")
 
-        assertEquals("http://127.0.0.1:2501/gps/web/update.cmd?KISMET=abc+123", endpoint)
+        assertEquals("http://127.0.0.1:2501/gps/web/update.cmd", endpoint)
+    }
+
+    @Test
+    fun `buildEndpointUrl with https base url`() {
+        val client = KismetGpsClient(FakeStore())
+
+        val endpoint = client.buildEndpointUrl("https://kismet.local:2501")
+
+        assertEquals("https://kismet.local:2501/gps/web/update.cmd", endpoint)
     }
 
     private class FakeStore : KismetConfigReader {
