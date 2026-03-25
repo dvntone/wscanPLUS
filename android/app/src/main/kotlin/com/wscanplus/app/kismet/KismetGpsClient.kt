@@ -5,7 +5,6 @@ import com.wscanplus.app.location.LocationSample
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
-import java.net.URLEncoder
 
 class KismetGpsClient(
     private val configStore: KismetConfigReader,
@@ -16,9 +15,13 @@ class KismetGpsClient(
         val normalizedBaseUrl = config.normalizedBaseUrl()
         if (normalizedBaseUrl.isBlank()) return false
 
+        if (normalizedBaseUrl.startsWith("http://")) {
+            Log.w(TAG, "Kismet base URL uses plain HTTP — token and GPS data are unencrypted in transit")
+        }
+
         val body = buildJsonPayload(sample)
         val connection =
-            (URL(buildEndpointUrl(normalizedBaseUrl, config.apiToken)).openConnection() as HttpURLConnection)
+            (URL(buildEndpointUrl(normalizedBaseUrl)).openConnection() as HttpURLConnection)
                 .apply {
                     requestMethod = "POST"
                     connectTimeout = 5000
@@ -26,6 +29,9 @@ class KismetGpsClient(
                     doOutput = true
                     setRequestProperty("Content-Type", "application/json")
                     setRequestProperty("Accept", "application/json")
+                    if (config.apiToken.isNotBlank()) {
+                        setRequestProperty("Authorization", "KISMET ${config.apiToken}")
+                    }
                 }
 
         return try {
@@ -60,16 +66,7 @@ class KismetGpsClient(
             append('}')
         }
 
-    internal fun buildEndpointUrl(
-        normalizedBaseUrl: String,
-        apiToken: String,
-    ): String =
-        if (apiToken.isBlank()) {
-            "$normalizedBaseUrl/gps/web/update.cmd"
-        } else {
-            val encodedToken = URLEncoder.encode(apiToken, Charsets.UTF_8.name())
-            "$normalizedBaseUrl/gps/web/update.cmd?KISMET=$encodedToken"
-        }
+    internal fun buildEndpointUrl(normalizedBaseUrl: String): String = "$normalizedBaseUrl/gps/web/update.cmd"
 
     companion object {
         private const val TAG = "KismetGpsClient"
