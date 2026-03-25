@@ -66,8 +66,7 @@ class KismetGpsClient(
             append('}')
         }
 
-    internal fun buildEndpointUrl(normalizedBaseUrl: String): String =
-        "$normalizedBaseUrl/gps/web/update.cmd"
+    internal fun buildEndpointUrl(normalizedBaseUrl: String): String = "$normalizedBaseUrl/gps/web/update.cmd"
 
     companion object {
         private const val TAG = "KismetGpsClient"

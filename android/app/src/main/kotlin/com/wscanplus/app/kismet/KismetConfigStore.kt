@@ -53,5 +53,4 @@ class KismetConfigStore(
             .putString(KEY_API_TOKEN, config.apiToken)
             .apply()
     }
-
 }
