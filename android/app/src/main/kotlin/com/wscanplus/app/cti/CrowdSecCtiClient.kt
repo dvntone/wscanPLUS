@@ -22,8 +22,8 @@ class CrowdSecCtiClient(
     private val consentReader: ConsentReader,
     private val httpClient: OkHttpClient = OkHttpClient(),
     private val baseUrl: String = BASE_URL,
-) {
-    suspend fun lookupSmoke(ip: String): CrowdSecSmokeResult? =
+) : CtiClient {
+    override suspend fun lookupSmoke(ip: String): CrowdSecSmokeResult? =
         withContext(Dispatchers.IO) {
             if (!consentReader.isConsentGiven()) {
                 Log.w(TAG, "CrowdSec CTI blocked: user consent not granted")
