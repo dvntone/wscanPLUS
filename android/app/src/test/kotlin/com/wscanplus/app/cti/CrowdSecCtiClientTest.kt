@@ -11,6 +11,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 
 class CrowdSecCtiClientTest {
     private lateinit var server: MockWebServer
@@ -80,7 +81,7 @@ class CrowdSecCtiClientTest {
             server.enqueue(MockResponse().setResponseCode(200).setBody("{}"))
             makeClient(apiKey = "my-secret-key").lookupSmoke("1.2.3.4")
 
-            val recorded = server.takeRequest()
+            val recorded = checkNotNull(server.takeRequest(5, TimeUnit.SECONDS))
             assertEquals("my-secret-key", recorded.getHeader("x-api-key"))
         }
 
@@ -90,7 +91,7 @@ class CrowdSecCtiClientTest {
             server.enqueue(MockResponse().setResponseCode(200).setBody("{}"))
             makeClient().lookupSmoke("5.6.7.8")
 
-            val recorded = server.takeRequest()
+            val recorded = checkNotNull(server.takeRequest(5, TimeUnit.SECONDS))
             assertEquals("/v2/smoke/5.6.7.8", recorded.path)
         }
 

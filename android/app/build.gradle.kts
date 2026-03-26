@@ -41,6 +41,9 @@ android {
 
     testOptions {
         unitTests {
+            // Allows android.util.Log calls to return defaults (0/null) in JVM unit tests
+            // rather than throwing RuntimeException. A proper logging abstraction is
+            // deferred to Phase 4 — this is the minimal fix to unblock JVM test execution.
             isReturnDefaultValues = true
         }
     }
@@ -76,6 +79,10 @@ dependencies {
     // Maps utility library — HeatmapTileProvider for threat-weighted GPS heatmap (#9)
     implementation("com.google.maps.android:android-maps-utils:3.8.2")
 
+    // Kotlin coroutines — required by CrowdSecCtiClient (withContext) and other async flows
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+
     // CrowdSec CTI client — /v2/smoke IP reputation lookups (Phase 3)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
@@ -83,7 +90,7 @@ dependencies {
     implementation("androidx.security:security-crypto:1.0.0")
 
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
