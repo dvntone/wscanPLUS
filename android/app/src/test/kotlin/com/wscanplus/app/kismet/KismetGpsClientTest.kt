@@ -1,13 +1,14 @@
 package com.wscanplus.app.kismet
 
 import com.wscanplus.app.location.LocationSample
+import com.wscanplus.app.privacy.ConsentReader
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class KismetGpsClientTest {
     @Test
     fun `buildJsonPayload omits optional fields when absent`() {
-        val client = KismetGpsClient(FakeStore())
+        val client = KismetGpsClient(FakeStore(), FakeConsent())
 
         val payload =
             client.buildJsonPayload(
@@ -28,7 +29,7 @@ class KismetGpsClientTest {
 
     @Test
     fun `buildJsonPayload includes altitude and speed when present`() {
-        val client = KismetGpsClient(FakeStore())
+        val client = KismetGpsClient(FakeStore(), FakeConsent())
 
         val payload =
             client.buildJsonPayload(
@@ -49,7 +50,7 @@ class KismetGpsClientTest {
 
     @Test
     fun `buildEndpointUrl returns update cmd path`() {
-        val client = KismetGpsClient(FakeStore())
+        val client = KismetGpsClient(FakeStore(), FakeConsent())
 
         val endpoint = client.buildEndpointUrl("http://127.0.0.1:2501")
 
@@ -58,7 +59,7 @@ class KismetGpsClientTest {
 
     @Test
     fun `buildEndpointUrl with https base url`() {
-        val client = KismetGpsClient(FakeStore())
+        val client = KismetGpsClient(FakeStore(), FakeConsent())
 
         val endpoint = client.buildEndpointUrl("https://kismet.local:2501")
 
@@ -67,5 +68,11 @@ class KismetGpsClientTest {
 
     private class FakeStore : KismetConfigReader {
         override fun load(): KismetConfig = KismetConfig()
+    }
+
+    private class FakeConsent(
+        private val given: Boolean = true,
+    ) : ConsentReader {
+        override fun isConsentGiven(): Boolean = given
     }
 }

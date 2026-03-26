@@ -2,14 +2,20 @@ package com.wscanplus.app.kismet
 
 import android.util.Log
 import com.wscanplus.app.location.LocationSample
+import com.wscanplus.app.privacy.ConsentReader
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
 
 class KismetGpsClient(
     private val configStore: KismetConfigReader,
+    private val consentStore: ConsentReader,
 ) {
     fun send(sample: LocationSample): Boolean {
+        if (!consentStore.isConsentGiven()) {
+            Log.w(TAG, "Kismet blocked: user consent not granted")
+            return false
+        }
         val config = configStore.load()
         if (!config.enabled) return false
         val normalizedBaseUrl = config.normalizedBaseUrl()

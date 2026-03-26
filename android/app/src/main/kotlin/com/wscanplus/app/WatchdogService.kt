@@ -20,6 +20,7 @@ import com.wscanplus.app.kismet.KismetConfigStore
 import com.wscanplus.app.kismet.KismetGpsClient
 import com.wscanplus.app.location.FusedLocationSampler
 import com.wscanplus.app.location.LocationSample
+import com.wscanplus.app.privacy.ConsentStore
 import com.wscanplus.core.db.WscanDatabase
 import com.wscanplus.core.db.entity.ScanResultEntity
 import com.wscanplus.core.db.entity.ScanSessionEntity
@@ -96,7 +97,11 @@ class WatchdogService : Service() {
         super.onCreate()
         createNotificationChannel()
         database = WscanDatabase.getInstance(applicationContext)
-        kismetGpsClient = KismetGpsClient(KismetConfigStore(applicationContext))
+        kismetGpsClient =
+            KismetGpsClient(
+                KismetConfigStore(applicationContext),
+                ConsentStore(applicationContext),
+            )
         Log.i(TAG, "Service created")
     }
 
