@@ -2,6 +2,7 @@ package com.wscanplus.app
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
@@ -15,6 +16,7 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import com.wscanplus.app.privacy.ConsentStore
 
 class MainActivity : Activity() {
     private lateinit var statusView: TextView
@@ -55,7 +57,9 @@ class MainActivity : Activity() {
         rootLayout.addView(mapButton)
         setContentView(rootLayout)
 
-        if (hasEntryPermissions()) {
+        if (!ConsentStore(this).isConsentGiven()) {
+            showConsentDialog()
+        } else if (hasEntryPermissions()) {
             maybeStartWatchdog()
         } else {
             requestPermissions(requiredPermissions(), REQUEST_CODE)
@@ -228,6 +232,34 @@ class MainActivity : Activity() {
                 putExtra(WatchdogService.EXTRA_DEGRADED, degraded)
             }
         ContextCompat.startForegroundService(this, intent)
+    }
+
+    private fun showConsentDialog() {
+        val dialog = AlertDialog.Builder(this)
+        dialog.setTitle("Data Sharing Consent")
+        dialog.setMessage(
+            "wscan+ can submit network data to external threat intelligence services " +
+                "(CrowdSec CTI) to enrich threat detection.\n\n" +
+                "This is optional. Local Wi-Fi scanning works without consent.",
+        )
+        dialog.setPositiveButton("Allow") { _, _ ->
+            ConsentStore(this).setConsentGiven(true)
+            if (hasEntryPermissions()) {
+                maybeStartWatchdog()
+            } else {
+                requestPermissions(requiredPermissions(), REQUEST_CODE)
+            }
+        }
+        dialog.setNegativeButton("Decline") { _, _ ->
+            ConsentStore(this).setConsentGiven(false)
+            if (hasEntryPermissions()) {
+                maybeStartWatchdog()
+            } else {
+                requestPermissions(requiredPermissions(), REQUEST_CODE)
+            }
+        }
+        dialog.setCancelable(false)
+        dialog.show()
     }
 
     companion object {
