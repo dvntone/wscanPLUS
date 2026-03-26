@@ -30,9 +30,22 @@ android {
         }
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    testOptions {
+        unitTests {
+            // Allows android.util.Log calls to return defaults (0/null) in JVM unit tests
+            // rather than throwing RuntimeException. A proper logging abstraction is
+            // deferred to Phase 4 — this is the minimal fix to unblock JVM test execution.
+            isReturnDefaultValues = true
+        }
     }
 
     packaging {
@@ -41,8 +54,9 @@ android {
 }
 
 secrets {
-    // Reads GOOGLE_MAPS_API_KEY and VERTEX_AI_API_KEY from android/local.properties (gitignored).
+    // Reads GOOGLE_MAPS_API_KEY and CROWDSEC_CTI_API_KEY from android/local.properties (gitignored).
     // Fallback placeholder values from android/secrets.defaults.properties (committed).
+    // Both keys are injected into BuildConfig fields automatically by the plugin.
     propertiesFileName = "local.properties"
     defaultPropertiesFileName = "secrets.defaults.properties"
 }
@@ -65,10 +79,19 @@ dependencies {
     // Maps utility library — HeatmapTileProvider for threat-weighted GPS heatmap (#9)
     implementation("com.google.maps.android:android-maps-utils:3.8.2")
 
+    // Kotlin coroutines — required by CrowdSecCtiClient (withContext) and other async flows
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+
+    // CrowdSec CTI client — /v2/smoke IP reputation lookups (Phase 3)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
     // Keystore-backed EncryptedSharedPreferences for Kismet config at rest
     implementation("androidx.security:security-crypto:1.0.0")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
