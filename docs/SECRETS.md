@@ -39,10 +39,11 @@ base64 -b 0 release.keystore > keystore.b64
 |-------------|---------|
 | `GOOGLE_MAPS_API_KEY` | Google Maps SDK for Android — scan history map, network heatmap |
 | `GOOGLE_MAPS_SIGNING_SECRET` | URL signing secret for server-side Maps API requests (without it: 25k/day unsigned cap) |
-| `VERTEX_AI_API_KEY` | Vertex AI / Gemini — in-app threat analysis and AI heuristics. Key is bound to a service account; access is controlled by that account's IAM permissions. |
 
-**Status:** ✅ All 3 secrets configured in GitHub (2026-03-15).
-Rotation schedule: weekly pre-release, TBD post-release. Pre-release: consolidate service accounts and add per-key API restrictions.
+**Status:** ✅ Both secrets configured in GitHub (2026-03-15).
+Rotation schedule: weekly pre-release, TBD post-release.
+
+**Firebase AI Logic (Gemini):** does NOT use a raw API key at Android runtime. Authentication is handled automatically via `google-services.json` + the `com.google.gms.google-services` plugin. The Firebase project (`gen-lang-client-0542386332`) must have `generativelanguage.googleapis.com` and `firebasevertexai.googleapis.com` enabled. No secret needs to be added to GitHub or `local.properties` for Gemini.
 
 ---
 
@@ -60,11 +61,12 @@ Rotation schedule: weekly pre-release, TBD post-release. Pre-release: consolidat
 For local Android builds, add to `android/local.properties` (git-ignored):
 ```
 GOOGLE_MAPS_API_KEY=your_key_here
-VERTEX_AI_API_KEY=your_key_here
+CROWDSEC_CTI_API_KEY=your_key_here
 ANDROID_KEY_ALIAS=your_alias
 ANDROID_KEY_PASSWORD=your_password
 ANDROID_STORE_PASSWORD=your_password
 ```
+`google-services.json` must also be placed at `android/app/google-services.json` (gitignored). Obtain from Firebase Console — see KNOWN_ISSUES.md.
 
 For local desktop builds, add to `.env` (git-ignored):
 ```

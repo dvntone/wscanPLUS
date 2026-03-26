@@ -1,8 +1,6 @@
 plugins {
     id("com.android.application")
-    // TODO: add id("com.google.gms.google-services") once google-services.json
-    // is placed at android/app/google-services.json (obtain from Firebase Console).
-    // Applying without the file will fail the build — see KNOWN_ISSUES.md.
+    id("com.google.gms.google-services")
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
     id("org.jlleitschuh.gradle.ktlint")
 }
@@ -69,8 +67,8 @@ dependencies {
     // Firebase AI Logic SDK (Gemini in-app threat analysis — Android only)
     // BOM manages all firebase-* versions. Do NOT pin firebase-ai explicitly.
     // google-services plugin + google-services.json required before Firebase
-    // initialises at runtime — see KNOWN_ISSUES.md.
-    implementation(platform("com.google.firebase:firebase-bom:34.10.0"))
+    // initialises at runtime.
+    implementation(platform("com.google.firebase:firebase-bom:34.11.0"))
     implementation("com.google.firebase:firebase-ai")
 
     // Google Maps SDK — scan history heatmap + GPS-tagged scan visualisation
