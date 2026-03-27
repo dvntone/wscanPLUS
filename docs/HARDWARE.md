@@ -66,6 +66,14 @@ This document describes the hardware available for development and testing of ws
 | Probe sniffing | Passive recon detection |
 | PMKID capture | WPA handshake grab alert |
 
+### Known Device Signatures
+
+| MAC | Firmware | Confidence | Notes |
+|-----|----------|------------|-------|
+| `DE:AD:BE:EF:FE:ED` | Momentum (Flipper Zero WiFi dev board) | HIGH | Hardcoded default transmitter MAC set before every scan/attack. Any frame sourced from this MAC is a near-certain Flipper indicator — treat as named device fingerprint, not generic spoofed MAC. Users who do not change the default will always emit this MAC. |
+
+> `DE:AD:BE:EF:FE:ED` ("deadbeeffeed") should trigger a HIGH confidence alert in wscanplus, distinct from generic locally-administered MAC warnings. Seed this into `BssidFingerprintEntity` as a known attack tool signature in Phase 4.
+
 ---
 
 ## 🧪 Recommended Test Lab Setup
