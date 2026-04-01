@@ -26,4 +26,12 @@ interface ScanSessionDao {
         from: Long,
         to: Long,
     ): List<ScanSessionEntity>
+
+    /**
+     * Delete completed sessions whose [ScanSessionEntity.endedAt] is before [cutoffMs].
+     * Deletion cascades to scan_results and threat_signals via their FK constraints.
+     * Returns the number of sessions deleted.
+     */
+    @Query("DELETE FROM scan_sessions WHERE endedAt IS NOT NULL AND endedAt < :cutoffMs")
+    fun deleteCompletedOlderThan(cutoffMs: Long): Int
 }

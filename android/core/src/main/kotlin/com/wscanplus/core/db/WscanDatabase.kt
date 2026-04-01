@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import androidx.sqlite.db.SupportSQLiteOpenHelper
 import com.wscanplus.core.db.dao.BssidFingerprintDao
 import com.wscanplus.core.db.dao.CtiCacheDao
 import com.wscanplus.core.db.dao.ScanResultDao
@@ -45,23 +46,40 @@ abstract class WscanDatabase : RoomDatabase() {
         @Volatile
         private var instance: WscanDatabase? = null
 
-        fun getInstance(context: Context): WscanDatabase =
+        /**
+         * Returns the singleton instance, constructing it on first call.
+         *
+         * [factory] should be a SQLCipher [SupportFactory] for at-rest encryption.
+         * It is only used during the initial construction — subsequent calls return
+         * the cached instance regardless of [factory].
+         * Pass null only in tests (in-memory DB via Room.inMemoryDatabaseBuilder).
+         */
+        fun getInstance(
+            context: Context,
+            factory: SupportSQLiteOpenHelper.Factory? = null,
+        ): WscanDatabase =
             instance
                 ?: synchronized(this) {
                     instance
-                        ?: buildDatabase(context).also {
+                        ?: buildDatabase(context, factory).also {
                             instance = it
                         }
                 }
 
-        private fun buildDatabase(context: Context): WscanDatabase =
-            Room
-                .databaseBuilder(
-                    context.applicationContext,
-                    WscanDatabase::class.java,
-                    "wscan.db",
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
-                .build()
+        private fun buildDatabase(
+            context: Context,
+            factory: SupportSQLiteOpenHelper.Factory?,
+        ): WscanDatabase {
+            val builder =
+                Room
+                    .databaseBuilder(
+                        context.applicationContext,
+                        WscanDatabase::class.java,
+                        "wscan.db",
+                    ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            factory?.let { builder.openHelperFactory(it) }
+            return builder.build()
+        }
 
         private val MIGRATION_1_2 =
             object : Migration(1, 2) {
