@@ -173,8 +173,7 @@ class ScanHistoryActivity : Activity() {
 
     private fun formatDate(ts: Long): String = DateFormat.format("MMM d", ts).toString()
 
-    private fun formatDateTime(ts: Long): String =
-        DateFormat.format("yyyy-MM-dd  HH:mm", ts).toString()
+    private fun formatDateTime(ts: Long): String = DateFormat.format("yyyy-MM-dd  HH:mm", ts).toString()
 
     private fun formatDuration(ms: Long): String {
         val totalSec = ms / 1000
