@@ -31,6 +31,7 @@ import com.wscanplus.app.location.LocationSample
 import com.wscanplus.app.privacy.ConsentStore
 import com.wscanplus.core.db.RetentionManager
 import com.wscanplus.core.db.WscanDatabase
+import com.wscanplus.core.db.entity.GeminiNarrativeEntity
 import com.wscanplus.core.db.entity.ScanResultEntity
 import com.wscanplus.core.db.entity.ScanSessionEntity
 import com.wscanplus.core.db.entity.ThreatSignalEntity
@@ -212,10 +213,23 @@ class WatchdogService : Service() {
                         val now = System.currentTimeMillis()
                         if (now - lastGeminiAnalysisAtMs >= GEMINI_COOLDOWN_MS) {
                             lastGeminiAnalysisAtMs = now
+                            val snapSessionId = currentSessionId
                             serviceScope.launch {
                                 when (val result = geminiThreatAnalyzer.analyze(filtered)) {
-                                    is GeminiAnalysisResult.Success ->
+                                    is GeminiAnalysisResult.Success -> {
                                         Log.i(TAG, "Gemini narrative: ${result.narrative}")
+                                        if (snapSessionId != null) {
+                                            database.geminiNarrativeDao().insert(
+                                                GeminiNarrativeEntity(
+                                                    sessionId = snapSessionId,
+                                                    narrative = result.narrative,
+                                                    generatedAt = System.currentTimeMillis(),
+                                                    signalCount = filtered.size,
+                                                    modelName = GeminiThreatAnalyzer.MODEL_NAME,
+                                                ),
+                                            )
+                                        }
+                                    }
                                     GeminiAnalysisResult.NoThreats ->
                                         Log.d(TAG, "Gemini: no threats")
                                     GeminiAnalysisResult.ConsentRequired ->
