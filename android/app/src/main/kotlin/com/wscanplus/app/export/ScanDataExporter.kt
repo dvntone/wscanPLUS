@@ -21,8 +21,9 @@ import java.util.Locale
  */
 class ScanDataExporter(private val context: Context) {
     fun export(): File {
-        val passphrase = DbPassphraseProvider(context).getOrCreate()
-            ?: error("Encrypted database unavailable — cannot export.")
+        val passphrase =
+            DbPassphraseProvider(context).getOrCreate()
+                ?: error("Encrypted database unavailable — cannot export.")
 
         SQLiteDatabase.loadLibs(context)
         val db = WscanDatabase.getInstance(context, SupportFactory(passphrase))
