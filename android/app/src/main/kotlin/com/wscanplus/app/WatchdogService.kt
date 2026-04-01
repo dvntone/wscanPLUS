@@ -16,6 +16,11 @@ import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import com.wscanplus.app.cti.BuildConfigCrowdSecCtiKeyProvider
+import com.wscanplus.app.cti.CrowdSecCtiClient
+import com.wscanplus.app.cti.CtiCacheRepository
+import com.wscanplus.app.cti.CtiLookupResult
+import com.wscanplus.app.cti.SharedPrefsQuotaTracker
 import com.wscanplus.app.kismet.KismetConfigStore
 import com.wscanplus.app.kismet.KismetGpsClient
 import com.wscanplus.app.location.FusedLocationSampler
@@ -42,6 +47,11 @@ import com.wscanplus.core.threat.ScanContext
 import com.wscanplus.core.threat.ScanInput
 import com.wscanplus.core.threat.SsidFloodingHeuristic
 import com.wscanplus.core.threat.WepOpenHeuristic
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -67,6 +77,7 @@ import java.util.concurrent.atomic.AtomicReference
  * TODO (Phase 3): open ServerSocket(9000) on a background thread for ADB comms.
  */
 class WatchdogService : Service() {
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val ouiLookupRef = AtomicReference<OuiLookup?>(null)
     private var scannerChain: ScannerChain? = null
     private var scannerExecutor: ExecutorService? = null
@@ -79,6 +90,7 @@ class WatchdogService : Service() {
     private var degradedMode = false
     private lateinit var database: WscanDatabase
     private lateinit var kismetGpsClient: KismetGpsClient
+    private lateinit var ctiCacheRepository: CtiCacheRepository
     private val engine =
         HeuristicEngine(
             listOf(
@@ -102,6 +114,11 @@ class WatchdogService : Service() {
                 KismetConfigStore(applicationContext),
                 ConsentStore(applicationContext),
             )
+        val consentStore = ConsentStore(applicationContext)
+        val ctiKeyProvider = BuildConfigCrowdSecCtiKeyProvider()
+        val ctiClient = CrowdSecCtiClient(ctiKeyProvider, consentStore)
+        val quotaTracker = SharedPrefsQuotaTracker(applicationContext)
+        ctiCacheRepository = CtiCacheRepository(database.ctiCacheDao(), ctiClient, quotaTracker)
         Log.i(TAG, "Service created")
     }
 
@@ -183,6 +200,14 @@ class WatchdogService : Service() {
                     }
                     currentSessionId = createSession()
                     Log.i(TAG, "Scan session created: id=$currentSessionId")
+                    serviceScope.launch {
+                        try {
+                            ctiCacheRepository.pruneExpired()
+                            Log.i(TAG, "CTI cache pruned")
+                        } catch (e: Exception) {
+                            Log.w(TAG, "CTI cache prune failed", e)
+                        }
+                    }
                     if (!degradedMode) {
                         locationSampler?.start()
                     }
@@ -246,8 +271,23 @@ class WatchdogService : Service() {
             .notify(NOTIFICATION_ID_REVOKED, notificationBuilder.build())
     }
 
+    /**
+     * Perform a CTI reputation lookup for [ip].
+     *
+     * Results are logged; callers (e.g. ADB/Kismet integration in Phase 4) can use the
+     * returned [CtiLookupResult] to attach reputation data to threat signals.
+     *
+     * Must be called from a coroutine — [CtiCacheRepository.lookup] is a suspend function.
+     */
+    suspend fun lookupIp(ip: String): CtiLookupResult {
+        val result = ctiCacheRepository.lookup(ip)
+        Log.i(TAG, "CTI lookup $ip → ${result::class.simpleName}")
+        return result
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        serviceScope.cancel()
         Log.i(TAG, "Service destroyed")
         // Cancel any queued start task before submitting stop, so a pending start cannot
         // race with or follow the stop on the executor queue.
