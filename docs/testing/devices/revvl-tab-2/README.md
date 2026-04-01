@@ -33,15 +33,23 @@ Current active Android tablet target for on-device verification.
 
 ## Current development-phase focus
 
-This device session should validate the app as it exists after the recent Phase 2 and bug-fix merges:
+**Updated 2026-04-01 — Phase 3 complete. New session required.**
 
-- app-side logging added for adb verification
-- coarse-location fallback in `MainActivity`
-- `WatchdogService` runtime permission re-check for sticky restarts
-- stale scan-result filtering in `StandardScanner`
-- scanner-chain USB fallback to standard scanning
+Phase 3 is fully merged. The next session should validate the Phase 3 additions on top of the Phase 2 baseline already confirmed in the March session.
 
-The first session goal is not full heuristic validation in the field. It is to confirm that the current build starts, logs correctly, handles permissions correctly, and produces scan/runtime signals that can support later threat-intelligence testing.
+### Phase 3 changes to verify on-device
+
+- **DB encryption** — `wscan.db` is now encrypted with SQLCipher AES-256. Confirm via `adb pull` that the file is not readable by sqlite3 without the passphrase.
+- **DB passphrase generation** — on first launch after update, logcat should emit `DB passphrase generated; existing plaintext DB removed if present`. On subsequent launches, no passphrase log should appear.
+- **Retention purge** — logcat should emit `Retention purge: N session(s) older than 30d removed` on startup. Zero is expected on a fresh install.
+- **CTI cache prune** — logcat should emit `CTI cache pruned` on startup.
+- **Consent gate** — opt-in dialog must appear on first use of any CTI/network feature. Verify CrowdSec lookups are blocked until consent is given.
+- **Google Maps heatmap** — `ScanMapActivity` should launch and render GPS-tagged scan results on the heatmap. Verify GPS tags are present in logcat during scanning.
+- **Degraded mode** — verify service starts in degraded mode when background location is not granted.
+
+### Phase 2 baseline (confirmed 2026-03-20 — no re-verification needed unless regressions observed)
+
+- app-side logging, coarse-location fallback, sticky restart permission re-check, stale scan filtering, USB→standard chain fallback
 
 ## Latest baseline result
 
