@@ -8,7 +8,7 @@
     "start": "electron .",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --passWithNoTests"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --passWithNoTests"
   },
   "dependencies": {
     "@yume-chan/adb": "2.5.1",
