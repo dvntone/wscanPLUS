@@ -47,15 +47,15 @@ import com.wscanplus.core.threat.ScanContext
 import com.wscanplus.core.threat.ScanInput
 import com.wscanplus.core.threat.SsidFloodingHeuristic
 import com.wscanplus.core.threat.WepOpenHeuristic
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
-import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * WatchdogService manages the scanner chain and the ADB communication socket.
