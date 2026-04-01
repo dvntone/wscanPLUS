@@ -1,18 +1,23 @@
 package com.wscanplus.app
 
 import android.app.Activity
+import android.content.Intent
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.net.Uri
 import android.os.Bundle
 import android.text.format.DateFormat
 import android.util.Log
 import android.view.Gravity
+import android.widget.Button
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.FileProvider
 import com.wscanplus.app.db.DbPassphraseProvider
+import com.wscanplus.app.export.ScanDataExporter
 import com.wscanplus.core.db.WscanDatabase
 import com.wscanplus.core.db.entity.GeminiNarrativeEntity
 import com.wscanplus.core.db.entity.ScanResultEntity
@@ -49,9 +54,14 @@ class ThreatResultsActivity : Activity() {
             TextView(this).apply {
                 text = "Recent scan sessions with persisted Gemini narratives and local threat context."
                 textSize = 14f
-                setPadding(0, dp(8), 0, dp(20))
+                setPadding(0, dp(8), 0, dp(16))
             },
         )
+
+        val exportButton = Button(this)
+        exportButton.text = "Export JSON"
+        exportButton.setOnClickListener { exportJson(exportButton) }
+        contentLayout.addView(exportButton)
 
         scrollView.addView(contentLayout)
         setContentView(scrollView)
@@ -274,6 +284,40 @@ class ThreatResultsActivity : Activity() {
         runOnUiThread {
             Toast.makeText(this, message, Toast.LENGTH_LONG).show()
             contentLayout.addView(bodyText(message))
+        }
+    }
+
+    private fun exportJson(button: Button) {
+        button.isEnabled = false
+        button.text = "Exporting…"
+        executor.execute {
+            try {
+                val file = ScanDataExporter(applicationContext).export()
+                val uri: Uri =
+                    FileProvider.getUriForFile(
+                        applicationContext,
+                        "${applicationContext.packageName}.fileprovider",
+                        file,
+                    )
+                if (isDestroyed) return@execute
+                runOnUiThread {
+                    val intent = Intent(Intent.ACTION_SEND)
+                    intent.type = "application/json"
+                    intent.putExtra(Intent.EXTRA_STREAM, uri)
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    startActivity(Intent.createChooser(intent, "Export scan data"))
+                    button.text = "Export JSON"
+                    button.isEnabled = true
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Export failed", e)
+                if (isDestroyed) return@execute
+                runOnUiThread {
+                    Toast.makeText(this, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    button.text = "Export JSON"
+                    button.isEnabled = true
+                }
+            }
         }
     }
 
