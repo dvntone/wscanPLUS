@@ -56,11 +56,17 @@ class MainActivity : Activity() {
                 text = "View Threat Results"
                 setOnClickListener { openThreatResults() }
             }
+        val historyButton =
+            Button(this).apply {
+                text = "View Scan History"
+                setOnClickListener { openScanHistory() }
+            }
         rootLayout.addView(statusView)
         rootLayout.addView(actionButton)
         rootLayout.addView(settingsButton)
         rootLayout.addView(mapButton)
         rootLayout.addView(threatResultsButton)
+        rootLayout.addView(historyButton)
         setContentView(rootLayout)
 
         if (!ConsentStore(this).isConsentGiven()) {
@@ -204,6 +210,10 @@ class MainActivity : Activity() {
 
     private fun openThreatResults() {
         startActivity(Intent(this, ThreatResultsActivity::class.java))
+    }
+
+    private fun openScanHistory() {
+        startActivity(Intent(this, ScanHistoryActivity::class.java))
     }
 
     private fun isDeviceLocationEnabled(): Boolean {
