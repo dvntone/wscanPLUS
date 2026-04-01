@@ -21,11 +21,13 @@ import com.wscanplus.app.cti.CrowdSecCtiClient
 import com.wscanplus.app.cti.CtiCacheRepository
 import com.wscanplus.app.cti.CtiLookupResult
 import com.wscanplus.app.cti.SharedPrefsQuotaTracker
+import com.wscanplus.app.db.DbPassphraseProvider
 import com.wscanplus.app.kismet.KismetConfigStore
 import com.wscanplus.app.kismet.KismetGpsClient
 import com.wscanplus.app.location.FusedLocationSampler
 import com.wscanplus.app.location.LocationSample
 import com.wscanplus.app.privacy.ConsentStore
+import com.wscanplus.core.db.RetentionManager
 import com.wscanplus.core.db.WscanDatabase
 import com.wscanplus.core.db.entity.ScanResultEntity
 import com.wscanplus.core.db.entity.ScanSessionEntity
@@ -47,6 +49,8 @@ import com.wscanplus.core.threat.ScanContext
 import com.wscanplus.core.threat.ScanInput
 import com.wscanplus.core.threat.SsidFloodingHeuristic
 import com.wscanplus.core.threat.WepOpenHeuristic
+import net.sqlcipher.database.SQLiteDatabase
+import net.sqlcipher.database.SupportFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -91,6 +95,7 @@ class WatchdogService : Service() {
     private lateinit var database: WscanDatabase
     private lateinit var kismetGpsClient: KismetGpsClient
     private lateinit var ctiCacheRepository: CtiCacheRepository
+    private lateinit var retentionManager: RetentionManager
     private val engine =
         HeuristicEngine(
             listOf(
@@ -108,7 +113,15 @@ class WatchdogService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        database = WscanDatabase.getInstance(applicationContext)
+        val passphrase = DbPassphraseProvider(applicationContext).getOrCreate()
+        if (passphrase == null) {
+            Log.e(TAG, "DB passphrase unavailable — cannot open encrypted database; stopping service")
+            stopSelf()
+            return
+        }
+        SQLiteDatabase.loadLibs(applicationContext)
+        database = WscanDatabase.getInstance(applicationContext, SupportFactory(passphrase))
+        retentionManager = RetentionManager(database.scanSessionDao())
         kismetGpsClient =
             KismetGpsClient(
                 KismetConfigStore(applicationContext),
@@ -206,6 +219,11 @@ class WatchdogService : Service() {
                             Log.i(TAG, "CTI cache pruned")
                         } catch (e: Exception) {
                             Log.w(TAG, "CTI cache prune failed", e)
+                        }
+                        try {
+                            retentionManager.purge()
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Retention purge failed", e)
                         }
                     }
                     if (!degradedMode) {

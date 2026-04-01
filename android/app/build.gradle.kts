@@ -84,8 +84,11 @@ dependencies {
     // CrowdSec CTI client — /v2/smoke IP reputation lookups (Phase 3)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
-    // Keystore-backed EncryptedSharedPreferences for Kismet config at rest
+    // Keystore-backed EncryptedSharedPreferences for Kismet config and DB passphrase at rest
     implementation("androidx.security:security-crypto:1.0.0")
+
+    // SQLCipher — AES-256 at-rest encryption for WscanDatabase (#169)
+    implementation("net.zetetic:android-database-sqlcipher:4.5.4")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
