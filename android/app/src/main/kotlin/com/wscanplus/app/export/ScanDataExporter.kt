@@ -19,7 +19,9 @@ import java.util.Locale
  *
  * Must be called off the main thread.
  */
-class ScanDataExporter(private val context: Context) {
+class ScanDataExporter(
+    private val context: Context,
+) {
     fun export(): File {
         val passphrase =
             DbPassphraseProvider(context).getOrCreate()
