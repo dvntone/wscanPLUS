@@ -1,9 +1,8 @@
 package com.wscanplus.app.gemini
 
 import android.util.Log
-import com.google.firebase.Firebase
-import com.google.firebase.ai.GenerativeBackend
-import com.google.firebase.ai.ai
+import com.google.firebase.ai.FirebaseAI
+import com.google.firebase.ai.type.GenerativeBackend
 import com.wscanplus.app.privacy.ConsentReader
 import com.wscanplus.core.threat.ThreatSignal
 import kotlinx.coroutines.Dispatchers
@@ -26,8 +25,8 @@ class GeminiThreatAnalyzer(
     private val consentReader: ConsentReader,
 ) {
     private val model by lazy {
-        Firebase
-            .ai(backend = GenerativeBackend.googleAI())
+        FirebaseAI
+            .getInstance(backend = GenerativeBackend.googleAI())
             .generativeModel(MODEL_NAME)
     }
 
