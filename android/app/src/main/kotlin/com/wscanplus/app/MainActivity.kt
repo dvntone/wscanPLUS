@@ -51,10 +51,16 @@ class MainActivity : Activity() {
                 text = "View Scan Map"
                 setOnClickListener { openScanMap() }
             }
+        val threatResultsButton =
+            Button(this).apply {
+                text = "View Threat Results"
+                setOnClickListener { openThreatResults() }
+            }
         rootLayout.addView(statusView)
         rootLayout.addView(actionButton)
         rootLayout.addView(settingsButton)
         rootLayout.addView(mapButton)
+        rootLayout.addView(threatResultsButton)
         setContentView(rootLayout)
 
         if (!ConsentStore(this).isConsentGiven()) {
@@ -194,6 +200,10 @@ class MainActivity : Activity() {
 
     private fun openScanMap() {
         startActivity(Intent(this, ScanMapActivity::class.java))
+    }
+
+    private fun openThreatResults() {
+        startActivity(Intent(this, ThreatResultsActivity::class.java))
     }
 
     private fun isDeviceLocationEnabled(): Boolean {
