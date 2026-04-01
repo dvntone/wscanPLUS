@@ -5,6 +5,7 @@ import com.google.firebase.ai.FirebaseAI
 import com.google.firebase.ai.type.GenerativeBackend
 import com.wscanplus.app.privacy.ConsentReader
 import com.wscanplus.core.threat.ThreatSignal
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -47,6 +48,9 @@ class GeminiThreatAnalyzer(
                 } else {
                     GeminiAnalysisResult.Success(text.trim())
                 }
+            } catch (e: CancellationException) {
+                Log.d(TAG, "Gemini analysis cancelled")
+                throw e
             } catch (e: Exception) {
                 Log.w(TAG, "Gemini analysis failed", e)
                 GeminiAnalysisResult.Unavailable

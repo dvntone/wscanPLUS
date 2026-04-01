@@ -82,6 +82,10 @@
             android:name=".ScanMapActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".ThreatResultsActivity"
+            android:exported="false" />
+
         <!--
             WatchdogService — foreground service managing the scanner chain + ADB socket.
             foregroundServiceType includes location because Wi-Fi scan retrieval is

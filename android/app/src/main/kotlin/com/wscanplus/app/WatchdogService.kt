@@ -62,6 +62,7 @@ import net.sqlcipher.database.SupportFactory
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -101,6 +102,7 @@ class WatchdogService : Service() {
     private lateinit var retentionManager: RetentionManager
     private lateinit var geminiThreatAnalyzer: GeminiThreatAnalyzer
     private var lastGeminiAnalysisAtMs: Long = 0L
+    private val geminiAnalysisInFlight = AtomicBoolean(false)
     private val engine =
         HeuristicEngine(
             listOf(
@@ -211,31 +213,37 @@ class WatchdogService : Service() {
                     )
                     if (filtered.isNotEmpty()) {
                         val now = System.currentTimeMillis()
-                        if (now - lastGeminiAnalysisAtMs >= GEMINI_COOLDOWN_MS) {
-                            lastGeminiAnalysisAtMs = now
+                        if (now - lastGeminiAnalysisAtMs >= GEMINI_COOLDOWN_MS &&
+                            geminiAnalysisInFlight.compareAndSet(false, true)
+                        ) {
                             val snapSessionId = currentSessionId
                             serviceScope.launch {
-                                when (val result = geminiThreatAnalyzer.analyze(filtered)) {
-                                    is GeminiAnalysisResult.Success -> {
-                                        Log.i(TAG, "Gemini narrative: ${result.narrative}")
-                                        if (snapSessionId != null) {
-                                            database.geminiNarrativeDao().insert(
-                                                GeminiNarrativeEntity(
-                                                    sessionId = snapSessionId,
-                                                    narrative = result.narrative,
-                                                    generatedAt = System.currentTimeMillis(),
-                                                    signalCount = filtered.size,
-                                                    modelName = GeminiThreatAnalyzer.MODEL_NAME,
-                                                ),
-                                            )
+                                try {
+                                    when (val result = geminiThreatAnalyzer.analyze(filtered)) {
+                                        is GeminiAnalysisResult.Success -> {
+                                            Log.i(TAG, "Gemini narrative: ${result.narrative}")
+                                            if (snapSessionId != null) {
+                                                database.geminiNarrativeDao().insert(
+                                                    GeminiNarrativeEntity(
+                                                        sessionId = snapSessionId,
+                                                        narrative = result.narrative,
+                                                        generatedAt = System.currentTimeMillis(),
+                                                        signalCount = filtered.size,
+                                                        modelName = GeminiThreatAnalyzer.MODEL_NAME,
+                                                    ),
+                                                )
+                                                lastGeminiAnalysisAtMs = System.currentTimeMillis()
+                                            }
                                         }
+                                        GeminiAnalysisResult.NoThreats ->
+                                            Log.d(TAG, "Gemini: no threats")
+                                        GeminiAnalysisResult.ConsentRequired ->
+                                            Log.d(TAG, "Gemini: consent not granted")
+                                        GeminiAnalysisResult.Unavailable ->
+                                            Log.w(TAG, "Gemini: analysis unavailable")
                                     }
-                                    GeminiAnalysisResult.NoThreats ->
-                                        Log.d(TAG, "Gemini: no threats")
-                                    GeminiAnalysisResult.ConsentRequired ->
-                                        Log.d(TAG, "Gemini: consent not granted")
-                                    GeminiAnalysisResult.Unavailable ->
-                                        Log.w(TAG, "Gemini: analysis unavailable")
+                                } finally {
+                                    geminiAnalysisInFlight.set(false)
                                 }
                             }
                         }
