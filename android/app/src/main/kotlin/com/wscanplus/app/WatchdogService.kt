@@ -22,6 +22,8 @@ import com.wscanplus.app.cti.CtiCacheRepository
 import com.wscanplus.app.cti.CtiLookupResult
 import com.wscanplus.app.cti.SharedPrefsQuotaTracker
 import com.wscanplus.app.db.DbPassphraseProvider
+import com.wscanplus.app.gemini.GeminiAnalysisResult
+import com.wscanplus.app.gemini.GeminiThreatAnalyzer
 import com.wscanplus.app.kismet.KismetConfigStore
 import com.wscanplus.app.kismet.KismetGpsClient
 import com.wscanplus.app.location.FusedLocationSampler
@@ -96,6 +98,8 @@ class WatchdogService : Service() {
     private lateinit var kismetGpsClient: KismetGpsClient
     private lateinit var ctiCacheRepository: CtiCacheRepository
     private lateinit var retentionManager: RetentionManager
+    private lateinit var geminiThreatAnalyzer: GeminiThreatAnalyzer
+    private var lastGeminiAnalysisAtMs: Long = 0L
     private val engine =
         HeuristicEngine(
             listOf(
@@ -132,6 +136,7 @@ class WatchdogService : Service() {
         val ctiClient = CrowdSecCtiClient(ctiKeyProvider, consentStore)
         val quotaTracker = SharedPrefsQuotaTracker(applicationContext)
         ctiCacheRepository = CtiCacheRepository(database.ctiCacheDao(), ctiClient, quotaTracker)
+        geminiThreatAnalyzer = GeminiThreatAnalyzer(consentStore)
         Log.i(TAG, "Service created")
     }
 
@@ -203,6 +208,24 @@ class WatchdogService : Service() {
                         results = results,
                         filteredSignals = filtered,
                     )
+                    if (filtered.isNotEmpty()) {
+                        val now = System.currentTimeMillis()
+                        if (now - lastGeminiAnalysisAtMs >= GEMINI_COOLDOWN_MS) {
+                            lastGeminiAnalysisAtMs = now
+                            serviceScope.launch {
+                                when (val result = geminiThreatAnalyzer.analyze(filtered)) {
+                                    is GeminiAnalysisResult.Success ->
+                                        Log.i(TAG, "Gemini narrative: ${result.narrative}")
+                                    GeminiAnalysisResult.NoThreats ->
+                                        Log.d(TAG, "Gemini: no threats")
+                                    GeminiAnalysisResult.ConsentRequired ->
+                                        Log.d(TAG, "Gemini: consent not granted")
+                                    GeminiAnalysisResult.Unavailable ->
+                                        Log.w(TAG, "Gemini: analysis unavailable")
+                                }
+                            }
+                        }
+                    }
                 }
             startFuture =
                 executor.submit {
@@ -465,6 +488,7 @@ class WatchdogService : Service() {
         private const val NOTIFICATION_ID = 1
         private const val NOTIFICATION_ID_REVOKED = 2
         private const val KISMET_SEND_INTERVAL_MS = 10_000L
+        private const val GEMINI_COOLDOWN_MS = 5 * 60 * 1000L
 
         /**
          * Pass true to start in degraded mode: ACCESS_FINE_LOCATION is required but
