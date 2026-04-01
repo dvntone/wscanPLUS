@@ -49,13 +49,13 @@ import com.wscanplus.core.threat.ScanContext
 import com.wscanplus.core.threat.ScanInput
 import com.wscanplus.core.threat.SsidFloodingHeuristic
 import com.wscanplus.core.threat.WepOpenHeuristic
-import net.sqlcipher.database.SQLiteDatabase
-import net.sqlcipher.database.SupportFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import net.sqlcipher.database.SQLiteDatabase
+import net.sqlcipher.database.SupportFactory
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future

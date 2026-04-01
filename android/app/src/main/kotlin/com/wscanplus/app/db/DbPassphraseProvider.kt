@@ -20,8 +20,9 @@ import java.security.SecureRandom
  * treat a null result as a hard failure — the database must not be opened
  * without encryption (fail-closed).
  */
-class DbPassphraseProvider(private val context: Context) {
-
+class DbPassphraseProvider(
+    private val context: Context,
+) {
     fun getOrCreate(): ByteArray? {
         val prefs = createEncryptedPrefs() ?: return null
         val stored = prefs.getString(KEY_PASSPHRASE, null)
@@ -68,7 +69,6 @@ class DbPassphraseProvider(private val context: Context) {
 
         private fun bytesToHex(bytes: ByteArray): String = bytes.joinToString("") { "%02x".format(it) }
 
-        private fun hexToBytes(hex: String): ByteArray =
-            ByteArray(hex.length / 2) { hex.substring(it * 2, it * 2 + 2).toInt(16).toByte() }
+        private fun hexToBytes(hex: String): ByteArray = ByteArray(hex.length / 2) { hex.substring(it * 2, it * 2 + 2).toInt(16).toByte() }
     }
 }
