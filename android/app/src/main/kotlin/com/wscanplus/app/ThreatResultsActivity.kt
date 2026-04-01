@@ -124,10 +124,11 @@ class ThreatResultsActivity : Activity() {
                     }
             }
 
-        val layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        )
+        val layoutParams =
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            )
         layoutParams.bottomMargin = dp(12)
         card.layoutParams = layoutParams
 
@@ -249,10 +250,11 @@ class ThreatResultsActivity : Activity() {
                             setStroke(dp(1), 0xFFB6C29A.toInt())
                         }
                     if (index < labels.lastIndex) {
-                        val lp = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                        )
+                        val lp =
+                            LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.WRAP_CONTENT,
+                                LinearLayout.LayoutParams.WRAP_CONTENT,
+                            )
                         lp.rightMargin = dp(8)
                         layoutParams = lp
                     }
