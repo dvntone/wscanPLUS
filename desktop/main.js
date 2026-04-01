@@ -1,9 +1,44 @@
 import { app, BrowserWindow } from 'electron';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { AdbTransport } from './adb/AdbTransport.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+let adbTransport;
+
+async function initAdbTransport() {
+  adbTransport = new AdbTransport();
+
+  adbTransport.on('connect', ({ serial }) => {
+    console.info(`[adb] Connected to ${serial} WatchdogService (tcp:9000)`);
+  });
+
+  adbTransport.on('data', (buffer) => {
+    console.debug(`[adb] WatchdogService data ${buffer.length} bytes`);
+  });
+
+  adbTransport.on('disconnect', ({ serial }) => {
+    console.info(`[adb] Disconnected from ${serial} WatchdogService`);
+  });
+
+  adbTransport.on('error', (error) => {
+    console.error('[adb] Transport error', error);
+  });
+
+  try {
+    const devices = await adbTransport.listDevices();
+    if (devices.length === 0) {
+      console.warn('[adb] No devices connected; skipping WatchdogService connect');
+      return;
+    }
+
+    const serial = devices[0];
+    await adbTransport.connect(serial);
+  } catch (error) {
+    console.error('[adb] Failed to initialize ADB transport', error);
+  }
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -22,6 +57,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow();
+  void initAdbTransport();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -29,5 +65,8 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  if (process.platform !== 'darwin') {
+    void adbTransport?.disconnect();
+    app.quit();
+  }
 });
