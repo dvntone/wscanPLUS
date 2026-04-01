@@ -70,7 +70,7 @@ This document describes the hardware available for development and testing of ws
 
 | MAC | Firmware | Confidence | Notes |
 |-----|----------|------------|-------|
-| `DE:AD:BE:EF:FE:ED` | Momentum (Flipper Zero WiFi dev board) | HIGH | Hardcoded default transmitter MAC set before every scan/attack. Any frame sourced from this MAC is a near-certain Flipper indicator — treat as named device fingerprint, not generic spoofed MAC. Users who do not change the default will always emit this MAC. |
+| `DE:AD:BE:EF:FE:ED` | Momentum (Flipper Zero WiFi dev board) | HIGH | Default transmitter MAC set before every scan/attack. Configurable in Momentum (MAC, device name, and BLE name can all be changed); not all Flipper Zero firmware expose this setting. Any frame sourced from this MAC is a near-certain Flipper indicator for users who have not changed the default — treat as named device fingerprint, not generic spoofed MAC. |
 
 > `DE:AD:BE:EF:FE:ED` ("deadbeeffeed") should trigger a HIGH confidence alert in wscanplus, distinct from generic locally-administered MAC warnings. Seed this into `BssidFingerprintEntity` as a known attack tool signature in Phase 4.
 
