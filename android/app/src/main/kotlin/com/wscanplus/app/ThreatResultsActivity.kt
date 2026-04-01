@@ -70,7 +70,8 @@ class ThreatResultsActivity : Activity() {
                 SQLiteDatabase.loadLibs(applicationContext)
                 val db = WscanDatabase.getInstance(applicationContext, SupportFactory(passphrase))
                 val summaries =
-                    db.scanSessionDao()
+                    db
+                        .scanSessionDao()
                         .getRecent(20)
                         .map { session ->
                             val results = db.scanResultDao().getBySession(session.id)
@@ -123,13 +124,11 @@ class ThreatResultsActivity : Activity() {
                     }
             }
 
-        val layoutParams =
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply {
-                bottomMargin = dp(12)
-            }
+        val layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        )
+        layoutParams.bottomMargin = dp(12)
         card.layoutParams = layoutParams
 
         val sessionWindow =
@@ -250,13 +249,12 @@ class ThreatResultsActivity : Activity() {
                             setStroke(dp(1), 0xFFB6C29A.toInt())
                         }
                     if (index < labels.lastIndex) {
-                        layoutParams =
-                            LinearLayout.LayoutParams(
-                                LinearLayout.LayoutParams.WRAP_CONTENT,
-                                LinearLayout.LayoutParams.WRAP_CONTENT,
-                            ).apply {
-                                rightMargin = dp(8)
-                            }
+                        val lp = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        )
+                        lp.rightMargin = dp(8)
+                        layoutParams = lp
                     }
                 },
             )
