@@ -10,11 +10,13 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
 import com.wscanplus.core.db.dao.BssidFingerprintDao
 import com.wscanplus.core.db.dao.CtiCacheDao
+import com.wscanplus.core.db.dao.GeminiNarrativeDao
 import com.wscanplus.core.db.dao.ScanResultDao
 import com.wscanplus.core.db.dao.ScanSessionDao
 import com.wscanplus.core.db.dao.ThreatSignalDao
 import com.wscanplus.core.db.entity.BssidFingerprintEntity
 import com.wscanplus.core.db.entity.CtiCacheEntity
+import com.wscanplus.core.db.entity.GeminiNarrativeEntity
 import com.wscanplus.core.db.entity.ScanResultEntity
 import com.wscanplus.core.db.entity.ScanSessionEntity
 import com.wscanplus.core.db.entity.ThreatSignalEntity
@@ -26,8 +28,9 @@ import com.wscanplus.core.db.entity.ThreatSignalEntity
         BssidFingerprintEntity::class,
         ThreatSignalEntity::class,
         CtiCacheEntity::class,
+        GeminiNarrativeEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -41,6 +44,8 @@ abstract class WscanDatabase : RoomDatabase() {
     abstract fun threatSignalDao(): ThreatSignalDao
 
     abstract fun ctiCacheDao(): CtiCacheDao
+
+    abstract fun geminiNarrativeDao(): GeminiNarrativeDao
 
     companion object {
         @Volatile
@@ -76,7 +81,7 @@ abstract class WscanDatabase : RoomDatabase() {
                         context.applicationContext,
                         WscanDatabase::class.java,
                         "wscan.db",
-                    ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             factory?.let { builder.openHelperFactory(it) }
             return builder.build()
         }
@@ -99,6 +104,27 @@ abstract class WscanDatabase : RoomDatabase() {
             object : Migration(2, 3) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_scan_results_timestamp ON scan_results (timestamp)")
+                }
+            }
+
+        private val MIGRATION_3_4 =
+            object : Migration(3, 4) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS gemini_narratives (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            sessionId INTEGER NOT NULL,
+                            narrative TEXT NOT NULL,
+                            generatedAt INTEGER NOT NULL,
+                            signalCount INTEGER NOT NULL,
+                            modelName TEXT NOT NULL,
+                            FOREIGN KEY (sessionId) REFERENCES scan_sessions(id) ON DELETE CASCADE
+                        )
+                        """.trimIndent(),
+                    )
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_gemini_narratives_sessionId ON gemini_narratives (sessionId)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_gemini_narratives_generatedAt ON gemini_narratives (generatedAt)")
                 }
             }
     }
