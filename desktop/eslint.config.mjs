@@ -20,10 +20,21 @@ export default [
         jest: "readonly",
         Buffer: "readonly",
         setTimeout: "readonly",
+        clearTimeout: "readonly",
         ReadableStream: "readonly",
       },
     },
     rules: {},
+  },
+  {
+    files: ["companion.js", "preload.js"],
+    languageOptions: {
+      globals: {
+        window: "readonly",
+        document: "readonly",
+        localStorage: "readonly",
+      },
+    },
   },
   {
     ignores: ["node_modules/", "dist/"],

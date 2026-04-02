@@ -32,10 +32,12 @@ class ScanDataExporter(
         val sessions = db.scanSessionDao().getRecent(EXPORT_SESSION_LIMIT)
 
         val sessionsArray = JSONArray()
+        val narrativesArray = JSONArray()
         for (session in sessions) {
             val results = db.scanResultDao().getBySession(session.id)
             val signals = db.threatSignalDao().getBySession(session.id)
             val narratives = db.geminiNarrativeDao().getBySession(session.id)
+            val latestNarrative = narratives.firstOrNull()
 
             val resultsArray = JSONArray()
             for (r in results) {
@@ -67,14 +69,16 @@ class ScanDataExporter(
                 signalsArray.put(obj)
             }
 
-            val narrativesArray = JSONArray()
+            val sessionNarrativesArray = JSONArray()
             for (n in narratives) {
                 val obj = JSONObject()
                 obj.put("id", n.id)
+                obj.put("sessionId", n.sessionId)
                 obj.put("narrative", n.narrative)
                 obj.put("generatedAt", n.generatedAt)
                 obj.put("signalCount", n.signalCount)
                 obj.put("modelName", n.modelName)
+                sessionNarrativesArray.put(obj)
                 narrativesArray.put(obj)
             }
 
@@ -84,9 +88,12 @@ class ScanDataExporter(
             sessionObj.put("endedAt", session.endedAt)
             sessionObj.put("environmentType", session.environmentType.name)
             sessionObj.put("deviceSerial", session.deviceSerial)
+            sessionObj.put("signalCount", latestNarrative?.signalCount ?: signals.size)
+            sessionObj.put("modelName", latestNarrative?.modelName ?: JSONObject.NULL)
+            sessionObj.put("narrative", latestNarrative?.narrative ?: JSONObject.NULL)
             sessionObj.put("scanResults", resultsArray)
             sessionObj.put("threatSignals", signalsArray)
-            sessionObj.put("geminiNarratives", narrativesArray)
+            sessionObj.put("geminiNarratives", sessionNarrativesArray)
             sessionsArray.put(sessionObj)
         }
 
@@ -94,6 +101,7 @@ class ScanDataExporter(
         root.put("exportedAt", ISO_FORMAT.format(Date()))
         root.put("sessionCount", sessions.size)
         root.put("sessions", sessionsArray)
+        root.put("narratives", narrativesArray)
 
         val exportsDir = File(context.cacheDir, "exports")
         exportsDir.mkdirs()
@@ -107,7 +115,10 @@ class ScanDataExporter(
     companion object {
         private const val TAG = "ScanDataExporter"
         private const val EXPORT_SESSION_LIMIT = 20
-        private val ISO_FORMAT = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
+        private val ISO_FORMAT =
+            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).also {
+                it.timeZone = java.util.TimeZone.getTimeZone("UTC")
+            }
         private val FILE_TIMESTAMP_FORMAT = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
     }
 }
