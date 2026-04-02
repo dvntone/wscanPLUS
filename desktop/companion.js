@@ -201,6 +201,10 @@ function renderIntelHistory() {
 }
 
 function render() {
+  const focusedId = document.activeElement?.id || null;
+  const selectionStart = document.activeElement?.selectionStart ?? null;
+  const selectionEnd = document.activeElement?.selectionEnd ?? null;
+
   const layout = selectedLayout();
   const summary = currentSummary();
   const intel = currentIntel();
@@ -451,6 +455,14 @@ function render() {
   `;
 
   bindEvents();
+
+  if (focusedId) {
+    const el = document.getElementById(focusedId);
+    if (el) {
+      el.focus();
+      if (selectionStart !== null) el.setSelectionRange(selectionStart, selectionEnd);
+    }
+  }
 }
 
 function bindEvents() {
