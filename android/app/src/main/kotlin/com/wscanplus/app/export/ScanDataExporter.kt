@@ -79,7 +79,7 @@ class ScanDataExporter(
                 obj.put("signalCount", n.signalCount)
                 obj.put("modelName", n.modelName)
                 sessionNarrativesArray.put(obj)
-                narrativesArray.put(JSONObject(obj.toString()))
+                narrativesArray.put(obj)
             }
 
             val sessionObj = JSONObject()

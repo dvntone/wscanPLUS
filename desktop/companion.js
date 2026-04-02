@@ -25,6 +25,8 @@ const STORAGE_KEYS = {
   selectedSessionId: 'wscanplus.desktop.selectedSessionId',
 };
 
+let macRenderTimer;
+
 function esc(s) {
   return String(s)
     .replace(/&/g, '&amp;')
@@ -402,7 +404,8 @@ function bindEvents() {
   });
   document.querySelector('#mac-intel')?.addEventListener('input', (event) => {
     state.macInput = event.target.value;
-    render();
+    clearTimeout(macRenderTimer);
+    macRenderTimer = setTimeout(() => render(), 150);
   });
   document.querySelector('#portal-variant')?.addEventListener('change', (event) => {
     state.selectedPortal = event.target.value;

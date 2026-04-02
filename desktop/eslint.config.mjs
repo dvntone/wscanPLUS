@@ -20,6 +20,7 @@ export default [
         jest: "readonly",
         Buffer: "readonly",
         setTimeout: "readonly",
+        clearTimeout: "readonly",
         ReadableStream: "readonly",
       },
     },

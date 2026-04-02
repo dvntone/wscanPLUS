@@ -1,6 +1,7 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { AdbTransport } from './adb/AdbTransport.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -57,6 +58,22 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  ipcMain.handle('adb:listDevices', async () => {
+    if (!adbTransport) return [];
+    return adbTransport.listDevices();
+  });
+
+  ipcMain.handle('sessions:importArtifact', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      properties: ['openFile'],
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+    });
+    if (canceled || filePaths.length === 0) return null;
+    const filePath = filePaths[0];
+    const raw = readFileSync(filePath, 'utf8');
+    return { raw, filePath };
+  });
+
   createWindow();
   void initAdbTransport();
 
