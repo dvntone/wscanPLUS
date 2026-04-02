@@ -115,9 +115,10 @@ class ScanDataExporter(
     companion object {
         private const val TAG = "ScanDataExporter"
         private const val EXPORT_SESSION_LIMIT = 20
-        private val ISO_FORMAT = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).also {
-            it.timeZone = java.util.TimeZone.getTimeZone("UTC")
-        }
+        private val ISO_FORMAT =
+            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).also {
+                it.timeZone = java.util.TimeZone.getTimeZone("UTC")
+            }
         private val FILE_TIMESTAMP_FORMAT = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
     }
 }
