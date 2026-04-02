@@ -53,6 +53,14 @@ function createWindow() {
     }
   });
 
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.on('will-navigate', (event, url) => {
+    if (url !== win.webContents.getURL()) {
+      event.preventDefault();
+      console.warn('[security] Blocked navigation to', url);
+    }
+  });
+
   win.loadFile(join(__dirname, 'index.html')).catch((err) => {
     console.error('Failed to load index.html', err);
   });
