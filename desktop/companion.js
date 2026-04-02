@@ -424,13 +424,13 @@ function render() {
             </select>
             <div class="intel-card" data-tone="warn">
               <div class="keyline">
-                <strong>${portal.title}</strong>
-                <span class="badge mono">${portal.artifactId}</span>
+                <strong>${esc(portal.title)}</strong>
+                <span class="badge mono">${esc(portal.artifactId)}</span>
               </div>
-              <p class="muted">${portal.summary}</p>
+              <p class="muted">${esc(portal.summary)}</p>
             </div>
             <ul class="portal-signal-list">
-              ${portal.signals.map((signal) => `<li class="muted">${signal}</li>`).join('')}
+              ${portal.signals.map((signal) => `<li class="muted">${esc(signal)}</li>`).join('')}
             </ul>
           </div>
           <div class="surface stack">

@@ -85,18 +85,16 @@ export function parseSessionArtifact(raw) {
     throw new Error('Artifact must contain a sessions array.');
   }
 
-  const narrativeBySession = new Map(
-    narratives
-      .filter((item) => typeof item?.sessionId === 'number')
-      .map((item) => [
-        item.sessionId,
-        {
-          narrative: item.narrative,
-          modelName: item.modelName,
-          signalCount: item.signalCount,
-        },
-      ])
-  );
+  const narrativeBySession = new Map();
+  for (const item of narratives) {
+    if (typeof item?.sessionId === 'number' && !narrativeBySession.has(item.sessionId)) {
+      narrativeBySession.set(item.sessionId, {
+        narrative: item.narrative,
+        modelName: item.modelName,
+        signalCount: item.signalCount,
+      });
+    }
+  }
 
   const normalized = sessions
     .filter(
