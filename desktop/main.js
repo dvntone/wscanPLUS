@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { AdbTransport } from './adb/AdbTransport.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -70,7 +70,7 @@ app.whenReady().then(() => {
     });
     if (canceled || filePaths.length === 0) return null;
     const filePath = filePaths[0];
-    const raw = readFileSync(filePath, 'utf8');
+    const raw = await readFile(filePath, 'utf8');
     return { raw, filePath };
   });
 

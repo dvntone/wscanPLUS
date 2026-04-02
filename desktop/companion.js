@@ -142,10 +142,13 @@ function persistState() {
 function hydrateState() {
   try {
     state.selectedPortal = window.localStorage.getItem(STORAGE_KEYS.selectedPortal) ?? state.selectedPortal;
-    state.selectedSessionId = Number.parseInt(
-      window.localStorage.getItem(STORAGE_KEYS.selectedSessionId) ?? String(state.selectedSessionId),
+    const parsedSessionId = Number.parseInt(
+      window.localStorage.getItem(STORAGE_KEYS.selectedSessionId) ?? '',
       10
     );
+    if (!Number.isNaN(parsedSessionId)) {
+      state.selectedSessionId = parsedSessionId;
+    }
     const intelHistory = JSON.parse(window.localStorage.getItem(STORAGE_KEYS.intelHistory) ?? '[]');
     const sessionNotes = JSON.parse(window.localStorage.getItem(STORAGE_KEYS.sessionNotes) ?? '{}');
     state.intelHistory = Array.isArray(intelHistory) ? intelHistory : [];
