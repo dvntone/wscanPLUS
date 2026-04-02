@@ -48,6 +48,7 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: false,
       preload: join(__dirname, 'preload.js'),
     }
   });
