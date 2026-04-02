@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { SAMPLE_SESSIONS, describeSession, narrativeTone, parseSessionArtifact } from './sessionWorkbench.js';
+import {
+  SAMPLE_SESSIONS,
+  describeSession,
+  narrativeTone,
+  parseSessionArtifact,
+  summarizeSessions,
+  matchesSessionQuery,
+} from './sessionWorkbench.js';
 
 test('sample sessions reflect scan session ids and narrative fields', () => {
   assert.equal(typeof SAMPLE_SESSIONS[0].id, 'number');
@@ -61,4 +68,21 @@ test('parseSessionArtifact normalizes sessions plus narratives from exported JSO
 
 test('parseSessionArtifact rejects invalid artifact shapes', () => {
   assert.throws(() => parseSessionArtifact(JSON.stringify({ nope: [] })), /sessions array/);
+});
+
+test('summarizeSessions totals session statuses and signal counts', () => {
+  assert.deepEqual(summarizeSessions(SAMPLE_SESSIONS), {
+    total: 3,
+    suspect: 1,
+    review: 1,
+    clear: 1,
+    signals: 6,
+  });
+});
+
+test('matchesSessionQuery filters by query and status', () => {
+  assert.equal(matchesSessionQuery(SAMPLE_SESSIONS[0], 'corridor', 'all'), true);
+  assert.equal(matchesSessionQuery(SAMPLE_SESSIONS[1], 'corridor', 'all'), false);
+  assert.equal(matchesSessionQuery(SAMPLE_SESSIONS[2], '', 'review'), true);
+  assert.equal(matchesSessionQuery(SAMPLE_SESSIONS[2], '', 'suspect'), false);
 });

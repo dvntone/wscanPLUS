@@ -135,3 +135,46 @@ export function narrativeTone(session) {
 
   return 'ok';
 }
+
+export function summarizeSessions(sessions = []) {
+  return sessions.reduce(
+    (summary, session) => {
+      summary.total += 1;
+      summary.signals += session.signalCount ?? 0;
+      if (session.status === 'suspect') {
+        summary.suspect += 1;
+      } else if (session.status === 'review') {
+        summary.review += 1;
+      } else {
+        summary.clear += 1;
+      }
+      return summary;
+    },
+    { total: 0, suspect: 0, review: 0, clear: 0, signals: 0 }
+  );
+}
+
+export function matchesSessionQuery(session, query = '', status = 'all') {
+  if (status !== 'all' && session.status !== status) {
+    return false;
+  }
+
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) {
+    return true;
+  }
+
+  const haystack = [
+    session.id,
+    session.environmentType,
+    session.deviceSerial,
+    session.modelName,
+    session.narrative,
+    session.startedAt,
+    session.endedAt ?? '',
+  ]
+    .join(' ')
+    .toLowerCase();
+
+  return haystack.includes(trimmed);
+}

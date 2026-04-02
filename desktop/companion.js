@@ -1,7 +1,14 @@
 import { PANEL_SECTIONS, resolveLayout, summarizeDevices } from './companionModel.js';
 import { describeIntel, getMacIntel } from './ouiIntel.js';
 import { PORTAL_VARIANTS, formatScore } from './portalWorkbench.js';
-import { SAMPLE_SESSIONS, describeSession, narrativeTone, parseSessionArtifact } from './sessionWorkbench.js';
+import {
+  SAMPLE_SESSIONS,
+  describeSession,
+  narrativeTone,
+  parseSessionArtifact,
+  summarizeSessions,
+  matchesSessionQuery,
+} from './sessionWorkbench.js';
 
 const state = {
   manualLayout: 'auto',
@@ -16,6 +23,8 @@ const state = {
   importedSessions: [],
   importedArtifactPath: '',
   importError: '',
+  sessionQuery: '',
+  sessionStatusFilter: 'all',
 };
 
 const STORAGE_KEYS = {
@@ -124,6 +133,18 @@ function selectedSession() {
   return sessions.find((session) => session.id === state.selectedSessionId) ?? sessions[0];
 }
 
+function visibleSessions() {
+  const sessions = availableSessions().filter((session) =>
+    matchesSessionQuery(session, state.sessionQuery, state.sessionStatusFilter)
+  );
+
+  if (sessions.length) {
+    return sessions;
+  }
+
+  return availableSessions();
+}
+
 function currentSessionNote() {
   return state.sessionNotes[selectedSession().id] ?? '';
 }
@@ -186,7 +207,8 @@ function render() {
   const portal = selectedPortalArtifact();
   const session = selectedSession();
   const sessionSummary = describeSession(session);
-  const sessions = availableSessions();
+  const sessions = visibleSessions();
+  const sessionStats = summarizeSessions(availableSessions());
 
   appRoot().innerHTML = `
     <div class="shell">
@@ -280,6 +302,42 @@ function render() {
           </div>
           <div class="surface stack">
             <div class="eyebrow">Recent sessions</div>
+            <div class="session-summary-grid">
+              <div class="summary-pill">
+                <span class="muted tiny">Total</span>
+                <strong>${sessionStats.total}</strong>
+              </div>
+              <div class="summary-pill" data-tone="high">
+                <span class="muted tiny">Suspect</span>
+                <strong>${sessionStats.suspect}</strong>
+              </div>
+              <div class="summary-pill" data-tone="warn">
+                <span class="muted tiny">Review</span>
+                <strong>${sessionStats.review}</strong>
+              </div>
+              <div class="summary-pill" data-tone="ok">
+                <span class="muted tiny">Signals</span>
+                <strong>${sessionStats.signals}</strong>
+              </div>
+            </div>
+            <div class="session-controls">
+              <input
+                class="text-input"
+                id="session-query"
+                type="text"
+                value="${esc(state.sessionQuery)}"
+                placeholder="Search by environment, serial, narrative, or id"
+              />
+              <select class="text-input session-filter" id="session-status-filter">
+                <option value="all" ${state.sessionStatusFilter === 'all' ? 'selected' : ''}>All statuses</option>
+                <option value="suspect" ${state.sessionStatusFilter === 'suspect' ? 'selected' : ''}>Suspect</option>
+                <option value="review" ${state.sessionStatusFilter === 'review' ? 'selected' : ''}>Review</option>
+                <option value="clear" ${state.sessionStatusFilter === 'clear' ? 'selected' : ''}>Clear</option>
+              </select>
+            </div>
+            <div class="muted tiny">
+              Showing ${sessions.length} of ${availableSessions().length} sessions
+            </div>
             <div class="session-list">
               ${sessions.map((entry) => {
                 const info = describeSession(entry);
@@ -413,6 +471,14 @@ function bindEvents() {
   document.querySelector('#portal-variant')?.addEventListener('change', (event) => {
     state.selectedPortal = event.target.value;
     persistState();
+    render();
+  });
+  document.querySelector('#session-query')?.addEventListener('input', (event) => {
+    state.sessionQuery = event.target.value;
+    render();
+  });
+  document.querySelector('#session-status-filter')?.addEventListener('change', (event) => {
+    state.sessionStatusFilter = event.target.value;
     render();
   });
   document.querySelector('#session-notes')?.addEventListener('input', (event) => {
