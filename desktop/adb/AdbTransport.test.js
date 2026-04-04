@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { Buffer } from 'node:buffer';
 
 // --- Mocks must be declared before importing the module under test ---
 
@@ -121,6 +122,40 @@ describe('AdbTransport.connect', () => {
       'tcp:9000',
     );
     expect(events).toEqual(['connect:serial-123', 'data:Hi', 'disconnect:serial-123']);
+  });
+
+  test('accepts hello without capabilities and stores null on session', async () => {
+    const hello = `${JSON.stringify({
+      type: 'hello',
+      deviceId: 'android-123',
+    })}\n`;
+    const socket = createSocket({
+      chunks: [Buffer.from(hello, 'utf8')],
+      autoClose: false,
+    });
+    mockCreateDeviceConnection.mockResolvedValue(socket);
+    mockWaitForDisconnect.mockResolvedValue();
+
+    const transport = new AdbTransport();
+    const helloEvents = [];
+
+    transport.on('hello', (session) => helloEvents.push(session));
+
+    await transport.connect('serial-123');
+    await flushMicrotasks();
+
+    expect(transport.session).toEqual({
+      serial: 'serial-123',
+      deviceId: 'android-123',
+      capabilities: null,
+    });
+    expect(helloEvents).toEqual([
+      {
+        serial: 'serial-123',
+        deviceId: 'android-123',
+        capabilities: null,
+      },
+    ]);
   });
 
   test('disconnect closes the socket and emits disconnect once', async () => {
