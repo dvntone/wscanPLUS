@@ -69,51 +69,45 @@ These are real remaining tasks, but they are no longer reasons to treat Phase 2 
 - `ACCESS_COARSE_LOCATION` remains supported only as degraded onboarding / limited mode, not normal scan-capable operation.
 - `ACCESS_BACKGROUND_LOCATION` is required for the intended field / long-running detection mode because foreground-only access is not sufficient for reliable background and keyguard continuity.
 
-## Phase 3 — Privacy + CTI Integration (Android)
+## Phase 3 — Privacy + CTI Integration (Android) ✅ Complete
 
-External API calls require consent framework first. GDPR/CCPA compliance before any third-party data sharing.
+- [x] Consent framework (opt-in, GDPR/CCPA compliant) (PR #173)
+- [x] CrowdSec CTI client (OkHttp, `/v2/smoke/{ip}`) (PR #174)
+- [x] Firebase setup (BOM 34.11.0) (PR #175)
+- [x] CTI cache + quota guardrails + degraded-mode handler (PRs #177, #180)
+- [x] Google Maps threat heatmap + GPS-tagged scan history (PR #178)
+- [x] SQLCipher AES-256 DB encryption + 30-day retention purge (PR #181)
 
-- [ ] Consent framework (opt-in, GDPR/CCPA compliant) — BEFORE any API calls
-- [ ] CrowdSec CTI client (OkHttp, `/v2/smoke/{ip}`)
-- [ ] CTI cache (Room, smoke 48h / fire 6h TTL)
-- [ ] Quota guardrails (30 req/week free tier)
-- [ ] Degraded-mode handler (cache-only when CTI unavailable)
+PRs: #173–#182
 
-~8-10 PRs
+## Phase 4 — AI Layer + Reporting (Android) ✅ Complete
 
-## Phase 4 — AI Layer + Reporting (Android)
+- [x] GeminiThreatAnalyzer (firebase-ai, consent-gated, 5-min cooldown) (PR #183)
+- [x] GeminiNarrativeEntity + DAO + DB v4 (PR #184)
+- [x] ThreatResultsActivity + bug fixes (PR #186)
+- [x] Scan history export (JSON) (PR #187)
+- [x] Scan history timeline activity (PR #190)
+- [x] ADB transport — device list + WatchdogService port forward tcp:9000 (PRs #192–#193)
+- [x] Companion shell + Android session artifact import (PRs #194–#195)
 
-Gemini integration for natural language threat assessment + user-facing results.
-
-Current sequencing note:
-
-- The active `#10` work establishes Android-side fused location sampling, GPS-tagged scan persistence, and Kismet `web GPS` upload first.
-- The Google Maps feature in `#9` should build on that stored GPS data rather than introducing a second location pipeline.
-
-- [ ] Gemini/firebase-ai runtime integration (prompt builder consuming ThreatSignal list)
-- [ ] Incident Narrative generator (Gemini converts events to plain English)
-- [ ] Baseline vs. Now visual (normal network count vs. incident density)
-- [ ] Threat results UI (list, detail, color-coded badges)
-- [ ] Scan history timeline (Room-backed)
-- [ ] Google Maps heatmap (GPS-tagged scans, cluster markers)
-- [ ] JSON export (scan session + ThreatSignals + audit log)
-- [ ] Plain-language incident summary export (shareable)
-- [ ] Thermal/power correlation logging (battery drain alongside scan events)
-
-~10-14 PRs
+PRs: #183–#195
 
 ## Phase 5 — Desktop Hub + Companion Sync
 
 Desktop receives and aggregates data from Android companion(s).
 
-- [ ] Desktop `src/` structure + IPC bridge
-- [ ] ADB library evaluation (Tango ADB for ESM compatibility)
-- [ ] Android ServerSocket(9000) implementation
-- [ ] Desktop scan aggregation + sqlite cache
+- [x] Desktop flat layout + IPC bridge (PR #200)
+- [x] ADB transport — `@yume-chan/adb`, WatchdogService tcp:9000 (PRs #192–#195)
+- [x] Android ServerSocket(9000) implementation (PR #193)
+- [x] CompanionServer (WebSocket, token auth, rate limiting) (PR #200)
+- [x] Scanner + detector + store wired into Electron main (PR #200)
+- [x] CapabilityProbe layer — DeviceCapabilityManifest + DetectorGate + self-tests (PR #198)
+- [ ] Transport hello — include DeviceCapabilityManifest JSON in WatchdogService hello
+- [ ] Spatial WiFi floor tracking — barometer-based relative floor detection
 - [ ] Desktop CTI client (fetch-based)
 - [ ] Unified timeline + map overlay
 
-~12-16 PRs
+~6-8 PRs remaining
 
 ## Phase 6 — Packaging + Release
 

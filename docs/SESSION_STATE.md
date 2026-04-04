@@ -74,15 +74,25 @@ wscanplus/
 │   ├── app/           # Application module
 │   ├── core/          # Library module
 │   └── gradle/        # Wrapper + daemon config
-├── desktop/           # Electron app (Linux-first, ESM)
-│   ├── src/
-│   │   ├── main/      # Electron main process
-│   │   └── renderer/  # UI — terminal/advanced + accessible modes
+├── desktop/           # Electron app (Linux-first, ESM) — flat layout post-#200
+│   ├── main.js        # Electron main process
+│   ├── preload.js     # Context bridge (window.wscan + window.wscanDesktop)
+│   ├── renderer.mjs   # Renderer UI
+│   ├── scanner.mjs    # iw-based WiFi scan loop
+│   ├── detector.mjs   # Threat scoring
+│   ├── store.mjs      # EventEmitter state store
+│   ├── companionServer.mjs  # WebSocket companion server (token auth)
+│   ├── adbPreflight.mjs     # ADB device readiness checks
+│   ├── adb/           # AdbTransport (WatchdogService tcp:9000)
+│   ├── companion.js   # Companion UI shell
+│   ├── sessionWorkbench.js  # Session artifact import
 │   └── package.json   # "type": "module"
 ├── docs/              # All documentation
 └── .github/
     └── workflows/     # CI only — no deploy/merge/trigger jobs
 ```
+
+> Note: `dvntone/wscanplus_desktop` was a separate companion repo that has been consolidated into `desktop/` via PR #200 and archived. It is no longer a live dependency.
 
 ---
 
@@ -100,41 +110,39 @@ See [docs/ROADMAP.md](/docs/ROADMAP.md) for the full phased plan.
 
 ---
 
-## 2026-03-23 Handoff Snapshot
+## 2026-04-04 Handoff Snapshot
 
 This section is the fast re-entry point for the next session.
 
-### Remote repo state (2026-03-23)
+### Remote repo state (2026-04-04)
 
-- `main` is current — latest merge: PR `#158` (docs: Copilot review followup)
+- `main` is current — latest merge: PR `#200` (desktop consolidation)
 - No open PRs
-- Open issues: `#9`, `#121`, `#122`, `#124`, `#125`, `#156`
-- P1 bugs `#122`, `#124`, `#125` block new feature work
+- No open blocking issues
+- `dvntone/wscanplus_desktop` archived — desktop runtime now lives in `desktop/` of this monorepo
+- `dvntone/wscanplus-deprecrated-` archived
+- `dvntone/flipp3d` archived
 
-### Immediate action needed (before next session)
+### Completed phases (as of 2026-04-04)
 
-**`gh auth refresh -s workflow`** — run this once to add workflow scope to gh CLI token.
-Required to push fixes to `.github/workflows/` files on desktop and webui repos.
-See memory file `project_codeql_fixes_pending.md` for exact steps.
+- **Phase 0–2**: Complete (Android scanner, heuristics, Room DB, OUI)
+- **Phase 3**: Complete (consent framework, CrowdSec CTI, Firebase, CTI cache, quota guardrails, SQLCipher, scan history)
+- **Phase 4**: Complete (GeminiThreatAnalyzer, scan history timeline, ADB transport, companion shell, JSON export, ESM preload bridge)
+- **Phase 5 (partial)**: CapabilityProbe layer merged (PR #198). Desktop consolidated (PR #200).
 
-### Copilot quota
+### Phase 5 remaining work
 
-Copilot at 110%+ usage. Resets the 9th. Merge on green CI only until then.
+1. **Transport hello update** — include `DeviceCapabilityManifest` JSON in WatchdogService hello message to desktop
+2. **Spatial WiFi floor tracking** — barometer-based relative floor detection (handoff spec in `/mnt/c/Users/Devia/AppData/Local/Temp/wscan_pull/handoff.md`)
+3. **darklotusLABS web UI** — Sentinel Prism theme, NYX assistant, Vite build for app.darklotuslabs.com
 
-### Desktop and webui repo status
+### Active repos
 
-- `wscanplus_desktop`: CodeQL workflow broken (actions not pinned to SHAs). Fix documented in memory.
-- `wscanplus_webui`: CodeQL workflow broken (no JS source yet). Fix documented in memory.
-- Both fixes blocked by missing `workflow` scope on gh CLI token.
-
-### Phase 3 scope (when P1 bugs resolved)
-
-1. File 5 code bugs from Codex findings as issues
-2. Timestamp µs→ms fix in WifiScanResult.toScanInput()
-3. OuiAssetLoader integration in WatchdogService
-4. CTI client (CrowdSec API) + Room cache layer
-5. Scan history accumulation + baseline population
-6. Gemini firebase-ai threat narrative layer
+| Repo | Status |
+|------|--------|
+| `dvntone/wscanplus` | Active — canonical monorepo |
+| `dvntone/wscanplus_webui` | Active — darklotuslabs.com placeholder (sweep-tool-v2.jsx) |
+| `dvntone/MetaRadar-Clone` | Reference only |
 
 ---
 
@@ -175,9 +183,8 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 
 ### Cross-repo dependency
 
-- Companion desktop repo `dvntone/wscanplus_desktop` was audited and hardened on 2026-03-20
-- Result: no open PRs, no open issues, CI includes `npm test` + `npm run lint`, and `npm audit` is clean after `electron-builder` upgrade
-- Treat the desktop repo as aligned with current Android handoff assumptions
+- `dvntone/wscanplus_desktop` was consolidated into `desktop/` of this monorepo via PR #200 on 2026-04-04 and is now archived.
+- All desktop development happens in `desktop/` of this repo only.
 
 ### Device-testing docs standard
 
