@@ -31,6 +31,8 @@ import com.wscanplus.app.kismet.KismetGpsClient
 import com.wscanplus.app.location.FusedLocationSampler
 import com.wscanplus.app.location.LocationSample
 import com.wscanplus.app.privacy.ConsentStore
+import com.wscanplus.app.sensor.BarometerSampler
+import com.wscanplus.app.sensor.FloorEstimate
 import com.wscanplus.core.db.RetentionManager
 import com.wscanplus.core.db.WscanDatabase
 import com.wscanplus.core.db.entity.GeminiNarrativeEntity
@@ -117,6 +119,11 @@ class WatchdogService : Service() {
     private lateinit var retentionManager: RetentionManager
     private lateinit var geminiThreatAnalyzer: GeminiThreatAnalyzer
     private var capabilityManifest: DeviceCapabilityManifest? = null
+    private var barometerSampler: BarometerSampler? = null
+
+    @Volatile
+    var currentFloorEstimate: FloorEstimate? = null
+        private set
     private var helloServerSocket: ServerSocket? = null
     private var helloClientSocket: Socket? = null
     private var helloServerJob: Job? = null
@@ -202,6 +209,20 @@ class WatchdogService : Service() {
                         latestLocationSample = sample
                         maybeSendKismetUpdate(sample)
                     }
+                val sensorManager = getSystemService(android.hardware.SensorManager::class.java)
+                if (sensorManager != null) {
+                    val sampler =
+                        BarometerSampler(sensorManager) { estimate ->
+                            currentFloorEstimate = estimate
+                        }
+                    if (sampler.isAvailable) {
+                        sampler.start()
+                        barometerSampler = sampler
+                        Log.i(TAG, "BarometerSampler started")
+                    } else {
+                        Log.i(TAG, "No barometer — floor tracking unavailable")
+                    }
+                }
             }
             scannerChain =
                 ScannerChain(applicationContext) { results: List<WifiScanResult> ->
@@ -385,6 +406,9 @@ class WatchdogService : Service() {
         scannerExecutor = null
         locationSampler?.stop()
         locationSampler = null
+        barometerSampler?.stop()
+        barometerSampler = null
+        currentFloorEstimate = null
         val sessionId = currentSessionId
         currentSessionId = null
         // stop() must run on a background thread per ScannerChain/StandardScanner threading rule.
