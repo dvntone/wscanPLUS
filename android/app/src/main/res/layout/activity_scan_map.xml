@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/scan_map_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Map fragment container fills the full screen -->
+    <FrameLayout
+        android:id="@+id/map_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Floor badge — top-start corner, hidden until a floor estimate is available -->
+    <TextView
+        android:id="@+id/floor_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_margin="12dp"
+        android:background="#CC000000"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="6dp"
+        android:textColor="#FFFFFFFF"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+</FrameLayout>

@@ -9,6 +9,7 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
@@ -169,7 +170,13 @@ class WatchdogService : Service() {
         Log.i(TAG, "Service created")
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    inner class LocalBinder : Binder() {
+        fun getService(): WatchdogService = this@WatchdogService
+    }
+
+    private val binder = LocalBinder()
+
+    override fun onBind(intent: Intent?): IBinder = binder
 
     // FOREGROUND_SERVICE_TYPE_* constants are API 29 — safe to inline: ServiceCompat.startForeground()
     // guards the type parameter internally and falls back to startForeground(id, notification)
