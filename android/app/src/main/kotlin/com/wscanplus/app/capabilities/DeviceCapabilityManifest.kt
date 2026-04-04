@@ -1,5 +1,8 @@
 package com.wscanplus.app.capabilities
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class DeviceCapabilityManifest(
     val deviceModel: String,
     val wifiScan: Boolean,
@@ -18,6 +21,7 @@ data class DeviceCapabilityManifest(
     val acousticSonarCapable: AcousticStatus,
 )
 
+@Serializable
 enum class CameraIrStatus {
     UNTESTED,
     CAPABLE,
@@ -25,6 +29,7 @@ enum class CameraIrStatus {
     PARTIAL,
 }
 
+@Serializable
 enum class AcousticStatus {
     UNTESTED,
     CAPABLE,

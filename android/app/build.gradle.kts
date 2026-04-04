@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
+    id("org.jetbrains.kotlin.plugin.serialization")
     id("org.jlleitschuh.gradle.ktlint")
 }
 
@@ -80,6 +81,7 @@ dependencies {
     // Kotlin coroutines — required by CrowdSecCtiClient (withContext) and other async flows
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 
     // CrowdSec CTI client — /v2/smoke IP reputation lookups (Phase 3)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
