@@ -27,7 +27,7 @@ export default [
     rules: {},
   },
   {
-    files: ["companion.js", "preload.js"],
+    files: ["companion.js", "preload.js", "renderer.mjs"],
     languageOptions: {
       globals: {
         window: "readonly",

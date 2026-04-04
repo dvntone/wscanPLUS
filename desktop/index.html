@@ -1,13 +1,131 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>wscan+ Desktop</title>
-    <link rel="stylesheet" href="companion.css" />
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="companion.js"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'"
+  >
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wscan+</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="shell">
+    <nav class="nav-rail">
+      <div class="nav-brand">wscan+</div>
+      <button class="nav-btn active" type="button" data-view="scan">Scan</button>
+      <button class="nav-btn" type="button" data-view="devices">Devices</button>
+      <button class="nav-btn" type="button" data-view="companion">Companion</button>
+    </nav>
+
+    <main class="workspace">
+      <section class="view active" id="view-scan">
+        <div class="view-header">
+          <span class="view-title">Scan</span>
+          <div class="tab-bar">
+            <button class="tab active" type="button" data-tab="aps">
+              Access Points <span class="badge" id="ap-count">0</span>
+            </button>
+            <button class="tab" type="button" data-tab="threats">
+              Threats <span class="badge" id="threat-count">0</span>
+            </button>
+          </div>
+          <div class="scan-controls">
+            <select class="iface-select" id="iface-select">
+              <option value="">Auto-detect</option>
+            </select>
+            <button class="btn btn-primary" id="btn-start" type="button">Start</button>
+            <button class="btn" id="btn-stop" type="button" disabled>Stop</button>
+            <button class="btn" id="btn-manual" type="button">Scan Now</button>
+            <span class="scan-badge" id="scan-badge">Idle</span>
+          </div>
+        </div>
+
+        <div class="tab-panel active" id="panel-aps">
+          <div class="table-wrap">
+            <table class="ap-table">
+              <thead>
+                <tr>
+                  <th>SSID</th>
+                  <th>BSSID</th>
+                  <th>Signal</th>
+                  <th>Ch</th>
+                  <th>Security</th>
+                  <th>Risk</th>
+                  <th>Last seen</th>
+                </tr>
+              </thead>
+              <tbody id="ap-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="panel-threats">
+          <ul class="threat-list" id="threat-list"></ul>
+        </div>
+      </section>
+
+      <section class="view" id="view-devices">
+        <div class="view-header">
+          <span class="view-title">Devices</span>
+          <button class="btn btn-primary" id="run-preflight" type="button">
+            Run ADB Preflight
+          </button>
+        </div>
+        <div class="devices-content">
+          <p class="trusted-host-notice" id="trusted-host">
+            Only trust this desktop if it is private and under your control.
+          </p>
+          <p id="status">Ready.</p>
+          <p id="guidance">Run the preflight to see the next operator step.</p>
+          <ul id="device-list"></ul>
+        </div>
+      </section>
+
+      <section class="view" id="view-companion">
+        <div class="view-header">
+          <span class="view-title">Companion</span>
+        </div>
+        <div class="companion-content">
+          <div class="companion-section">
+            <div class="section-label">Pairing</div>
+            <p class="section-note">
+              Generate a token and enter it in the companion app to authorise
+              the connection. The server binds to localhost only unless
+              <code>COMPANION_HOST</code> is set.
+            </p>
+            <button class="btn btn-primary" id="btn-pair" type="button">
+              Generate Pairing Token
+            </button>
+            <div class="token-block" id="token-block" hidden>
+              <div class="token-label">Token</div>
+              <div class="token-value mono" id="token-value"></div>
+              <div class="token-addr" id="token-addr"></div>
+            </div>
+          </div>
+          <div class="companion-section">
+            <div class="section-label">Connected devices</div>
+            <ul class="companion-device-list" id="companion-device-list">
+              <li class="companion-empty">No devices connected</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="inspector">
+      <div class="inspector-header">Inspector</div>
+      <div id="inspector-content">
+        <p class="inspector-empty">Select an AP to inspect</p>
+      </div>
+    </aside>
+
+    <footer class="log-drawer">
+      <div class="log-header">Event Log</div>
+      <div class="log-entries" id="log-entries"></div>
+    </footer>
+  </div>
+  <script type="module" src="./renderer.mjs"></script>
+</body>
 </html>
