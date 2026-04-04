@@ -16,6 +16,8 @@ import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import com.wscanplus.app.capabilities.CapabilityProbe
+import com.wscanplus.app.capabilities.DeviceCapabilityManifest
 import com.wscanplus.app.cti.BuildConfigCrowdSecCtiKeyProvider
 import com.wscanplus.app.cti.CrowdSecCtiClient
 import com.wscanplus.app.cti.CtiCacheRepository
@@ -54,11 +56,19 @@ import com.wscanplus.core.threat.SsidFloodingHeuristic
 import com.wscanplus.core.threat.WepOpenHeuristic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import net.sqlcipher.database.SQLiteDatabase
 import net.sqlcipher.database.SupportFactory
+import java.net.InetAddress
+import java.net.ServerSocket
+import java.net.Socket
+import java.net.SocketException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -87,6 +97,11 @@ import java.util.concurrent.atomic.AtomicReference
 class WatchdogService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val ouiLookupRef = AtomicReference<OuiLookup?>(null)
+    private val watchdogJson =
+        Json {
+            encodeDefaults = true
+            explicitNulls = false
+        }
     private var scannerChain: ScannerChain? = null
     private var scannerExecutor: ExecutorService? = null
     private var startFuture: Future<*>? = null
@@ -101,6 +116,10 @@ class WatchdogService : Service() {
     private lateinit var ctiCacheRepository: CtiCacheRepository
     private lateinit var retentionManager: RetentionManager
     private lateinit var geminiThreatAnalyzer: GeminiThreatAnalyzer
+    private var capabilityManifest: DeviceCapabilityManifest? = null
+    private var helloServerSocket: ServerSocket? = null
+    private var helloClientSocket: Socket? = null
+    private var helloServerJob: Job? = null
     private var lastGeminiAnalysisAtMs: Long = 0L
     private val geminiAnalysisInFlight = AtomicBoolean(false)
     private val engine =
@@ -171,6 +190,7 @@ class WatchdogService : Service() {
         )
         if (scannerChain == null) {
             startTimeMillis = SystemClock.elapsedRealtime()
+            startHelloServerIfNeeded()
             val executor =
                 Executors.newSingleThreadExecutor { runnable ->
                     Thread(runnable, "wscanplus-watchdog")
@@ -352,6 +372,9 @@ class WatchdogService : Service() {
         super.onDestroy()
         serviceScope.cancel()
         Log.i(TAG, "Service destroyed")
+        helloServerJob?.cancel()
+        helloServerJob = null
+        closeHelloSockets()
         // Cancel any queued start task before submitting stop, so a pending start cannot
         // race with or follow the stop on the executor queue.
         startFuture?.cancel(true)
@@ -373,8 +396,130 @@ class WatchdogService : Service() {
             }
         }
         executor?.shutdown()
-        // TODO (Phase 3): close ServerSocket
     }
+
+    private fun startHelloServerIfNeeded() {
+        if (helloServerJob != null) {
+            return
+        }
+
+        helloServerJob =
+            serviceScope.launch(Dispatchers.IO) {
+                if (capabilityManifest == null) {
+                    capabilityManifest =
+                        try {
+                            CapabilityProbe
+                                .probe(applicationContext)
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Capability probe failed; hello payload will omit capabilities", e)
+                            null
+                        }
+                }
+
+                runHelloServerLoop()
+            }
+    }
+
+    private fun runHelloServerLoop() {
+        try {
+            val loopbackAddress =
+                InetAddress
+                    .getByName(HELLO_BIND_HOST)
+            val serverSocket =
+                ServerSocket(
+                    HELLO_PORT,
+                    1,
+                    loopbackAddress,
+                )
+            helloServerSocket = serverSocket
+            Log.i(TAG, "Watchdog hello transport listening on $HELLO_BIND_HOST:$HELLO_PORT")
+
+            while (!serverSocket.isClosed) {
+                val clientSocket =
+                    try {
+                        serverSocket.accept()
+                    } catch (e: SocketException) {
+                        if (serverSocket.isClosed) {
+                            break
+                        }
+                        throw e
+                    }
+
+                handleHelloConnection(clientSocket)
+            }
+        } catch (e: Exception) {
+            if (!isExpectedHelloShutdown(e)) {
+                Log.e(TAG, "Watchdog hello transport failed", e)
+            }
+        } finally {
+            closeHelloSockets()
+        }
+    }
+
+    private fun handleHelloConnection(clientSocket: Socket) {
+        helloClientSocket = clientSocket
+
+        try {
+            val helloMessage =
+                buildWatchdogHelloJson(
+                    deviceId = buildHelloDeviceId(),
+                    capabilityManifest = capabilityManifest,
+                    json = watchdogJson,
+                )
+
+            clientSocket
+                .getOutputStream()
+                .writer(Charsets.UTF_8)
+                .apply {
+                    write(helloMessage)
+                    write("\n")
+                    flush()
+                }
+
+            val inputStream = clientSocket.getInputStream()
+            while (inputStream.read() != -1) {
+                // Keep the connection open until the desktop side disconnects.
+            }
+        } catch (e: Exception) {
+            if (!isExpectedHelloShutdown(e)) {
+                Log.w(TAG, "Watchdog hello client connection failed", e)
+            }
+        } finally {
+            try {
+                clientSocket.close()
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to close hello client socket", e)
+            }
+            if (helloClientSocket === clientSocket) {
+                helloClientSocket = null
+            }
+        }
+    }
+
+    private fun closeHelloSockets() {
+        val clientSocket = helloClientSocket
+        helloClientSocket = null
+        try {
+            clientSocket?.close()
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to close hello client socket", e)
+        }
+
+        val serverSocket = helloServerSocket
+        helloServerSocket = null
+        try {
+            serverSocket?.close()
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to close hello server socket", e)
+        }
+    }
+
+    private fun isExpectedHelloShutdown(error: Exception): Boolean =
+        error is SocketException &&
+            (
+                error.message?.contains("Socket closed", ignoreCase = true) == true ||
+                    error.message?.contains("closed", ignoreCase = true) == true
+            )
 
     private fun createSession(): Long =
         database.scanSessionDao().insert(
@@ -387,6 +532,16 @@ class WatchdogService : Service() {
         )
 
     private fun buildDeviceIdentifier(): String = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown-device"
+
+    @Suppress("DEPRECATION")
+    private fun buildHelloDeviceId(): String {
+        val buildSerial = Build.SERIAL
+        return if (buildSerial.isNullOrBlank() || buildSerial == Build.UNKNOWN) {
+            buildDeviceIdentifier()
+        } else {
+            buildSerial
+        }
+    }
 
     private fun persistResults(
         results: List<WifiScanResult>,
@@ -509,6 +664,8 @@ class WatchdogService : Service() {
         private const val CHANNEL_ID_ALERT = "wscanplus_alerts"
         private const val NOTIFICATION_ID = 1
         private const val NOTIFICATION_ID_REVOKED = 2
+        private const val HELLO_BIND_HOST = "127.0.0.1"
+        private const val HELLO_PORT = 9000
         private const val KISMET_SEND_INTERVAL_MS = 10_000L
         private const val GEMINI_COOLDOWN_MS = 5 * 60 * 1000L
 
@@ -519,3 +676,27 @@ class WatchdogService : Service() {
         const val EXTRA_DEGRADED = "extra_degraded"
     }
 }
+
+@Serializable
+internal data class WatchdogHelloPayload(
+    val type: String,
+    val deviceId: String,
+    val capabilities: DeviceCapabilityManifest? = null,
+)
+
+internal fun buildWatchdogHelloJson(
+    deviceId: String,
+    capabilityManifest: DeviceCapabilityManifest?,
+    json: Json =
+        Json {
+            encodeDefaults = true
+            explicitNulls = false
+        },
+): String =
+    json.encodeToString(
+        WatchdogHelloPayload(
+            type = "hello",
+            deviceId = deviceId,
+            capabilities = capabilityManifest,
+        ),
+    )
