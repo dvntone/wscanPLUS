@@ -7,11 +7,12 @@
   "scripts": {
     "start": "electron .",
     "lint": "eslint . --max-warnings=0",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --passWithNoTests && node --test companionModel.test.js ouiIntel.test.js portalWorkbench.test.js sessionWorkbench.test.js"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --passWithNoTests && node --test adbPreflight.test.js companionModel.test.js companionServer.test.js detector.test.js ouiIntel.test.js portalWorkbench.test.js scanner.test.js sessionWorkbench.test.js"
   },
   "dependencies": {
     "@yume-chan/adb": "2.5.1",
-    "@yume-chan/adb-server-node-tcp": "2.1.0"
+    "@yume-chan/adb-server-node-tcp": "2.1.0",
+    "ws": "8.20.0"
   },
   "devDependencies": {
     "electron": "41.0.3",
