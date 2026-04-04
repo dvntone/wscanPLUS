@@ -47,6 +47,7 @@ class ScanMapActivity :
 
     private var watchdogService: WatchdogService? = null
     private var floorBadge: TextView? = null
+    private var isServiceBound = false
 
     private val serviceConnection =
         object : ServiceConnection {
@@ -60,6 +61,7 @@ class ScanMapActivity :
 
             override fun onServiceDisconnected(name: ComponentName) {
                 watchdogService = null
+                isServiceBound = false
                 handler.removeCallbacks(floorUpdateRunnable)
                 floorBadge?.visibility = View.GONE
             }
@@ -89,14 +91,18 @@ class ScanMapActivity :
 
     override fun onStart() {
         super.onStart()
+        // Bind only if the service is already running — do not create it just for the badge.
         val bindIntent = Intent(this, WatchdogService::class.java)
-        bindService(bindIntent, serviceConnection, BIND_AUTO_CREATE)
+        isServiceBound = bindService(bindIntent, serviceConnection, 0)
     }
 
     override fun onStop() {
         super.onStop()
         handler.removeCallbacks(floorUpdateRunnable)
-        unbindService(serviceConnection)
+        if (isServiceBound) {
+            unbindService(serviceConnection)
+            isServiceBound = false
+        }
         watchdogService = null
     }
 
@@ -112,13 +118,14 @@ class ScanMapActivity :
             badge.visibility = View.GONE
             return
         }
-        val label =
+        val floorLabel =
             when {
                 estimate.relativeFloor > 0 -> "Floor +${estimate.relativeFloor}"
                 estimate.relativeFloor < 0 -> "Floor ${estimate.relativeFloor}"
                 else -> "Floor 0"
             }
-        badge.text = label
+        val confidenceLabel = "±${estimate.confidenceMeters.toInt()}m"
+        badge.text = "$floorLabel ($confidenceLabel)"
         badge.visibility = View.VISIBLE
     }
 
