@@ -11,11 +11,11 @@
   },
   "dependencies": {
     "@yume-chan/adb": "2.5.1",
+    "@yume-chan/adb-server-node-tcp": "2.5.2",
     "ws": "8.20.0"
   },
   "devDependencies": {
-    "@yume-chan/adb-server-node-tcp": "^2.5.2",
-    "electron": "^41.1.1",
+    "electron": "41.1.1",
     "eslint": "9.0.0",
     "jest": "30.3.0"
   },
