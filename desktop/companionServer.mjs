@@ -37,6 +37,9 @@ export class CompanionServer {
 
   generateToken() {
     this.#token = randomBytes(16).toString('hex');
+    // Clear per-device sequence state so reconnects after token rotation
+    // are not permanently rejected by the monotonic-sequence check.
+    this.#sessions.clear();
     return this.#token;
   }
 
@@ -65,6 +68,7 @@ export class CompanionServer {
         resolve();
         return;
       }
+      this.#sessions.clear();
       this.#wss?.close();
       this.#httpServer.close(() => {
         this.#httpServer = null;
