@@ -77,6 +77,15 @@ class BarometerSamplerTest {
     }
 
     @Test
+    fun `autoCalibrate=true uses first reading as baseline so floor 0 is emitted`() {
+        // computeFloorEstimate with baseline == current yields floor 0
+        val baselineHpa = 1013.25f
+        val estimate = computeFloorEstimate(currentHpa = baselineHpa, baselineHpa = baselineHpa)
+        assertEquals(0, estimate.relativeFloor)
+        assertEquals(0f, estimate.deltaHpa, 0.001f)
+    }
+
+    @Test
     fun `constants are physically reasonable`() {
         assertTrue("Expected 7-10 m/hPa, got $METERS_PER_HPA", METERS_PER_HPA in 7f..10f)
         assertTrue("Expected 2.5-4 m/floor, got $FLOOR_HEIGHT_METERS", FLOOR_HEIGHT_METERS in 2.5f..4f)
