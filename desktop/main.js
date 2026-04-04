@@ -322,7 +322,12 @@ ipcMain.handle('adb:preflight', async () => {
   }
 });
 
+const IFACE_RE = /^[a-zA-Z0-9_-]{1,32}$/;
+
 ipcMain.handle('scan:start', async (_event, iface) => {
+  if (iface !== undefined && iface !== null && !IFACE_RE.test(iface)) {
+    return { ok: false, error: 'Invalid interface name' };
+  }
   try {
     await startScanning(iface || undefined);
     return { ok: true, started: true, interface: store.state.interface };
