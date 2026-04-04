@@ -49,15 +49,17 @@ object CameraIrSelfTest {
                 if (!completed.compareAndSet(false, true)) {
                     return
                 }
-                runCatching {
-                    providerRef
-                        ?.javaClass
-                        ?.getMethod("unbindAll")
-                        ?.invoke(providerRef)
-                }
                 analyzerExecutor.shutdownNow()
-                if (continuation.isActive) {
-                    continuation.resume(status)
+                ContextCompat.getMainExecutor(context).execute {
+                    runCatching {
+                        providerRef
+                            ?.javaClass
+                            ?.getMethod("unbindAll")
+                            ?.invoke(providerRef)
+                    }
+                    if (continuation.isActive) {
+                        continuation.resume(status)
+                    }
                 }
             }
 

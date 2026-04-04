@@ -19,17 +19,26 @@ object CapabilityProbe {
             packageManager.hasSystemFeature(
                 PackageManager.FEATURE_WIFI,
             )
+        val locationGranted = hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
         val wifiPermissionsGranted =
             hasPermission(context, Manifest.permission.CHANGE_WIFI_STATE) &&
-                hasPermission(context, Manifest.permission.ACCESS_WIFI_STATE)
+                hasPermission(context, Manifest.permission.ACCESS_WIFI_STATE) &&
+                locationGranted
         val wifiRttFeature =
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.P &&
                 packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_RTT)
         val wifiRttAvailableNow =
-            if (wifiRttFeature && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            if (wifiRttFeature && locationGranted) {
                 context
                     .getSystemService(WifiRttManager::class.java)
                     ?.isAvailable == true
+            } else {
+                false
+            }
+        val uwb =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                @Suppress("InlinedApi")
+                packageManager.hasSystemFeature(PackageManager.FEATURE_UWB)
             } else {
                 false
             }
@@ -37,13 +46,13 @@ object CapabilityProbe {
         return DeviceCapabilityManifest(
             deviceModel = Build.MODEL,
             wifiScan = wifiFeature && wifiPermissionsGranted,
-            wifiRtt = wifiRttFeature,
+            wifiRtt = wifiRttFeature && locationGranted,
             wifiAware =
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
                     packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE),
-            uwb = packageManager.hasSystemFeature("android.hardware.uwb"),
+            uwb = uwb,
             barometer = hasSensor(sensorManager, Sensor.TYPE_PRESSURE),
-            nsd = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN,
+            nsd = true,
             bluetoothLe =
                 packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE) &&
                     context
@@ -62,7 +71,9 @@ object CapabilityProbe {
     private fun hasPermission(
         context: Context,
         permission: String,
-    ): Boolean = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+    ): Boolean =
+        ContextCompat
+            .checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 
     private fun hasSensor(
         sensorManager: SensorManager?,

@@ -89,40 +89,44 @@ object AcousticSelfTest {
             }
 
             try {
-                val written =
-                    audioTrack.write(
-                        playbackSamples,
-                        0,
-                        playbackSamples.size,
-                        AudioTrack.WRITE_BLOCKING,
-                    )
-                if (written <= 0) {
-                    return@withContext AcousticStatus.UNTESTED
-                }
+                val result =
+                    runCatching {
+                        val written =
+                            audioTrack.write(
+                                playbackSamples,
+                                0,
+                                playbackSamples.size,
+                                AudioTrack.WRITE_BLOCKING,
+                            )
+                        if (written <= 0) {
+                            return@runCatching AcousticStatus.UNTESTED
+                        }
 
-                audioRecord.startRecording()
-                SystemClock.sleep(LEAD_IN_MS)
-                audioTrack.play()
-                val read =
-                    audioRecord.read(
-                        recordedSamples,
-                        0,
-                        recordedSamples.size,
-                        AudioRecord.READ_BLOCKING,
-                    )
-                audioTrack.stop()
-                audioRecord.stop()
+                        audioRecord.startRecording()
+                        SystemClock.sleep(LEAD_IN_MS)
+                        audioTrack.play()
+                        val read =
+                            audioRecord.read(
+                                recordedSamples,
+                                0,
+                                recordedSamples.size,
+                                AudioRecord.READ_BLOCKING,
+                            )
+                        audioTrack.stop()
+                        audioRecord.stop()
 
-                if (read <= 0) {
-                    return@withContext AcousticStatus.UNTESTED
-                }
+                        if (read <= 0) {
+                            return@runCatching AcousticStatus.UNTESTED
+                        }
 
-                val ratio = computeEnergyRatio(recordedSamples, read)
-                if (ratio >= DETECTION_THRESHOLD) {
-                    AcousticStatus.CAPABLE
-                } else {
-                    AcousticStatus.NOT_CAPABLE
-                }
+                        val ratio = computeEnergyRatio(recordedSamples, read)
+                        if (ratio >= DETECTION_THRESHOLD) {
+                            AcousticStatus.CAPABLE
+                        } else {
+                            AcousticStatus.NOT_CAPABLE
+                        }
+                    }
+                result.getOrDefault(AcousticStatus.UNTESTED)
             } finally {
                 audioTrack.release()
                 audioRecord.release()
