@@ -18,8 +18,12 @@ const WATCHDOG_PORT = 9000;
 export class AdbTransport extends EventEmitter {
   /** @type {AdbServerClient} */
   #client;
+  /** @type {string} */
+  #bufferedText = '';
   /** @type {ReadableStreamDefaultReader<Uint8Array> | undefined} */
   #reader;
+  /** @type {{ serial: string, deviceId: string | null, capabilities: object | null } | null} */
+  #session = null;
   /** @type {{ readable: ReadableStream<Uint8Array>, writable: WritableStream<Uint8Array>, closed: Promise<undefined>, close: () => Promise<void>, transportId?: bigint } | undefined} */
   #socket;
   /** @type {string | undefined} */
@@ -41,6 +45,16 @@ export class AdbTransport extends EventEmitter {
   }
 
   /**
+   * Returns the last parsed hello session for the connected device.
+   * `capabilities` is `null` when the Android side omits the key.
+   *
+   * @returns {{ serial: string, deviceId: string | null, capabilities: object | null } | null}
+   */
+  get session() {
+    return this.#session;
+  }
+
+  /**
    * Connect to WatchdogService on tcp:9000 for the given device serial.
    * Emits `connect`, then `data` events as Buffers, and `disconnect` when closed.
    *
@@ -53,6 +67,8 @@ export class AdbTransport extends EventEmitter {
     }
 
     await this.disconnect();
+    this.#bufferedText = '';
+    this.#session = null;
 
     try {
       const socket = await this.#client.createDeviceConnection(
@@ -125,7 +141,9 @@ export class AdbTransport extends EventEmitter {
           }
 
           if (value) {
-            this.emit('data', Buffer.from(value));
+            const buffer = Buffer.from(value);
+            this.#handleIncomingBuffer(buffer);
+            this.emit('data', buffer);
           }
         }
       } catch (error) {
@@ -151,5 +169,43 @@ export class AdbTransport extends EventEmitter {
     this.#connectedSerial = undefined;
 
     this.emit('disconnect', { serial });
+  }
+
+  #handleIncomingBuffer(buffer) {
+    this.#bufferedText += buffer.toString('utf8');
+
+    let newlineIndex = this.#bufferedText.indexOf('\n');
+    while (newlineIndex >= 0) {
+      const line = this.#bufferedText.slice(0, newlineIndex).trim();
+      this.#bufferedText = this.#bufferedText.slice(newlineIndex + 1);
+
+      if (line) {
+        this.#handleJsonLine(line);
+      }
+
+      newlineIndex = this.#bufferedText.indexOf('\n');
+    }
+  }
+
+  #handleJsonLine(line) {
+    let message;
+    try {
+      message = JSON.parse(line);
+    } catch {
+      return;
+    }
+
+    if (message?.type !== 'hello') {
+      return;
+    }
+
+    this.#session = {
+      serial: this.#connectedSerial ?? '',
+      deviceId:
+        typeof message.deviceId === 'string' ? message.deviceId : null,
+      capabilities: message.capabilities ?? null,
+    };
+
+    this.emit('hello', this.#session);
   }
 }
