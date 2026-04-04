@@ -43,9 +43,11 @@ class CtiCacheRepository(
                 }
             }
 
+            // Record the outbound attempt before the call so failed requests
+            // are counted against the quota guardrail, not just successful ones.
+            quotaTracker.recordRequest()
             val result = client.lookupSmoke(ip)
             if (result != null) {
-                quotaTracker.recordRequest()
                 dao.upsert(
                     CtiCacheEntity(
                         cacheKey = key,

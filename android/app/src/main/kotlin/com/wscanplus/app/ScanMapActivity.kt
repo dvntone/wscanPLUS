@@ -13,7 +13,10 @@ import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.TileOverlayOptions
 import com.google.maps.android.heatmaps.HeatmapTileProvider
 import com.google.maps.android.heatmaps.WeightedLatLng
+import com.wscanplus.app.db.DbPassphraseProvider
 import com.wscanplus.core.db.WscanDatabase
+import net.sqlcipher.database.SQLiteDatabase
+import net.sqlcipher.database.SupportFactory
 import java.util.concurrent.Executors
 
 /**
@@ -57,7 +60,18 @@ class ScanMapActivity :
     }
 
     private fun loadAndRender(map: GoogleMap) {
-        val db = WscanDatabase.getInstance(applicationContext)
+        val passphrase = DbPassphraseProvider(applicationContext).getOrCreate()
+        if (passphrase == null) {
+            Log.e(TAG, "Encrypted database unavailable — cannot load map data")
+            if (!isDestroyed) {
+                runOnUiThread {
+                    Toast.makeText(this, "Encrypted database unavailable.", Toast.LENGTH_LONG).show()
+                }
+            }
+            return
+        }
+        SQLiteDatabase.loadLibs(applicationContext)
+        val db = WscanDatabase.getInstance(applicationContext, SupportFactory(passphrase))
         val scanResults = db.scanResultDao().getGpsTagged(limit = 500)
         if (scanResults.isEmpty()) {
             if (!isDestroyed) {
