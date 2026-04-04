@@ -209,16 +209,21 @@ class WatchdogService : Service() {
                         latestLocationSample = sample
                         maybeSendKismetUpdate(sample)
                     }
+                // Gate on capability manifest when already probed; fall back to
+                // runtime sensor check (isAvailable) which is equivalent to manifest.barometer.
+                val barometerCapable = capabilityManifest?.barometer ?: true
                 val sensorManager = getSystemService(android.hardware.SensorManager::class.java)
-                if (sensorManager != null) {
+                if (barometerCapable && sensorManager != null) {
                     val sampler =
-                        BarometerSampler(sensorManager) { estimate ->
-                            currentFloorEstimate = estimate
-                        }
+                        BarometerSampler(
+                            sensorManager = sensorManager,
+                            onEstimate = { estimate -> currentFloorEstimate = estimate },
+                            autoCalibrate = true,
+                        )
                     if (sampler.isAvailable) {
                         sampler.start()
                         barometerSampler = sampler
-                        Log.i(TAG, "BarometerSampler started")
+                        Log.i(TAG, "BarometerSampler started (autoCalibrate=true)")
                     } else {
                         Log.i(TAG, "No barometer — floor tracking unavailable")
                     }

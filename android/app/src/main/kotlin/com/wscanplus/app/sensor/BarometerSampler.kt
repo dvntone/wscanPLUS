@@ -27,6 +27,11 @@ import kotlin.math.roundToInt
 class BarometerSampler(
     private val sensorManager: SensorManager,
     private val onEstimate: (FloorEstimate) -> Unit,
+    /**
+     * When true, the first sensor reading automatically becomes the floor-0 baseline.
+     * Convenient for service-level usage where calibration is deferred to the first reading.
+     */
+    val autoCalibrate: Boolean = false,
 ) : SensorEventListener {
     private var baselineHpa: Float? = null
     private var started = false
@@ -84,6 +89,10 @@ class BarometerSampler(
         if (event.sensor.type != Sensor.TYPE_PRESSURE) return
         val hpa = event.values[0]
         lastReadingHpa = hpa
+        if (baselineHpa == null && autoCalibrate) {
+            baselineHpa = hpa
+            Log.i(TAG, "Barometer auto-calibrated on first reading: $hpa hPa")
+        }
         val baseline = baselineHpa ?: return
         val estimate = computeFloorEstimate(hpa, baseline)
         onEstimate(estimate)
