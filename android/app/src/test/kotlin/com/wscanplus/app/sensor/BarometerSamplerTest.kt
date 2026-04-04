@@ -5,6 +5,7 @@ import com.wscanplus.app.sensor.BarometerSampler.Companion.FLOOR_HEIGHT_METERS
 import com.wscanplus.app.sensor.BarometerSampler.Companion.METERS_PER_HPA
 import com.wscanplus.app.sensor.BarometerSampler.Companion.computeFloorEstimate
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.roundToInt
 
@@ -19,10 +20,10 @@ class BarometerSamplerTest {
     @Test
     fun `positive floor when above baseline`() {
         // One floor up ≈ 3 m ≈ 0.353 hPa drop in current reading
-        val oneFlorHpa = FLOOR_HEIGHT_METERS / METERS_PER_HPA
+        val oneFloorHpa = FLOOR_HEIGHT_METERS / METERS_PER_HPA
         val estimate =
             computeFloorEstimate(
-                currentHpa = 1013.25f - oneFlorHpa,
+                currentHpa = 1013.25f - oneFloorHpa,
                 baselineHpa = 1013.25f,
             )
         assertEquals(1, estimate.relativeFloor)
@@ -30,10 +31,10 @@ class BarometerSamplerTest {
 
     @Test
     fun `negative floor when below baseline`() {
-        val oneFlorHpa = FLOOR_HEIGHT_METERS / METERS_PER_HPA
+        val oneFloorHpa = FLOOR_HEIGHT_METERS / METERS_PER_HPA
         val estimate =
             computeFloorEstimate(
-                currentHpa = 1013.25f + oneFlorHpa,
+                currentHpa = 1013.25f + oneFloorHpa,
                 baselineHpa = 1013.25f,
             )
         assertEquals(-1, estimate.relativeFloor)
@@ -58,9 +59,9 @@ class BarometerSamplerTest {
     }
 
     @Test
-    fun `confidenceMeters is positive and non-zero`() {
+    fun `confidenceMeters equals CONFIDENCE_METERS constant`() {
         val estimate = computeFloorEstimate(currentHpa = 1013.25f, baselineHpa = 1013.25f)
-        assert(estimate.confidenceMeters > 0f)
+        assertEquals(CONFIDENCE_METERS, estimate.confidenceMeters, 0.001f)
     }
 
     @Test
@@ -77,8 +78,8 @@ class BarometerSamplerTest {
 
     @Test
     fun `constants are physically reasonable`() {
-        assert(METERS_PER_HPA in 7f..10f) { "Expected 7-10 m/hPa, got $METERS_PER_HPA" }
-        assert(FLOOR_HEIGHT_METERS in 2.5f..4f) { "Expected 2.5-4 m/floor, got $FLOOR_HEIGHT_METERS" }
-        assert(CONFIDENCE_METERS in 0.5f..3f) { "Expected 0.5-3 m confidence, got $CONFIDENCE_METERS" }
+        assertTrue("Expected 7-10 m/hPa, got $METERS_PER_HPA", METERS_PER_HPA in 7f..10f)
+        assertTrue("Expected 2.5-4 m/floor, got $FLOOR_HEIGHT_METERS", FLOOR_HEIGHT_METERS in 2.5f..4f)
+        assertTrue("Expected 0.5-3 m confidence, got $CONFIDENCE_METERS", CONFIDENCE_METERS in 0.5f..3f)
     }
 }

@@ -5,7 +5,6 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.util.Log
-import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -20,6 +19,7 @@ import kotlin.math.roundToInt
  * Floor math:
  *   ~1 hPa ≈ 8.5 m altitude change (ISA standard lapse rate, sea-level approximation).
  *   Typical residential floor height ≈ 3 m → ~0.353 hPa per floor.
+ *   deltaHpa = baselineHpa − currentHpa, so positive deltaHpa = lower current pressure = higher altitude.
  *
  * This class has no Android framework dependencies beyond [SensorManager] and [SensorEvent],
  * making the floor calculation logic unit-testable without Robolectric.
@@ -29,29 +29,33 @@ class BarometerSampler(
     private val onEstimate: (FloorEstimate) -> Unit,
 ) : SensorEventListener {
     private var baselineHpa: Float? = null
+    private var started = false
     private val pressureSensor: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE)
 
     /** True when the device has a barometer. */
     val isAvailable: Boolean get() = pressureSensor != null
 
     /**
-     * Register the sensor listener. Safe to call multiple times — subsequent calls are no-ops
-     * if already registered.
+     * Register the sensor listener. No-op if already started or no barometer is present.
      */
     fun start() {
+        if (started) return
         val sensor =
             pressureSensor ?: run {
                 Log.w(TAG, "No barometer sensor available — BarometerSampler inactive")
                 return
             }
         sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+        started = true
         Log.d(TAG, "BarometerSampler started")
     }
 
     /** Unregister the sensor listener and clear the baseline. */
     fun stop() {
+        if (!started) return
         sensorManager.unregisterListener(this)
         baselineHpa = null
+        started = false
         Log.d(TAG, "BarometerSampler stopped")
     }
 
@@ -97,7 +101,8 @@ class BarometerSampler(
 
         /**
          * Meters of altitude change per hPa at sea level (ISA standard).
-         * Positive hPa delta = lower altitude (descended).
+         * With deltaHpa computed as baselineHpa − currentHpa, a positive hPa delta
+         * means lower current pressure and therefore higher altitude (ascended).
          */
         internal const val METERS_PER_HPA = 8.5f
 
@@ -120,12 +125,10 @@ class BarometerSampler(
             val deltaHpa = baselineHpa - currentHpa
             val deltaMeters = deltaHpa * METERS_PER_HPA
             val relativeFloor = (deltaMeters / FLOOR_HEIGHT_METERS).roundToInt()
-            val confidenceFloors = (CONFIDENCE_METERS / FLOOR_HEIGHT_METERS)
-            val confidenceMeters = abs(confidenceFloors * FLOOR_HEIGHT_METERS) + CONFIDENCE_METERS
             return FloorEstimate(
                 relativeFloor = relativeFloor,
                 deltaHpa = deltaHpa,
-                confidenceMeters = confidenceMeters,
+                confidenceMeters = CONFIDENCE_METERS,
             )
         }
     }
