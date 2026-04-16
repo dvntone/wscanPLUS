@@ -550,7 +550,11 @@ class WatchdogService : Service() {
     }
 
     private fun parseDesktopMessage(line: String) {
-        val msg = parseDesktopMessageLine(line, inboundJson) ?: return
+        val msg =
+            parseDesktopMessageLine(line, inboundJson) ?: run {
+                Log.w(TAG, "Failed to parse desktop message")
+                return
+            }
         if (msg.type == "ack") {
             lastDesktopAckSeq = msg.seq
             Log.d(TAG, "Desktop ack received: seq=${msg.seq}")
