@@ -127,6 +127,7 @@ class WatchdogService : Service() {
     @Volatile
     var currentFloorEstimate: FloorEstimate? = null
         private set
+
     @Volatile
     var lastDesktopAckSeq: Int = -1
         private set
@@ -777,13 +778,14 @@ internal fun buildWatchdogHelloJson(
             seq = seq,
             sentAt = sentAt,
             capabilities = capabilityManifest,
-            floorEstimate = floorEstimate?.let {
-                FloorEstimateSummary(
-                    relativeFloor = it.relativeFloor,
-                    deltaHpa = it.deltaHpa,
-                    confidenceMeters = it.confidenceMeters,
-                    observedAt = it.observedAt,
-                )
-            },
+            floorEstimate =
+                floorEstimate?.let {
+                    FloorEstimateSummary(
+                        relativeFloor = it.relativeFloor,
+                        deltaHpa = it.deltaHpa,
+                        confidenceMeters = it.confidenceMeters,
+                        observedAt = it.observedAt,
+                    )
+                },
         ),
     )

@@ -88,11 +88,12 @@ class BarometerSamplerTest {
     @Test
     fun `observedAt is set to the provided epoch millis`() {
         val fixedTime = 1_700_000_000_000L
-        val estimate = computeFloorEstimate(
-            currentHpa = 1013.25f,
-            baselineHpa = 1013.25f,
-            observedAt = fixedTime,
-        )
+        val estimate =
+            computeFloorEstimate(
+                currentHpa = 1013.25f,
+                baselineHpa = 1013.25f,
+                observedAt = fixedTime,
+            )
         assertEquals(fixedTime, estimate.observedAt)
     }
 
