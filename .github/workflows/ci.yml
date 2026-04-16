@@ -148,20 +148,15 @@ jobs:
         run: ./gradlew :core:ktlintCheck :app:ktlintCheck
 
       - name: Android Build (assembleDebug)
-      # Upload debug APK for device testing
-      - name: Upload APK Artifact
-        if: steps.check_gradlew.outputs.skip != 'true'
-        uses: actions/upload-artifact@3b0346c531297cd300fe2e9edee4777ce94cf486
-        with:
-          name: wscanplus-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
         if: steps.check_gradlew.outputs.skip != 'true'
         working-directory: android
         run: ./gradlew assembleDebug
-      # Upload debug APK for device testing
+
+      # Upload debug APK so successful CI runs produce an installable artifact
+      # for mobile/device smoke testing without requiring a local SDK build.
       - name: Upload APK Artifact
         if: steps.check_gradlew.outputs.skip != 'true'
-        uses: actions/upload-artifact@3b0346c531297cd300fe2e9edee4777ce94cf486
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: wscanplus-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
