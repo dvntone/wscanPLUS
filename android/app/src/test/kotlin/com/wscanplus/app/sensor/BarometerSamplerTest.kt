@@ -86,6 +86,29 @@ class BarometerSamplerTest {
     }
 
     @Test
+    fun `observedAt is set to the provided epoch millis`() {
+        val fixedTime = 1_700_000_000_000L
+        val estimate =
+            computeFloorEstimate(
+                currentHpa = 1013.25f,
+                baselineHpa = 1013.25f,
+                observedAt = fixedTime,
+            )
+        assertEquals(fixedTime, estimate.observedAt)
+    }
+
+    @Test
+    fun `observedAt defaults to a recent timestamp when not provided`() {
+        val before = System.currentTimeMillis()
+        val estimate = computeFloorEstimate(currentHpa = 1013.25f, baselineHpa = 1013.25f)
+        val after = System.currentTimeMillis()
+        assertTrue(
+            "observedAt=${estimate.observedAt} should be in [$before, $after]",
+            estimate.observedAt in before..after,
+        )
+    }
+
+    @Test
     fun `constants are physically reasonable`() {
         assertTrue("Expected 7-10 m/hPa, got $METERS_PER_HPA", METERS_PER_HPA in 7f..10f)
         assertTrue("Expected 2.5-4 m/floor, got $FLOOR_HEIGHT_METERS", FLOOR_HEIGHT_METERS in 2.5f..4f)

@@ -64,6 +64,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.sqlcipher.database.SQLiteDatabase
@@ -76,6 +77,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -94,12 +96,12 @@ import java.util.concurrent.atomic.AtomicReference
  *
  * Threading rule: scanner chain and ServerSocket operations MUST run on background
  * threads. Never call scanners or socket operations on the main thread.
- *
- * TODO (Phase 3): open ServerSocket(9000) on a background thread for ADB comms.
  */
 class WatchdogService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val ouiLookupRef = AtomicReference<OuiLookup?>(null)
+    private val helloSeq = AtomicInteger(0)
+    private val inboundJson = Json { ignoreUnknownKeys = true }
     private val watchdogJson =
         Json {
             encodeDefaults = true
@@ -124,6 +126,10 @@ class WatchdogService : Service() {
 
     @Volatile
     var currentFloorEstimate: FloorEstimate? = null
+        private set
+
+    @Volatile
+    var lastDesktopAckSeq: Int = -1
         private set
     private var helloServerSocket: ServerSocket? = null
     private var helloClientSocket: Socket? = null
@@ -496,10 +502,14 @@ class WatchdogService : Service() {
         helloClientSocket = clientSocket
 
         try {
+            val seq = helloSeq.getAndIncrement()
             val helloMessage =
                 buildWatchdogHelloJson(
                     deviceId = buildHelloDeviceId(),
+                    seq = seq,
+                    sentAt = System.currentTimeMillis(),
                     capabilityManifest = capabilityManifest,
+                    floorEstimate = currentFloorEstimate,
                     json = watchdogJson,
                 )
 
@@ -512,10 +522,10 @@ class WatchdogService : Service() {
                     flush()
                 }
 
-            val inputStream = clientSocket.getInputStream()
-            while (inputStream.read() != -1) {
-                // Keep the connection open until the desktop side disconnects.
-            }
+            clientSocket
+                .getInputStream()
+                .bufferedReader(Charsets.UTF_8)
+                .forEachLine { line -> parseDesktopMessage(line) }
         } catch (e: Exception) {
             if (!isExpectedHelloShutdown(e)) {
                 Log.w(TAG, "Watchdog hello client connection failed", e)
@@ -529,6 +539,18 @@ class WatchdogService : Service() {
             if (helloClientSocket === clientSocket) {
                 helloClientSocket = null
             }
+        }
+    }
+
+    private fun parseDesktopMessage(line: String) {
+        try {
+            val msg = inboundJson.decodeFromString<DesktopMessageEnvelope>(line)
+            if (msg.type == "ack") {
+                lastDesktopAckSeq = msg.seq
+                Log.d(TAG, "Desktop ack received: seq=${msg.seq}")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to parse desktop message", e)
         }
     }
 
@@ -717,12 +739,32 @@ class WatchdogService : Service() {
 internal data class WatchdogHelloPayload(
     val type: String,
     val deviceId: String,
+    val seq: Int,
+    val sentAt: Long,
     val capabilities: DeviceCapabilityManifest? = null,
+    val floorEstimate: FloorEstimateSummary? = null,
+)
+
+@Serializable
+internal data class FloorEstimateSummary(
+    val relativeFloor: Int,
+    val deltaHpa: Float,
+    val confidenceMeters: Float,
+    val observedAt: Long,
+)
+
+@Serializable
+internal data class DesktopMessageEnvelope(
+    val type: String,
+    val seq: Int = -1,
 )
 
 internal fun buildWatchdogHelloJson(
     deviceId: String,
+    seq: Int,
+    sentAt: Long,
     capabilityManifest: DeviceCapabilityManifest?,
+    floorEstimate: FloorEstimate? = null,
     json: Json =
         Json {
             encodeDefaults = true
@@ -733,6 +775,17 @@ internal fun buildWatchdogHelloJson(
         WatchdogHelloPayload(
             type = "hello",
             deviceId = deviceId,
+            seq = seq,
+            sentAt = sentAt,
             capabilities = capabilityManifest,
+            floorEstimate =
+                floorEstimate?.let {
+                    FloorEstimateSummary(
+                        relativeFloor = it.relativeFloor,
+                        deltaHpa = it.deltaHpa,
+                        confidenceMeters = it.confidenceMeters,
+                        observedAt = it.observedAt,
+                    )
+                },
         ),
     )
