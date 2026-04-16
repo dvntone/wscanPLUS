@@ -544,14 +544,10 @@ class WatchdogService : Service() {
     }
 
     private fun parseDesktopMessage(line: String) {
-        try {
-            val msg = inboundJson.decodeFromString<DesktopMessageEnvelope>(line)
-            if (msg.type == "ack") {
-                lastDesktopAckSeq = msg.seq
-                Log.d(TAG, "Desktop ack received: seq=${msg.seq}")
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to parse desktop message", e)
+        val msg = parseDesktopMessageLine(line, inboundJson) ?: return
+        if (msg.type == "ack") {
+            lastDesktopAckSeq = msg.seq
+            Log.d(TAG, "Desktop ack received: seq=${msg.seq}")
         }
     }
 
@@ -759,6 +755,16 @@ internal data class DesktopMessageEnvelope(
     val type: String,
     val seq: Int = -1,
 )
+
+internal fun parseDesktopMessageLine(
+    line: String,
+    json: Json = Json { ignoreUnknownKeys = true },
+): DesktopMessageEnvelope? =
+    try {
+        json.decodeFromString<DesktopMessageEnvelope>(line)
+    } catch (_: Exception) {
+        null
+    }
 
 internal fun buildWatchdogHelloJson(
     deviceId: String,
