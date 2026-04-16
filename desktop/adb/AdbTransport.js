@@ -223,7 +223,7 @@ export class AdbTransport extends EventEmitter {
       const ack = JSON.stringify({ type: 'ack', seq }) + '\n';
       const writer = this.#socket.writable.getWriter();
       try {
-        await writer.write(new TextEncoder().encode(ack));
+        await writer.write(Buffer.from(ack, 'utf8'));
       } finally {
         writer.releaseLock();
       }
