@@ -59,18 +59,22 @@ const createSocket = ({ chunks = [], autoClose = true, transportId = 1n } = {}) 
     return Promise.resolve();
   });
 
+  // Shared mock so tests can assert what was written back to Android.
+  const mockWrite = jest.fn().mockResolvedValue(undefined);
+
   return {
     transportId,
     readable,
     writable: {
       getWriter: () => ({
-        write: jest.fn(),
+        write: mockWrite,
         releaseLock: jest.fn(),
         close: jest.fn(),
       }),
     },
     closed,
     close,
+    _mockWrite: mockWrite,
   };
 };
 
@@ -144,18 +148,91 @@ describe('AdbTransport.connect', () => {
     await transport.connect('serial-123');
     await flushMicrotasks();
 
-    expect(transport.session).toEqual({
+    // Core identity fields
+    expect(transport.session).toMatchObject({
       serial: 'serial-123',
       deviceId: 'android-123',
       capabilities: null,
+      seq: null,
+      sentAt: null,
+      latencyMs: null,
     });
-    expect(helloEvents).toEqual([
-      {
-        serial: 'serial-123',
-        deviceId: 'android-123',
-        capabilities: null,
-      },
-    ]);
+    // receivedAt must be a recent timestamp
+    expect(typeof transport.session.receivedAt).toBe('number');
+    expect(transport.session.receivedAt).toBeGreaterThan(0);
+  });
+
+  test('session captures seq, sentAt, receivedAt, and latencyMs from hello', async () => {
+    const sentAt = Date.now() - 20; // simulate 20 ms in-flight
+    const hello = `${JSON.stringify({
+      type: 'hello',
+      deviceId: 'android-456',
+      seq: 5,
+      sentAt,
+    })}\n`;
+    const socket = createSocket({
+      chunks: [Buffer.from(hello, 'utf8')],
+      autoClose: false,
+    });
+    mockCreateDeviceConnection.mockResolvedValue(socket);
+    mockWaitForDisconnect.mockResolvedValue();
+
+    const transport = new AdbTransport();
+    await transport.connect('serial-456');
+    await flushMicrotasks();
+
+    const session = transport.session;
+    expect(session.seq).toBe(5);
+    expect(session.sentAt).toBe(sentAt);
+    expect(typeof session.receivedAt).toBe('number');
+    expect(session.receivedAt).toBeGreaterThanOrEqual(sentAt);
+    expect(typeof session.latencyMs).toBe('number');
+    expect(session.latencyMs).toBeGreaterThanOrEqual(0);
+  });
+
+  test('sends ack back to Android after receiving hello (bidirectional smoke)', async () => {
+    const hello = `${JSON.stringify({
+      type: 'hello',
+      deviceId: 'android-789',
+      seq: 3,
+      sentAt: Date.now(),
+    })}\n`;
+    const socket = createSocket({
+      chunks: [Buffer.from(hello, 'utf8')],
+      autoClose: false,
+    });
+    mockCreateDeviceConnection.mockResolvedValue(socket);
+    mockWaitForDisconnect.mockResolvedValue();
+
+    const transport = new AdbTransport();
+    await transport.connect('serial-789');
+    await flushMicrotasks();
+
+    expect(socket._mockWrite).toHaveBeenCalledTimes(1);
+    const written = Buffer.from(socket._mockWrite.mock.calls[0][0]).toString('utf8');
+    const ack = JSON.parse(written.trim());
+    expect(ack.type).toBe('ack');
+    expect(ack.seq).toBe(3);
+  });
+
+  test('ack seq defaults to 0 when hello has no seq field', async () => {
+    const hello = `${JSON.stringify({ type: 'hello', deviceId: 'android-000' })}\n`;
+    const socket = createSocket({
+      chunks: [Buffer.from(hello, 'utf8')],
+      autoClose: false,
+    });
+    mockCreateDeviceConnection.mockResolvedValue(socket);
+    mockWaitForDisconnect.mockResolvedValue();
+
+    const transport = new AdbTransport();
+    await transport.connect('serial-000');
+    await flushMicrotasks();
+
+    expect(socket._mockWrite).toHaveBeenCalledTimes(1);
+    const written = Buffer.from(socket._mockWrite.mock.calls[0][0]).toString('utf8');
+    const ack = JSON.parse(written.trim());
+    expect(ack.type).toBe('ack');
+    expect(ack.seq).toBe(0);
   });
 
   test('disconnect closes the socket and emits disconnect once', async () => {

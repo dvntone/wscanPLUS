@@ -22,7 +22,7 @@ export class AdbTransport extends EventEmitter {
   #bufferedText = '';
   /** @type {ReadableStreamDefaultReader<Uint8Array> | undefined} */
   #reader;
-  /** @type {{ serial: string, deviceId: string | null, capabilities: object | null } | null} */
+  /** @type {{ serial: string, deviceId: string | null, capabilities: object | null, seq: number | null, sentAt: number | null, receivedAt: number, latencyMs: number | null } | null} */
   #session = null;
   /** @type {{ readable: ReadableStream<Uint8Array>, writable: WritableStream<Uint8Array>, closed: Promise<undefined>, close: () => Promise<void>, transportId?: bigint } | undefined} */
   #socket;
@@ -47,8 +47,10 @@ export class AdbTransport extends EventEmitter {
   /**
    * Returns the last parsed hello session for the connected device.
    * `capabilities` is `null` when the Android side omits the key.
+   * `seq` and `sentAt` are `null` when the Android side omits them (older builds).
+   * `latencyMs` is `null` when `sentAt` was not present in the hello.
    *
-   * @returns {{ serial: string, deviceId: string | null, capabilities: object | null } | null}
+   * @returns {{ serial: string, deviceId: string | null, capabilities: object | null, seq: number | null, sentAt: number | null, receivedAt: number, latencyMs: number | null } | null}
    */
   get session() {
     return this.#session;
@@ -199,13 +201,34 @@ export class AdbTransport extends EventEmitter {
       return;
     }
 
+    const receivedAt = Date.now();
+    const sentAt = typeof message.sentAt === 'number' ? message.sentAt : null;
     this.#session = {
       serial: this.#connectedSerial ?? '',
-      deviceId:
-        typeof message.deviceId === 'string' ? message.deviceId : null,
+      deviceId: typeof message.deviceId === 'string' ? message.deviceId : null,
       capabilities: message.capabilities ?? null,
+      seq: typeof message.seq === 'number' ? message.seq : null,
+      sentAt,
+      receivedAt,
+      latencyMs: sentAt !== null ? receivedAt - sentAt : null,
     };
 
     this.emit('hello', this.#session);
+    void this.#sendAck(this.#session.seq ?? 0);
+  }
+
+  async #sendAck(seq) {
+    if (!this.#socket) return;
+    try {
+      const ack = JSON.stringify({ type: 'ack', seq }) + '\n';
+      const writer = this.#socket.writable.getWriter();
+      try {
+        await writer.write(new TextEncoder().encode(ack));
+      } finally {
+        writer.releaseLock();
+      }
+    } catch (error) {
+      this.emit('error', error);
+    }
   }
 }

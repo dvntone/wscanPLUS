@@ -130,6 +130,7 @@ class BarometerSampler(
         fun computeFloorEstimate(
             currentHpa: Float,
             baselineHpa: Float,
+            observedAt: Long = System.currentTimeMillis(),
         ): FloorEstimate {
             val deltaHpa = baselineHpa - currentHpa
             val deltaMeters = deltaHpa * METERS_PER_HPA
@@ -138,6 +139,7 @@ class BarometerSampler(
                 relativeFloor = relativeFloor,
                 deltaHpa = deltaHpa,
                 confidenceMeters = CONFIDENCE_METERS,
+                observedAt = observedAt,
             )
         }
     }
