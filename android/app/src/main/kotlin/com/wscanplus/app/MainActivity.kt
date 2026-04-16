@@ -61,12 +61,18 @@ class MainActivity : Activity() {
                 text = "View Scan History"
                 setOnClickListener { openScanHistory() }
             }
+        val diagnosticButton =
+            Button(this).apply {
+                text = "Diagnostics"
+                setOnClickListener { openDiagnostics() }
+            }
         rootLayout.addView(statusView)
         rootLayout.addView(actionButton)
         rootLayout.addView(settingsButton)
         rootLayout.addView(mapButton)
         rootLayout.addView(threatResultsButton)
         rootLayout.addView(historyButton)
+        rootLayout.addView(diagnosticButton)
         setContentView(rootLayout)
 
         if (!ConsentStore(this).isConsentGiven()) {
@@ -214,6 +220,10 @@ class MainActivity : Activity() {
 
     private fun openScanHistory() {
         startActivity(Intent(this, ScanHistoryActivity::class.java))
+    }
+
+    private fun openDiagnostics() {
+        startActivity(Intent(this, DiagnosticActivity::class.java))
     }
 
     private fun isDeviceLocationEnabled(): Boolean {

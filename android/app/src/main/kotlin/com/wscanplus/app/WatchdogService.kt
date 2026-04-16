@@ -121,6 +121,8 @@ class WatchdogService : Service() {
     private lateinit var ctiCacheRepository: CtiCacheRepository
     private lateinit var retentionManager: RetentionManager
     private lateinit var geminiThreatAnalyzer: GeminiThreatAnalyzer
+
+    @Volatile
     private var capabilityManifest: DeviceCapabilityManifest? = null
     private var barometerSampler: BarometerSampler? = null
 
@@ -178,6 +180,12 @@ class WatchdogService : Service() {
 
     inner class LocalBinder : Binder() {
         fun getService(): WatchdogService = this@WatchdogService
+
+        val capabilityManifest: DeviceCapabilityManifest?
+            get() = this@WatchdogService.capabilityManifest
+
+        val isDegraded: Boolean
+            get() = this@WatchdogService.degradedMode
     }
 
     private val binder = LocalBinder()
@@ -544,14 +552,14 @@ class WatchdogService : Service() {
     }
 
     private fun parseDesktopMessage(line: String) {
-        try {
-            val msg = inboundJson.decodeFromString<DesktopMessageEnvelope>(line)
-            if (msg.type == "ack") {
-                lastDesktopAckSeq = msg.seq
-                Log.d(TAG, "Desktop ack received: seq=${msg.seq}")
+        val msg =
+            parseDesktopMessageLine(line, inboundJson) ?: run {
+                Log.w(TAG, "Failed to parse desktop message")
+                return
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to parse desktop message", e)
+        if (msg.type == "ack") {
+            lastDesktopAckSeq = msg.seq
+            Log.d(TAG, "Desktop ack received: seq=${msg.seq}")
         }
     }
 
@@ -759,6 +767,16 @@ internal data class DesktopMessageEnvelope(
     val type: String,
     val seq: Int = -1,
 )
+
+internal fun parseDesktopMessageLine(
+    line: String,
+    json: Json = Json { ignoreUnknownKeys = true },
+): DesktopMessageEnvelope? =
+    try {
+        json.decodeFromString<DesktopMessageEnvelope>(line)
+    } catch (_: Exception) {
+        null
+    }
 
 internal fun buildWatchdogHelloJson(
     deviceId: String,
