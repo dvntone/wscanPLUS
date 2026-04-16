@@ -178,6 +178,12 @@ class WatchdogService : Service() {
 
     inner class LocalBinder : Binder() {
         fun getService(): WatchdogService = this@WatchdogService
+
+        val capabilityManifest: DeviceCapabilityManifest?
+            get() = this@WatchdogService.capabilityManifest
+
+        val isDegraded: Boolean
+            get() = this@WatchdogService.degradedMode
     }
 
     private val binder = LocalBinder()

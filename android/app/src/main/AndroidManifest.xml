@@ -96,6 +96,10 @@
             android:name=".ScanHistoryActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".DiagnosticActivity"
+            android:exported="false" />
+
         <!--
             FileProvider for sharing JSON exports from ScanDataExporter.
             Exposes cacheDir/exports/ only — no other paths.
