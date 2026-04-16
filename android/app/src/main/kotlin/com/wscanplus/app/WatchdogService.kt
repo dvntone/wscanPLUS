@@ -121,6 +121,8 @@ class WatchdogService : Service() {
     private lateinit var ctiCacheRepository: CtiCacheRepository
     private lateinit var retentionManager: RetentionManager
     private lateinit var geminiThreatAnalyzer: GeminiThreatAnalyzer
+
+    @Volatile
     private var capabilityManifest: DeviceCapabilityManifest? = null
     private var barometerSampler: BarometerSampler? = null
 

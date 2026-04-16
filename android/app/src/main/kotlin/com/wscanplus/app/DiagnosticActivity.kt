@@ -32,6 +32,7 @@ class DiagnosticActivity : Activity() {
 
             override fun onServiceDisconnected(name: ComponentName?) {
                 boundBinder = null
+                serviceBound = false
                 refreshDiagnostics()
             }
         }
@@ -87,6 +88,9 @@ class DiagnosticActivity : Activity() {
     }
 
     private fun refreshDiagnostics() {
+        if (!serviceBound) {
+            serviceBound = bindService(Intent(this, WatchdogService::class.java), serviceConnection, 0)
+        }
         val binder = boundBinder
         if (binder == null) {
             diagnosticText.text = "Service: NOT RUNNING"
