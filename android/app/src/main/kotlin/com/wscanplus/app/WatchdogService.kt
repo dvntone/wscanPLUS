@@ -500,6 +500,7 @@ class WatchdogService : Service() {
 
     private fun handleHelloConnection(clientSocket: Socket) {
         helloClientSocket = clientSocket
+        lastDesktopAckSeq = -1
 
         try {
             val seq = helloSeq.getAndIncrement()
