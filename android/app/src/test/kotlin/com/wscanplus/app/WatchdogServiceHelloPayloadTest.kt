@@ -154,23 +154,15 @@ class WatchdogServiceHelloPayloadTest {
     }
 
     @Test
-    fun `seq monotonically increases across two hello builds`() {
-        val p1 = buildWatchdogHelloJson("d", seq = 0, sentAt = 1L, capabilityManifest = null)
-        val p2 = buildWatchdogHelloJson("d", seq = 1, sentAt = 2L, capabilityManifest = null)
-        val s1 =
+    fun `seq field is serialized into hello JSON`() {
+        val payload = buildWatchdogHelloJson("d", seq = 7, sentAt = 1L, capabilityManifest = null)
+        val seq =
             Json
-                .parseToJsonElement(p1)
+                .parseToJsonElement(payload)
                 .jsonObject
                 .getValue("seq")
                 .jsonPrimitive.content
                 .toInt()
-        val s2 =
-            Json
-                .parseToJsonElement(p2)
-                .jsonObject
-                .getValue("seq")
-                .jsonPrimitive.content
-                .toInt()
-        assertTrue(s2 > s1)
+        assertEquals(7, seq)
     }
 }

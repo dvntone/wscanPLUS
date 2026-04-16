@@ -48,7 +48,8 @@ export class AdbTransport extends EventEmitter {
    * Returns the last parsed hello session for the connected device.
    * `capabilities` is `null` when the Android side omits the key.
    * `seq` and `sentAt` are `null` when the Android side omits them (older builds).
-   * `latencyMs` is `null` when `sentAt` was not present in the hello.
+   * `latencyMs` is `null` when `sentAt` was not present in the hello, or when
+   * `receivedAt < sentAt` (device clock skew between Android and desktop).
    *
    * @returns {{ serial: string, deviceId: string | null, capabilities: object | null, seq: number | null, sentAt: number | null, receivedAt: number, latencyMs: number | null } | null}
    */
@@ -210,7 +211,7 @@ export class AdbTransport extends EventEmitter {
       seq: typeof message.seq === 'number' ? message.seq : null,
       sentAt,
       receivedAt,
-      latencyMs: sentAt !== null ? receivedAt - sentAt : null,
+      latencyMs: sentAt !== null && receivedAt >= sentAt ? receivedAt - sentAt : null,
     };
 
     this.emit('hello', this.#session);
