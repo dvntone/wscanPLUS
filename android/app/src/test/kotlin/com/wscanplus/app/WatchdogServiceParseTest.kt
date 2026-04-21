@@ -73,8 +73,15 @@ class WatchdogServiceParseTest {
         assertEquals(-1, service.lastDesktopAckSeq)
     }
 
-    private fun invokeParseDesktopMessage(service: WatchdogService, line: String) {
-        val method = WatchdogService::class.java.getDeclaredMethod("parseDesktopMessage", String::class.java)
+    private fun invokeParseDesktopMessage(
+        service: WatchdogService,
+        line: String,
+    ) {
+        val method =
+            WatchdogService::class.java.getDeclaredMethod(
+                "parseDesktopMessage",
+                String::class.java,
+            )
         method.isAccessible = true
         method.invoke(service, line)
     }

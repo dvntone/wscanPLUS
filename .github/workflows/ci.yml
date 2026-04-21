@@ -152,6 +152,15 @@ jobs:
         working-directory: android
         run: ./gradlew assembleDebug
 
+      # Upload debug APK so successful CI runs produce an installable artifact
+      # for mobile/device smoke testing without requiring a local SDK build.
+      - name: Upload APK Artifact
+        if: steps.check_gradlew.outputs.skip != 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: wscanplus-debug-apk-ci-mock
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
   secret-scan:
     name: Secret Scan (blocking)
     runs-on: ubuntu-latest

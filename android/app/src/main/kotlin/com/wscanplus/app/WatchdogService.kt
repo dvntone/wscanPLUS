@@ -718,9 +718,22 @@ class WatchdogService : Service() {
     }
 
     private fun buildNotification(): android.app.Notification {
+        // Explicit intent to MainActivity — avoids implicit-intent PendingIntent warning.
+        val tapIntent =
+            Intent(applicationContext, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+        val tapPendingIntent =
+            PendingIntent.getActivity(
+                this,
+                1,
+                tapIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
         builder.setContentTitle(if (degradedMode) "wscan+ scanning (degraded)" else "wscan+ scanning")
         builder.setSmallIcon(R.mipmap.ic_launcher)
+        builder.setContentIntent(tapPendingIntent)
         builder.setOngoing(true)
         return builder.build()
     }
