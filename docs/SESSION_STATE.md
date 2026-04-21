@@ -114,9 +114,9 @@ See [docs/ROADMAP.md](/docs/ROADMAP.md) for the full phased plan.
 
 This section is the fast re-entry point for the next session.
 
-### Remote repo state (2026-04-04)
+### Remote repo state (2026-04-21)
 
-- `main` is current — latest merge: PR `#200` (desktop consolidation)
+- `main` is current — latest merge: PR `#230` (FLAG_IMMUTABLE contentIntent on foreground notification)
 - No open PRs
 - No open blocking issues
 - `dvntone/wscanplus_desktop` archived — desktop runtime now lives in `desktop/` of this monorepo
@@ -128,12 +128,12 @@ This section is the fast re-entry point for the next session.
 - **Phase 0–2**: Complete (Android scanner, heuristics, Room DB, OUI)
 - **Phase 3**: Complete (consent framework, CrowdSec CTI, Firebase, CTI cache, quota guardrails, SQLCipher, scan history)
 - **Phase 4**: Complete (GeminiThreatAnalyzer, scan history timeline, ADB transport, companion shell, JSON export, ESM preload bridge)
-- **Phase 5 (partial)**: CapabilityProbe layer merged (PR #198). Desktop consolidated (PR #200).
+- **Phase 5 (partial)**: CapabilityProbe layer merged (PR #198). Desktop consolidated (PR #200). Transport hello + capabilities complete (PR #209 Android, PR #211 desktop).
 
 ### Phase 5 remaining work
 
-1. **Transport hello update** — include `DeviceCapabilityManifest` JSON in WatchdogService hello message to desktop
-2. **Spatial WiFi floor tracking** — barometer-based relative floor detection (handoff spec in `/mnt/c/Users/Devia/AppData/Local/Temp/wscan_pull/handoff.md`)
+1. ~~**Transport hello update**~~ ✅ — `DeviceCapabilityManifest` serialized in WatchdogService hello (PR #209); desktop `AdbTransport` parses capabilities field (PR #211)
+2. ~~**Spatial WiFi floor tracking**~~ ✅ — `BarometerSampler` + `FloorEstimate` (PR #217); wired into `WatchdogService` with `autoCalibrate=true` (PR #219); floor badge on `ScanMapActivity` (PR #221)
 3. **darklotusLABS web UI** — Sentinel Prism theme, NYX assistant, Vite build for app.darklotuslabs.com
 
 ### Active repos
