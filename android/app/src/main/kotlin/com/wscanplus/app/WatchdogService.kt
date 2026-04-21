@@ -721,11 +721,7 @@ class WatchdogService : Service() {
         // Explicit intent to MainActivity — avoids implicit-intent PendingIntent warning.
         val tapIntent =
             Intent(applicationContext, MainActivity::class.java).apply {
-                addFlags(
-                    Intent.FLAG_ACTIVITY_NEW_TASK or
-                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                        Intent.FLAG_ACTIVITY_SINGLE_TOP,
-                )
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
         val tapPendingIntent =
             PendingIntent.getActivity(
