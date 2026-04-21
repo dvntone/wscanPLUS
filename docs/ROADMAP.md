@@ -122,6 +122,22 @@ Desktop receives and aggregates data from Android companion(s).
 
 ---
 
+## Future Features — Post-Release
+
+### Android Bubble (Persistent Threat Indicator)
+
+Floating threat-level bubble overlay while using other apps, modeled on Google Messages chat heads.
+
+- `BubbleMetadata` + `NotificationChannel.setAllowBubbles(true)` (API 30+)
+- Bubble icon reflects current threat level (color-coded: green/yellow/red)
+- Tap expands to condensed scan summary (top threat, network count, floor)
+- `BubbleActivity` declared with `android:allowEmbedded="true"`
+- Requires user to grant bubble permission per-app
+- **Device compatibility note:** confirmed working on Pixel; not supported on Moto G Play 2024 (XT2613-1)
+- Phase 1: indicator only (tap → MainActivity). Phase 2: embedded mini scan view.
+
+---
+
 ## Deferred — Not in Scope Near-Term
 
 ### VpnService / Network Traffic Pipeline
