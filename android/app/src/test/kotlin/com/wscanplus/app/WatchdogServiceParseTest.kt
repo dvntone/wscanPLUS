@@ -45,4 +45,44 @@ class WatchdogServiceParseTest {
     fun `missing type field returns null`() {
         assertNull(parseDesktopMessageLine("""{"seq":1}"""))
     }
+
+    @Test
+    fun `valid ack message updates lastDesktopAckSeq`() {
+        val service = WatchdogService()
+
+        invokeParseDesktopMessage(service, """{"type":"ack","seq":9}""")
+
+        assertEquals(9, service.lastDesktopAckSeq)
+    }
+
+    @Test
+    fun `malformed desktop message does not crash or update ack`() {
+        val service = WatchdogService()
+
+        invokeParseDesktopMessage(service, "not json")
+
+        assertEquals(-1, service.lastDesktopAckSeq)
+    }
+
+    @Test
+    fun `non-ack desktop message is ignored`() {
+        val service = WatchdogService()
+
+        invokeParseDesktopMessage(service, """{"type":"ping","seq":2}""")
+
+        assertEquals(-1, service.lastDesktopAckSeq)
+    }
+
+    private fun invokeParseDesktopMessage(
+        service: WatchdogService,
+        line: String,
+    ) {
+        val method =
+            WatchdogService::class.java.getDeclaredMethod(
+                "parseDesktopMessage",
+                String::class.java,
+            )
+        method.isAccessible = true
+        method.invoke(service, line)
+    }
 }
