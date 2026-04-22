@@ -1,5 +1,9 @@
 # SESSION_STATE (source of truth)
 
+> **THIS DOCUMENT IS THE AUTHORITATIVE SOURCE OF CURRENT PROJECT STATE.**
+> For any question about what is implemented, merged, or pending — use this document.
+> Other docs (`PROJECT_OVERVIEW.md`, `ROADMAP.md`) may lag and must not be used alone for implementation decisions.
+
 Repo: https://github.com/dvntone/wscanplus
 Name: wscan+ (WiFi Scan + Companion)
 Audience: professional / advanced users (defensive detection & assessment)
