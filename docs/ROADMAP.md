@@ -60,7 +60,6 @@ Phase 2 is complete. The following items are known gaps between the architecture
 - [ ] Wire Room DB into `ScanContext` at decision time — `knownProfiles`, `baselineNetworkCount`, `baselineStdDev` are always empty/null at runtime; three heuristics (EncryptionDowngrade, BssidFingerprint, SsidFlooding) receive no historical data
 - [ ] Remove hardcoded `EnvironmentType.RESIDENTIAL` in `WatchdogService` — infer from context or default to `UNKNOWN`
 - [ ] Heuristic-aware gate hardening in `PolicyGate` — recurrence/corroboration weighting for behavioral detections; structural detections (WEP/Open) always pass
-- [ ] OuiAssetLoader integration in `WatchdogService` so BSSID vendor lookup is no longer wired as `null`
 - [ ] False-positive brakes backed by real CTI/context instead of stub logic
 - [ ] Capability-aware scoring weight once context wiring is stable
 
