@@ -150,8 +150,9 @@ Before expanding UI or alerting features, the pipeline must reliably produce all
 ### 3. Capability status
 - What this device can actually do natively
 - Which features require ADB-assisted mode
+- Which features are enhanced by ADB-assisted mode
 - Which features are degraded or unavailable
-- `WORKS_NATIVE / WORKS_ADB / WORKS_DEGRADED / FAILS / UNTESTED` per feature
+- `WORKS_NATIVE / WORKS_ADB / WORKS_ADB_ENHANCED / WORKS_DEGRADED / FAILS / UNTESTED` per feature
 
 ### 4. Session summary
 - Key events from the session
