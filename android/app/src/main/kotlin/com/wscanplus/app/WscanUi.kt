@@ -12,6 +12,7 @@ import android.widget.TextView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import java.util.Locale
 
 object WscanUi {
     val COLOR_NAVY: Int = Color.rgb(2, 28, 55)
@@ -62,7 +63,11 @@ object WscanUi {
         }
     }
 
-    fun header(parent: LinearLayout, title: String, subtitle: String? = null) {
+    fun header(
+        parent: LinearLayout,
+        title: String,
+        subtitle: String? = null,
+    ) {
         parent.addView(
             TextView(parent.context).apply {
                 text = title
@@ -91,19 +96,23 @@ object WscanUi {
                 background = rounded(COLOR_CARD, parent.dp(16), strokeColor = Color.rgb(38, 57, 87))
                 parent.addView(
                     this,
-                    LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                    ).apply {
-                        bottomMargin = parent.dp(12)
-                    },
+                    LinearLayout
+                        .LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        ).apply {
+                            bottomMargin = parent.dp(12)
+                        },
                 )
             }
 
-    fun sectionTitle(parent: LinearLayout, text: String) {
+    fun sectionTitle(
+        parent: LinearLayout,
+        text: String,
+    ) {
         parent.addView(
             TextView(parent.context).apply {
-                this.text = text.uppercase()
+                this.text = text.uppercase(Locale.ROOT)
                 textSize = 11f
                 letterSpacing = 0.12f
                 typeface = Typeface.DEFAULT_BOLD
@@ -113,7 +122,11 @@ object WscanUi {
         )
     }
 
-    fun body(parent: LinearLayout, text: String, muted: Boolean = false): TextView =
+    fun body(
+        parent: LinearLayout,
+        text: String,
+        muted: Boolean = false,
+    ): TextView =
         TextView(parent.context).apply {
             this.text = text
             textSize = 14f
@@ -122,7 +135,12 @@ object WscanUi {
             parent.addView(this)
         }
 
-    fun metricRow(parent: LinearLayout, label: String, value: String, valueColor: Int = COLOR_TEXT) {
+    fun metricRow(
+        parent: LinearLayout,
+        label: String,
+        value: String,
+        valueColor: Int = COLOR_TEXT,
+    ) {
         val row =
             LinearLayout(parent.context).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -147,7 +165,11 @@ object WscanUi {
         parent.addView(row)
     }
 
-    fun actionButton(parent: LinearLayout, text: String, onClick: () -> Unit): Button =
+    fun actionButton(
+        parent: LinearLayout,
+        text: String,
+        onClick: () -> Unit,
+    ): Button =
         Button(parent.context)
             .apply {
                 this.text = text
@@ -159,18 +181,23 @@ object WscanUi {
                 setOnClickListener { onClick() }
                 parent.addView(
                     this,
-                    LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        parent.dp(52),
-                    ).apply {
-                        bottomMargin = parent.dp(10)
-                    },
+                    LinearLayout
+                        .LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            parent.dp(52),
+                        ).apply {
+                            bottomMargin = parent.dp(10)
+                        },
                 )
             }
 
     fun statusColor(value: Boolean): Int = if (value) COLOR_OK else COLOR_BAD
 
-    fun rounded(color: Int, radius: Int, strokeColor: Int? = null): GradientDrawable =
+    fun rounded(
+        color: Int,
+        radius: Int,
+        strokeColor: Int? = null,
+    ): GradientDrawable =
         GradientDrawable().apply {
             setColor(color)
             cornerRadius = radius.toFloat()

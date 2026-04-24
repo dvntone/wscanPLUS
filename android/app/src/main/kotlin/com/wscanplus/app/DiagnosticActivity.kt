@@ -8,6 +8,8 @@ import android.os.Bundle
 import android.os.IBinder
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import com.wscanplus.app.capabilities.AcousticStatus
+import com.wscanplus.app.capabilities.CameraIrStatus
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -100,13 +102,18 @@ class DiagnosticActivity : Activity() {
         if (caps != null) {
             WscanUi.metricRow(capsCard, "Device", caps.deviceModel)
             WscanUi.metricRow(capsCard, "Wi-Fi scan", caps.wifiScan.toReadyLabel(), WscanUi.statusColor(caps.wifiScan))
-            WscanUi.metricRow(capsCard, "Wi-Fi RTT", "${caps.wifiRtt.toReadyLabel()} · now=${caps.wifiRttAvailableNow}", WscanUi.statusColor(caps.wifiRtt))
+            WscanUi.metricRow(
+                capsCard,
+                "Wi-Fi RTT",
+                "${caps.wifiRtt.toReadyLabel()} · now=${caps.wifiRttAvailableNow}",
+                WscanUi.statusColor(caps.wifiRtt),
+            )
             WscanUi.metricRow(capsCard, "Wi-Fi Aware", caps.wifiAware.toReadyLabel(), WscanUi.statusColor(caps.wifiAware))
             WscanUi.metricRow(capsCard, "UWB", caps.uwb.toReadyLabel(), WscanUi.statusColor(caps.uwb))
             WscanUi.metricRow(capsCard, "Barometer", caps.barometer.toReadyLabel(), WscanUi.statusColor(caps.barometer))
             WscanUi.metricRow(capsCard, "BLE", caps.bluetoothLe.toReadyLabel(), WscanUi.statusColor(caps.bluetoothLe))
-            WscanUi.metricRow(capsCard, "Camera depth/IR", caps.cameraIrCapable.name, caps.cameraIrCapable.name.statusColor())
-            WscanUi.metricRow(capsCard, "Acoustic", caps.acousticSonarCapable.name, caps.acousticSonarCapable.name.statusColor())
+            WscanUi.metricRow(capsCard, "Camera depth/IR", caps.cameraIrCapable.toDisplayLabel(), caps.cameraIrCapable.statusColor())
+            WscanUi.metricRow(capsCard, "Acoustic", caps.acousticSonarCapable.toDisplayLabel(), caps.acousticSonarCapable.statusColor())
         } else {
             WscanUi.body(capsCard, "Capability probe has not completed yet.", muted = true)
         }
@@ -140,17 +147,36 @@ class DiagnosticActivity : Activity() {
         when (this) {
             CameraIrStatus.CAPABLE -> WscanUi.COLOR_OK
             CameraIrStatus.PARTIAL,
-            CameraIrStatus.DEVICE_VARIABLE -> WscanUi.COLOR_WARN
+            CameraIrStatus.UNTESTED,
+            -> WscanUi.COLOR_WARN
             CameraIrStatus.NOT_CAPABLE -> WscanUi.COLOR_BAD
         }
 
     private fun AcousticStatus.statusColor(): Int =
         when (this) {
             AcousticStatus.CAPABLE -> WscanUi.COLOR_OK
-            AcousticStatus.PARTIAL,
-            AcousticStatus.DEVICE_VARIABLE -> WscanUi.COLOR_WARN
+            AcousticStatus.UNTESTED,
+            AcousticStatus.DEVICE_VARIABLE,
+            -> WscanUi.COLOR_WARN
             AcousticStatus.NOT_CAPABLE -> WscanUi.COLOR_BAD
         }
+
+    private fun CameraIrStatus.toDisplayLabel(): String =
+        when (this) {
+            CameraIrStatus.UNTESTED -> "UNTESTED"
+            CameraIrStatus.CAPABLE -> "CAPABLE"
+            CameraIrStatus.NOT_CAPABLE -> "NOT CAPABLE"
+            CameraIrStatus.PARTIAL -> "PARTIAL"
+        }
+
+    private fun AcousticStatus.toDisplayLabel(): String =
+        when (this) {
+            AcousticStatus.UNTESTED -> "UNTESTED"
+            AcousticStatus.CAPABLE -> "CAPABLE"
+            AcousticStatus.NOT_CAPABLE -> "NOT CAPABLE"
+            AcousticStatus.DEVICE_VARIABLE -> "DEVICE VARIABLE"
+        }
+
     private fun formatMs(epochMs: Long): String = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(epochMs))
 
     companion object {

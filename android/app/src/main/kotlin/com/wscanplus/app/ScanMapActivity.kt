@@ -39,6 +39,7 @@ class ScanMapActivity :
     private var statusTitle: TextView? = null
     private var statusBody: TextView? = null
     private var isServiceBound = false
+    private val dismissStatusRunnable = Runnable { statusPanel?.visibility = View.GONE }
 
     private val serviceConnection =
         object : ServiceConnection {
@@ -100,6 +101,7 @@ class ScanMapActivity :
     override fun onStop() {
         super.onStop()
         handler.removeCallbacks(floorUpdateRunnable)
+        handler.removeCallbacks(dismissStatusRunnable)
         if (isServiceBound) {
             unbindService(serviceConnection)
             isServiceBound = false
@@ -225,9 +227,9 @@ class ScanMapActivity :
             runOnUiThread {
                 map.addTileOverlay(TileOverlayOptions().tileProvider(provider))
                 setMapStatus("Heatmap rendered", "${points.size} GPS-tagged scan points loaded.")
-                handler.postDelayed({ statusPanel?.visibility = View.GONE }, MAP_SUCCESS_DISMISS_MS)
                 try {
                     map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 64))
+                    handler.postDelayed(dismissStatusRunnable, MAP_SUCCESS_DISMISS_MS)
                 } catch (e: Exception) {
                     Log.w(TAG, "Camera bounds fit failed — map may be too small", e)
                     setMapStatus(
@@ -243,6 +245,7 @@ class ScanMapActivity :
         title: String,
         body: String,
     ) {
+        handler.removeCallbacks(dismissStatusRunnable)
         statusTitle?.text = title
         statusBody?.text = body
         statusPanel?.visibility = View.VISIBLE
@@ -250,6 +253,7 @@ class ScanMapActivity :
 
     override fun onDestroy() {
         super.onDestroy()
+        handler.removeCallbacks(dismissStatusRunnable)
         executor.shutdownNow()
     }
 

@@ -71,7 +71,7 @@ object CapabilityProbe {
         if (!packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
             return CameraIrStatus.NOT_CAPABLE
         }
-        val cameraManager = context.getSystemService(CameraManager::class.java) ?: return CameraIrStatus.PARTIAL
+        val cameraManager = context.getSystemService(CameraManager::class.java) ?: return CameraIrStatus.UNTESTED
         return try {
             val hasDepthOutput =
                 cameraManager.cameraIdList.any { cameraId ->
@@ -80,9 +80,9 @@ object CapabilityProbe {
                         characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES) ?: intArrayOf()
                     capabilities.contains(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_DEPTH_OUTPUT)
                 }
-            if (hasDepthOutput) CameraIrStatus.PARTIAL else CameraIrStatus.NOT_CAPABLE
+            if (hasDepthOutput) CameraIrStatus.CAPABLE else CameraIrStatus.NOT_CAPABLE
         } catch (_: Exception) {
-            CameraIrStatus.PARTIAL
+            CameraIrStatus.UNTESTED
         }
     }
 
@@ -105,9 +105,7 @@ object CapabilityProbe {
     private fun hasPermission(
         context: Context,
         permission: String,
-    ): Boolean {
-        return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
-    }
+    ): Boolean = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 
     private fun hasSensor(
         sensorManager: SensorManager?,
