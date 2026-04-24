@@ -140,7 +140,7 @@ jobs:
       - name: Android Unit Tests
         if: steps.check_gradlew.outputs.skip != 'true'
         working-directory: android
-        run: ./gradlew :core:test
+        run: ./gradlew :core:test :app:test
 
       - name: Kotlin Lint (ktlint)
         if: steps.check_gradlew.outputs.skip != 'true'
