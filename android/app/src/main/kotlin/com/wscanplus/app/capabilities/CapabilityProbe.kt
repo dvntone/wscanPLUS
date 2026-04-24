@@ -103,8 +103,9 @@ object CapabilityProbe {
     private fun hasPermission(
         context: Context,
         permission: String,
-    ): Boolean =
-        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+    ): Boolean {
+        return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+    }
 
     private fun hasSensor(
         sensorManager: SensorManager?,
