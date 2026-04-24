@@ -6,24 +6,23 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorManager
-import android.location.LocationManager
 import android.net.wifi.WifiManager
 import android.os.Build
-import android.provider.Settings
 import android.telephony.TelephonyManager
 import androidx.core.content.ContextCompat
 
 class CapabilityReadinessSurveyor(
-    private val context: Context,
+    context: Context,
 ) : PermissionReadinessProvider {
+    private val appContext = context.applicationContext
+
     override fun current(): PermissionReadiness {
-        val packageManager = context.packageManager
-        val locationManager = context.getSystemService(LocationManager::class.java)
-        val wifiManager = context.getSystemService(WifiManager::class.java)
-        val bluetoothManager = context.getSystemService(BluetoothManager::class.java)
+        val packageManager = appContext.packageManager
+        val wifiManager = appContext.getSystemService(WifiManager::class.java)
+        val bluetoothManager = appContext.getSystemService(BluetoothManager::class.java)
         val bluetoothAdapter = bluetoothManager?.adapter
-        val telephonyManager = context.getSystemService(TelephonyManager::class.java)
-        val sensorManager = context.getSystemService(SensorManager::class.java)
+        val telephonyManager = appContext.getSystemService(TelephonyManager::class.java)
+        val sensorManager = appContext.getSystemService(SensorManager::class.java)
 
         return evaluate(
             ReadinessInputs(
@@ -32,7 +31,7 @@ class CapabilityReadinessSurveyor(
                 hasAccessWifiState = hasPermission(Manifest.permission.ACCESS_WIFI_STATE),
                 hasChangeWifiState = hasPermission(Manifest.permission.CHANGE_WIFI_STATE),
                 hasNearbyWifiDevicesPermission = hasPermission(Manifest.permission.NEARBY_WIFI_DEVICES),
-                locationServicesEnabled = isDeviceLocationEnabled(locationManager),
+                locationServicesEnabled = DeviceLocationState.isLocationEnabled(appContext),
                 hasWifiHardware = packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI),
                 hasWifiManager = wifiManager != null,
                 hasBleHardware = packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE),
@@ -48,19 +47,7 @@ class CapabilityReadinessSurveyor(
     }
 
     private fun hasPermission(permission: String): Boolean =
-        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
-
-    private fun isDeviceLocationEnabled(locationManager: LocationManager?): Boolean =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            locationManager?.isLocationEnabled ?: false
-        } else {
-            @Suppress("DEPRECATION")
-            Settings.Secure.getInt(
-                context.contentResolver,
-                Settings.Secure.LOCATION_MODE,
-                Settings.Secure.LOCATION_MODE_OFF,
-            ) != Settings.Secure.LOCATION_MODE_OFF
-        }
+        ContextCompat.checkSelfPermission(appContext, permission) == PackageManager.PERMISSION_GRANTED
 
     private fun hasAnySupportedSensor(sensorManager: SensorManager?): Boolean =
         sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null ||
@@ -93,6 +80,9 @@ class CapabilityReadinessSurveyor(
             val blockers = mutableSetOf<ReadinessBlocker>()
             val hasWifiSupport = inputs.hasWifiHardware && inputs.hasWifiManager
             val hasBleSupport = inputs.hasBleHardware && inputs.hasBluetoothAdapter
+            val legacyBleLocationDisabled =
+                inputs.sdkInt < Build.VERSION_CODES.S &&
+                    !inputs.locationServicesEnabled
             val hasNearbyWifiDevices =
                 inputs.sdkInt < Build.VERSION_CODES.TIRAMISU ||
                     inputs.hasNearbyWifiDevicesPermission
@@ -138,7 +128,11 @@ class CapabilityReadinessSurveyor(
                 inputs.sdkInt >= Build.VERSION_CODES.S &&
                     !inputs.hasBluetoothConnectPermission
 
-            if (hasBleSupport && bleScanPermissionMissing) {
+            if (
+                hasBleSupport &&
+                    inputs.sdkInt >= Build.VERSION_CODES.S &&
+                    bleScanPermissionMissing
+            ) {
                 blockers += ReadinessBlocker.MISSING_BLE_SCAN_PERMISSION
             }
             if (hasBleSupport && bleConnectPermissionMissing) {
@@ -153,7 +147,8 @@ class CapabilityReadinessSurveyor(
                     !hasBleSupport -> CapabilityState.UNSUPPORTED_BY_HARDWARE
                     bleScanPermissionMissing || bleConnectPermissionMissing ->
                         CapabilityState.SUPPORTED_PERMISSION_MISSING
-                    !inputs.bluetoothEnabled -> CapabilityState.SUPPORTED_DISABLED_BY_SYSTEM
+                    legacyBleLocationDisabled || !inputs.bluetoothEnabled ->
+                        CapabilityState.SUPPORTED_DISABLED_BY_SYSTEM
                     else -> CapabilityState.SUPPORTED_AND_READY
                 }
 
