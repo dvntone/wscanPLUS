@@ -8,7 +8,11 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import com.wscanplus.app.kismet.KismetConfig
 import com.wscanplus.app.kismet.KismetConfigStore
 import com.wscanplus.app.privacy.ConsentStore
@@ -31,6 +35,18 @@ class KismetSettingsActivity : Activity() {
                 orientation = LinearLayout.VERTICAL
                 setPadding(48, 48, 48, 48)
             }
+
+        val scrollView =
+            ScrollView(this).apply {
+                isFillViewport = true
+                addView(root)
+            }
+
+        ViewCompat.setOnApplyWindowInsetsListener(scrollView) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.updatePadding(top = bars.top, bottom = bars.bottom)
+            insets
+        }
 
         enabledCheckbox =
             CheckBox(this).apply {
@@ -66,7 +82,7 @@ class KismetSettingsActivity : Activity() {
         root.addView(consentCheckbox)
         root.addView(statusView)
         root.addView(saveButton)
-        setContentView(root)
+        setContentView(scrollView)
     }
 
     private fun buildInput(
