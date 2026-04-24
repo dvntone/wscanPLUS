@@ -100,7 +100,7 @@ class DiagnosticActivity : Activity() {
         if (caps != null) {
             WscanUi.metricRow(capsCard, "Device", caps.deviceModel)
             WscanUi.metricRow(capsCard, "Wi-Fi scan", caps.wifiScan.toReadyLabel(), WscanUi.statusColor(caps.wifiScan))
-            WscanUi.metricRow(capsCard, "Wi-Fi RTT", "${caps.wifiRtt.toReadyLabel()} · now=${caps.wifiRttAvailableNow}")
+            WscanUi.metricRow(capsCard, "Wi-Fi RTT", "${caps.wifiRtt.toReadyLabel()} · now=${caps.wifiRttAvailableNow}", WscanUi.statusColor(caps.wifiRtt))
             WscanUi.metricRow(capsCard, "Wi-Fi Aware", caps.wifiAware.toReadyLabel(), WscanUi.statusColor(caps.wifiAware))
             WscanUi.metricRow(capsCard, "UWB", caps.uwb.toReadyLabel(), WscanUi.statusColor(caps.uwb))
             WscanUi.metricRow(capsCard, "Barometer", caps.barometer.toReadyLabel(), WscanUi.statusColor(caps.barometer))
