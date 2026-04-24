@@ -1,5 +1,3 @@
-@file:Suppress("ktlint:standard:function-signature")
-
 package com.wscanplus.app
 
 import android.app.Activity
