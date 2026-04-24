@@ -92,6 +92,7 @@ class CapabilityReadinessSurveyor(
         internal fun evaluate(inputs: ReadinessInputs): PermissionReadiness {
             val blockers = mutableSetOf<ReadinessBlocker>()
             val hasWifiSupport = inputs.hasWifiHardware && inputs.hasWifiManager
+            val hasBleSupport = inputs.hasBleHardware && inputs.hasBluetoothAdapter
             val hasNearbyWifiDevices =
                 inputs.sdkInt < Build.VERSION_CODES.TIRAMISU ||
                     inputs.hasNearbyWifiDevicesPermission
@@ -137,18 +138,19 @@ class CapabilityReadinessSurveyor(
                 inputs.sdkInt >= Build.VERSION_CODES.S &&
                     !inputs.hasBluetoothConnectPermission
 
-            if (bleScanPermissionMissing) blockers += ReadinessBlocker.MISSING_BLE_SCAN_PERMISSION
-            if (bleConnectPermissionMissing) {
+            if (hasBleSupport && bleScanPermissionMissing) {
+                blockers += ReadinessBlocker.MISSING_BLE_SCAN_PERMISSION
+            }
+            if (hasBleSupport && bleConnectPermissionMissing) {
                 blockers += ReadinessBlocker.MISSING_BLE_CONNECT_PERMISSION
             }
-            if (inputs.hasBluetoothAdapter && !inputs.bluetoothEnabled) {
+            if (hasBleSupport && !inputs.bluetoothEnabled) {
                 blockers += ReadinessBlocker.BLUETOOTH_DISABLED
             }
 
             val bleState =
                 when {
-                    !inputs.hasBleHardware || !inputs.hasBluetoothAdapter ->
-                        CapabilityState.UNSUPPORTED_BY_HARDWARE
+                    !hasBleSupport -> CapabilityState.UNSUPPORTED_BY_HARDWARE
                     bleScanPermissionMissing || bleConnectPermissionMissing ->
                         CapabilityState.SUPPORTED_PERMISSION_MISSING
                     !inputs.bluetoothEnabled -> CapabilityState.SUPPORTED_DISABLED_BY_SYSTEM
