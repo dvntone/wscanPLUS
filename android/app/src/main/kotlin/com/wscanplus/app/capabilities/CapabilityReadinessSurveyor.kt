@@ -112,10 +112,12 @@ class CapabilityReadinessSurveyor(
 
             val wifiPermissionMissing =
                 hasWifiSupport &&
-                    (!inputs.hasFineLocation ||
-                        !inputs.hasAccessWifiState ||
-                        !inputs.hasChangeWifiState ||
-                        !hasNearbyWifiDevices)
+                    listOf(
+                        !inputs.hasFineLocation,
+                        !inputs.hasAccessWifiState,
+                        !inputs.hasChangeWifiState,
+                        !hasNearbyWifiDevices,
+                    ).any { it }
 
             val wifiState =
                 when {
