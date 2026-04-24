@@ -212,11 +212,10 @@ class ScanMapActivity :
         }
 
         val weightedPoints = points.map { p -> WeightedLatLng(p.latLng, p.weight) }
-        val provider =
-            HeatmapTileProvider.Builder()
-                .weightedData(weightedPoints)
-                .radius(50)
-                .build()
+        val heatmapBuilder = HeatmapTileProvider.Builder()
+        heatmapBuilder.weightedData(weightedPoints)
+        heatmapBuilder.radius(50)
+        val provider = heatmapBuilder.build()
 
         val boundsBuilder = LatLngBounds.Builder()
         points.forEach { p -> boundsBuilder.include(p.latLng) }
