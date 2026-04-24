@@ -114,20 +114,20 @@ See [docs/ROADMAP.md](/docs/ROADMAP.md) for the full phased plan.
 
 ---
 
-## 2026-04-04 Handoff Snapshot
+## 2026-04-24 Handoff Snapshot
 
 This section is the fast re-entry point for the next session.
 
-### Remote repo state (2026-04-21)
+### Remote repo state (2026-04-24)
 
-- `main` is current — latest merge: PR `#230` (FLAG_IMMUTABLE contentIntent on foreground notification)
+- `main` is current — latest merge: PR `#249` (orphaned scan session completion fix)
 - No open PRs
 - No open blocking issues
 - `dvntone/wscanplus_desktop` archived — desktop runtime now lives in `desktop/` of this monorepo
 - `dvntone/wscanplus-deprecrated-` archived
 - `dvntone/flipp3d` archived
 
-### Completed phases (as of 2026-04-04)
+### Completed phases (as of 2026-04-24)
 
 - **Phase 0–2**: Complete (Android scanner, heuristics, Room DB, OUI)
 - **Phase 3**: Complete (consent framework, CrowdSec CTI, Firebase, CTI cache, quota guardrails, SQLCipher, scan history)
@@ -139,6 +139,22 @@ This section is the fast re-entry point for the next session.
 1. ~~**Transport hello update**~~ ✅ — `DeviceCapabilityManifest` serialized in WatchdogService hello (PR #209); desktop `AdbTransport` parses capabilities field (PR #211)
 2. ~~**Spatial WiFi floor tracking**~~ ✅ — `BarometerSampler` + `FloorEstimate` (PR #217); wired into `WatchdogService` with `autoCalibrate=true` (PR #219); floor badge on `ScanMapActivity` (PR #221)
 3. **darklotusLABS web UI** — Sentinel Prism theme, NYX assistant, Vite build for app.darklotuslabs.com
+
+### Smoke test fixes merged 2026-04-24 (Pixel 10 Pro XL)
+
+| PR | Fix |
+|----|-----|
+| #245 | Kismet Settings URL field hidden behind toolbar (edge-to-edge inset) |
+| #246 | Scan Map missing "Center on Me" FAB — added `ImageButton` + `FusedLocationProviderClient` |
+| #248 | Diagnostics "Camera depth/IR" renamed to "Depth camera (ToF)"; new "Camera (photo)" row via `FEATURE_CAMERA_ANY` |
+| #249 | Scan History sessions stuck "in progress" — `closeOrphanedSessions()` called on `createSession()` |
+
+### Known pre-existing issues (carry forward)
+
+- `WscanUi.kt` deprecation warnings: `statusBarColor`, `navigationBarColor`, `navigationBarDividerColor` — fix before Phase 6
+- Art typo "datection" in Floating Transparent 002/003 — fix at release stage
+- Firebase Gemini key may need re-verification at `console.firebase.google.com/project/gen-lang-client-0542386332/ailogic/settings`
+- `cursor-only` branch: scheduled remote agent review on 2026-05-01 (routine `trig_01Tt8bp8LhqNai34tx4HvTSg`)
 
 ### Active repos
 
