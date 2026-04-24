@@ -14,16 +14,16 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 
 object WscanUi {
-    const val COLOR_NAVY: Int = Color.rgb(2, 28, 55)
-    const val COLOR_BG: Int = Color.rgb(11, 18, 32)
-    const val COLOR_CARD: Int = Color.rgb(17, 28, 47)
-    const val COLOR_CARD_ALT: Int = Color.rgb(21, 35, 58)
-    const val COLOR_TEXT: Int = Color.rgb(232, 240, 255)
-    const val COLOR_MUTED: Int = Color.rgb(147, 163, 184)
-    const val COLOR_ACCENT: Int = Color.rgb(64, 196, 255)
-    const val COLOR_WARN: Int = Color.rgb(255, 193, 7)
-    const val COLOR_OK: Int = Color.rgb(55, 214, 122)
-    const val COLOR_BAD: Int = Color.rgb(255, 94, 94)
+    val COLOR_NAVY: Int = Color.rgb(2, 28, 55)
+    val COLOR_BG: Int = Color.rgb(11, 18, 32)
+    val COLOR_CARD: Int = Color.rgb(17, 28, 47)
+    val COLOR_CARD_ALT: Int = Color.rgb(21, 35, 58)
+    val COLOR_TEXT: Int = Color.rgb(232, 240, 255)
+    val COLOR_MUTED: Int = Color.rgb(147, 163, 184)
+    val COLOR_ACCENT: Int = Color.rgb(64, 196, 255)
+    val COLOR_WARN: Int = Color.rgb(255, 193, 7)
+    val COLOR_OK: Int = Color.rgb(55, 214, 122)
+    val COLOR_BAD: Int = Color.rgb(255, 94, 94)
 
     fun prepareWindow(activity: Activity) {
         WindowCompat.setDecorFitsSystemWindows(activity.window, false)
