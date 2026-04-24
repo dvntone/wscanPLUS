@@ -21,6 +21,7 @@ class DiagnosticActivity : Activity() {
     private var serviceBound = false
     private lateinit var content: LinearLayout
     private val handler = Handler(Looper.getMainLooper())
+    private var lastRefreshedAt: Long = 0L
 
     private val refreshRunnable: Runnable =
         object : Runnable {
@@ -94,6 +95,7 @@ class DiagnosticActivity : Activity() {
         if (!serviceBound) {
             serviceBound = bindService(Intent(this, WatchdogService::class.java), serviceConnection, 0)
         }
+        lastRefreshedAt = System.currentTimeMillis()
         content.removeAllViews()
         val binder = boundBinder
         if (binder == null) {
@@ -114,6 +116,7 @@ class DiagnosticActivity : Activity() {
             if (binder.isDegraded) "RUNNING · DEGRADED" else "RUNNING",
             if (binder.isDegraded) WscanUi.COLOR_WARN else WscanUi.COLOR_OK,
         )
+        WscanUi.metricRow(serviceCard, "Last refreshed", formatMs(lastRefreshedAt), WscanUi.COLOR_MUTED)
         WscanUi.actionButton(serviceCard, "Refresh Diagnostics") { refreshDiagnostics() }
 
         val capsCard = WscanUi.card(content)
@@ -170,6 +173,7 @@ class DiagnosticActivity : Activity() {
         val card = WscanUi.card(content)
         WscanUi.sectionTitle(card, "Service")
         WscanUi.metricRow(card, "WatchdogService", state, color)
+        WscanUi.metricRow(card, "Last refreshed", formatMs(lastRefreshedAt), WscanUi.COLOR_MUTED)
         WscanUi.body(card, message, muted = true)
         WscanUi.actionButton(card, "Refresh Diagnostics") { refreshDiagnostics() }
     }
