@@ -1,5 +1,7 @@
 package com.wscanplus.app.capabilities
 
+import android.os.Build
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -17,6 +19,7 @@ class PermissionReadinessTest {
             )
 
         assertFalse(readiness.canRunMinimumScan)
+        assertTrue(readiness.degraded)
     }
 
     @Test
@@ -104,4 +107,82 @@ class PermissionReadinessTest {
 
         assertTrue(ReadinessBlocker.entries.containsAll(required))
     }
+
+    @Test
+    fun evaluate_does_not_emit_wifi_specific_blockers_without_wifi_support() {
+        val readiness = CapabilityReadinessSurveyor.evaluate(readyInputs(hasWifiHardware = false))
+
+        assertEquals(CapabilityState.UNSUPPORTED_BY_HARDWARE, readiness.wifi)
+        assertFalse(readiness.blockers.contains(ReadinessBlocker.MISSING_ACCESS_WIFI_STATE))
+        assertFalse(readiness.blockers.contains(ReadinessBlocker.MISSING_CHANGE_WIFI_STATE))
+        assertFalse(readiness.blockers.contains(ReadinessBlocker.MISSING_NEARBY_WIFI_DEVICES))
+    }
+
+    @Test
+    fun evaluate_marks_cellular_unsupported_without_telephony_support() {
+        val readiness = CapabilityReadinessSurveyor.evaluate(readyInputs(hasTelephonyHardware = false))
+
+        assertEquals(CapabilityState.UNSUPPORTED_BY_HARDWARE, readiness.cellular)
+    }
+
+    @Test
+    fun evaluate_marks_sensors_unsupported_when_no_supported_sensor_exists() {
+        val readiness = CapabilityReadinessSurveyor.evaluate(readyInputs(hasAnySupportedSensor = false))
+
+        assertEquals(CapabilityState.UNSUPPORTED_BY_HARDWARE, readiness.sensors)
+        assertTrue(readiness.blockers.contains(ReadinessBlocker.SENSOR_UNAVAILABLE))
+    }
+
+    @Test
+    fun evaluate_marks_ble_scan_and_connect_permissions_separately_on_android_s_plus() {
+        val readiness =
+            CapabilityReadinessSurveyor.evaluate(
+                readyInputs(
+                    sdkInt = Build.VERSION_CODES.S,
+                    hasBluetoothScanPermission = false,
+                    hasBluetoothConnectPermission = false,
+                ),
+            )
+
+        assertEquals(CapabilityState.SUPPORTED_PERMISSION_MISSING, readiness.ble)
+        assertTrue(readiness.blockers.contains(ReadinessBlocker.MISSING_BLE_SCAN_PERMISSION))
+        assertTrue(readiness.blockers.contains(ReadinessBlocker.MISSING_BLE_CONNECT_PERMISSION))
+    }
+
+    private fun readyInputs(
+        sdkInt: Int = Build.VERSION_CODES.TIRAMISU,
+        hasFineLocation: Boolean = true,
+        hasAccessWifiState: Boolean = true,
+        hasChangeWifiState: Boolean = true,
+        hasNearbyWifiDevicesPermission: Boolean = true,
+        locationServicesEnabled: Boolean = true,
+        hasWifiHardware: Boolean = true,
+        hasWifiManager: Boolean = true,
+        hasBleHardware: Boolean = true,
+        hasBluetoothAdapter: Boolean = true,
+        bluetoothEnabled: Boolean = true,
+        hasBluetoothScanPermission: Boolean = true,
+        hasBluetoothConnectPermission: Boolean = true,
+        hasTelephonyHardware: Boolean = true,
+        hasTelephonyManager: Boolean = true,
+        hasAnySupportedSensor: Boolean = true,
+    ): CapabilityReadinessSurveyor.ReadinessInputs =
+        CapabilityReadinessSurveyor.ReadinessInputs(
+            sdkInt = sdkInt,
+            hasFineLocation = hasFineLocation,
+            hasAccessWifiState = hasAccessWifiState,
+            hasChangeWifiState = hasChangeWifiState,
+            hasNearbyWifiDevicesPermission = hasNearbyWifiDevicesPermission,
+            locationServicesEnabled = locationServicesEnabled,
+            hasWifiHardware = hasWifiHardware,
+            hasWifiManager = hasWifiManager,
+            hasBleHardware = hasBleHardware,
+            hasBluetoothAdapter = hasBluetoothAdapter,
+            bluetoothEnabled = bluetoothEnabled,
+            hasBluetoothScanPermission = hasBluetoothScanPermission,
+            hasBluetoothConnectPermission = hasBluetoothConnectPermission,
+            hasTelephonyHardware = hasTelephonyHardware,
+            hasTelephonyManager = hasTelephonyManager,
+            hasAnySupportedSensor = hasAnySupportedSensor,
+        )
 }
