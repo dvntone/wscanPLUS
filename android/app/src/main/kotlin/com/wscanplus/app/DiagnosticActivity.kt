@@ -136,14 +136,21 @@ class DiagnosticActivity : Activity() {
 
     private fun Boolean.toReadyLabel(): String = if (this) "READY" else "UNAVAILABLE"
 
-    private fun String.statusColor(): Int =
+    private fun CameraIrStatus.statusColor(): Int =
         when (this) {
-            "CAPABLE" -> WscanUi.COLOR_OK
-            "PARTIAL", "DEVICE_VARIABLE" -> WscanUi.COLOR_WARN
-            "NOT_CAPABLE" -> WscanUi.COLOR_BAD
-            else -> WscanUi.COLOR_MUTED
+            CameraIrStatus.CAPABLE -> WscanUi.COLOR_OK
+            CameraIrStatus.PARTIAL,
+            CameraIrStatus.DEVICE_VARIABLE -> WscanUi.COLOR_WARN
+            CameraIrStatus.NOT_CAPABLE -> WscanUi.COLOR_BAD
         }
 
+    private fun AcousticStatus.statusColor(): Int =
+        when (this) {
+            AcousticStatus.CAPABLE -> WscanUi.COLOR_OK
+            AcousticStatus.PARTIAL,
+            AcousticStatus.DEVICE_VARIABLE -> WscanUi.COLOR_WARN
+            AcousticStatus.NOT_CAPABLE -> WscanUi.COLOR_BAD
+        }
     private fun formatMs(epochMs: Long): String = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(epochMs))
 
     companion object {
