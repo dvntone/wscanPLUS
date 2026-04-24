@@ -60,14 +60,16 @@ data class PermissionReadiness(
     val checkedAtMs: Long = System.currentTimeMillis(),
 ) {
     val canRunMinimumScan: Boolean
-        get() = wifi == CapabilityState.SUPPORTED_AND_READY &&
-            !blockers.contains(ReadinessBlocker.LOCATION_SERVICES_DISABLED)
+        get() =
+            wifi == CapabilityState.SUPPORTED_AND_READY &&
+                !blockers.contains(ReadinessBlocker.LOCATION_SERVICES_DISABLED)
 
     val degraded: Boolean
-        get() = blockers.isNotEmpty() ||
-            ble != CapabilityState.SUPPORTED_AND_READY ||
-            cellular != CapabilityState.SUPPORTED_AND_READY ||
-            sensors != CapabilityState.SUPPORTED_AND_READY
+        get() =
+            blockers.isNotEmpty() ||
+                ble != CapabilityState.SUPPORTED_AND_READY ||
+                cellular != CapabilityState.SUPPORTED_AND_READY ||
+                sensors != CapabilityState.SUPPORTED_AND_READY
 }
 
 interface PermissionReadinessProvider {
