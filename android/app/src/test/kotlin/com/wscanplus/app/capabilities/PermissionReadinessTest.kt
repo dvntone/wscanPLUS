@@ -97,9 +97,11 @@ class PermissionReadinessTest {
                 ReadinessBlocker.LOCATION_SERVICES_DISABLED,
                 ReadinessBlocker.MISSING_BLE_SCAN_PERMISSION,
                 ReadinessBlocker.MISSING_BLE_CONNECT_PERMISSION,
-                ReadinessBlocker.UNSUPPORTED_OR_STALE_ALIAS,
+                ReadinessBlocker.BATTERY_OPTIMIZATION_ACTIVE,
+                ReadinessBlocker.FOREGROUND_SERVICE_NOT_RUNNING,
+                ReadinessBlocker.SCAN_RESULTS_STALE,
             )
 
-        assertTrue(ReadinessBlocker.entries.containsAll(required - ReadinessBlocker.UNSUPPORTED_OR_STALE_ALIAS))
+        assertTrue(ReadinessBlocker.entries.containsAll(required))
     }
 }
