@@ -5,7 +5,9 @@ import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import com.wscanplus.app.capabilities.AcousticStatus
@@ -18,6 +20,15 @@ class DiagnosticActivity : Activity() {
     private var boundBinder: WatchdogService.LocalBinder? = null
     private var serviceBound = false
     private lateinit var content: LinearLayout
+    private val handler = Handler(Looper.getMainLooper())
+
+    private val refreshRunnable: Runnable =
+        object : Runnable {
+            override fun run() {
+                refreshDiagnostics()
+                handler.postDelayed(this, REFRESH_INTERVAL_MS)
+            }
+        }
 
     private val serviceConnection =
         object : ServiceConnection {
@@ -27,11 +38,13 @@ class DiagnosticActivity : Activity() {
             ) {
                 boundBinder = binder as? WatchdogService.LocalBinder
                 refreshDiagnostics()
+                scheduleRefresh()
             }
 
             override fun onServiceDisconnected(name: ComponentName?) {
                 boundBinder = null
                 serviceBound = false
+                handler.removeCallbacks(refreshRunnable)
                 refreshDiagnostics()
             }
         }
@@ -53,23 +66,28 @@ class DiagnosticActivity : Activity() {
             ),
         )
         setContentView(root)
+        renderServicePlaceholder("CONNECTING", "Connecting to the scanner service…", WscanUi.COLOR_WARN)
     }
 
     override fun onStart() {
         super.onStart()
         serviceBound = bindService(Intent(this, WatchdogService::class.java), serviceConnection, 0)
-        if (!serviceBound) {
-            refreshDiagnostics()
-        }
+        refreshDiagnostics()
     }
 
     override fun onStop() {
         super.onStop()
+        handler.removeCallbacks(refreshRunnable)
         if (serviceBound) {
             unbindService(serviceConnection)
             serviceBound = false
         }
         boundBinder = null
+    }
+
+    private fun scheduleRefresh() {
+        handler.removeCallbacks(refreshRunnable)
+        handler.postDelayed(refreshRunnable, REFRESH_INTERVAL_MS)
     }
 
     private fun refreshDiagnostics() {
@@ -79,10 +97,11 @@ class DiagnosticActivity : Activity() {
         content.removeAllViews()
         val binder = boundBinder
         if (binder == null) {
-            val card = WscanUi.card(content)
-            WscanUi.sectionTitle(card, "Service")
-            WscanUi.metricRow(card, "WatchdogService", "NOT RUNNING", WscanUi.COLOR_BAD)
-            WscanUi.body(card, "Start scanning from the main screen, then return here.", muted = true)
+            if (serviceBound) {
+                renderServicePlaceholder("CONNECTING", "Waiting for WatchdogService binder callback…", WscanUi.COLOR_WARN)
+            } else {
+                renderServicePlaceholder("NOT RUNNING", "Start scanning from the main screen, then return here.", WscanUi.COLOR_BAD)
+            }
             return
         }
 
@@ -95,6 +114,7 @@ class DiagnosticActivity : Activity() {
             if (binder.isDegraded) "RUNNING · DEGRADED" else "RUNNING",
             if (binder.isDegraded) WscanUi.COLOR_WARN else WscanUi.COLOR_OK,
         )
+        WscanUi.actionButton(serviceCard, "Refresh Diagnostics") { refreshDiagnostics() }
 
         val capsCard = WscanUi.card(content)
         WscanUi.sectionTitle(capsCard, "Capabilities")
@@ -141,6 +161,19 @@ class DiagnosticActivity : Activity() {
         }
     }
 
+    private fun renderServicePlaceholder(
+        state: String,
+        message: String,
+        color: Int,
+    ) {
+        content.removeAllViews()
+        val card = WscanUi.card(content)
+        WscanUi.sectionTitle(card, "Service")
+        WscanUi.metricRow(card, "WatchdogService", state, color)
+        WscanUi.body(card, message, muted = true)
+        WscanUi.actionButton(card, "Refresh Diagnostics") { refreshDiagnostics() }
+    }
+
     private fun Boolean.toReadyLabel(): String = if (this) "READY" else "UNAVAILABLE"
 
     private fun CameraIrStatus.statusColor(): Int =
@@ -166,7 +199,7 @@ class DiagnosticActivity : Activity() {
             CameraIrStatus.UNTESTED -> "UNTESTED"
             CameraIrStatus.CAPABLE -> "CAPABLE"
             CameraIrStatus.NOT_CAPABLE -> "NOT CAPABLE"
-            CameraIrStatus.PARTIAL -> "UNTESTED"
+            CameraIrStatus.PARTIAL -> "PARTIAL"
         }
 
     private fun AcousticStatus.toDisplayLabel(): String =
@@ -182,5 +215,6 @@ class DiagnosticActivity : Activity() {
     companion object {
         @Suppress("unused")
         private const val TAG = "DiagnosticActivity"
+        private const val REFRESH_INTERVAL_MS = 2_000L
     }
 }
