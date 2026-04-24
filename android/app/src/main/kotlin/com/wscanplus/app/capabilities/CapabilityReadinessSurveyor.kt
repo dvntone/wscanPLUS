@@ -4,93 +4,181 @@ import android.Manifest
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.pm.PackageManager
+import android.hardware.Sensor
+import android.hardware.SensorManager
 import android.location.LocationManager
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.provider.Settings
+import android.telephony.TelephonyManager
 import androidx.core.content.ContextCompat
 
 class CapabilityReadinessSurveyor(
     private val context: Context,
 ) : PermissionReadinessProvider {
     override fun current(): PermissionReadiness {
-        val blockers = mutableSetOf<ReadinessBlocker>()
-
         val packageManager = context.packageManager
         val locationManager = context.getSystemService(LocationManager::class.java)
         val wifiManager = context.getSystemService(WifiManager::class.java)
         val bluetoothManager = context.getSystemService(BluetoothManager::class.java)
         val bluetoothAdapter = bluetoothManager?.adapter
+        val telephonyManager = context.getSystemService(TelephonyManager::class.java)
+        val sensorManager = context.getSystemService(SensorManager::class.java)
 
-        val hasFineLocation = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-        val hasAccessWifiState = hasPermission(Manifest.permission.ACCESS_WIFI_STATE)
-        val hasChangeWifiState = hasPermission(Manifest.permission.CHANGE_WIFI_STATE)
-        val locationServicesEnabled = locationManager?.isLocationEnabled ?: false
-        val hasWifiHardware = packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI)
-        val hasNearbyWifiDevices =
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                hasPermission(Manifest.permission.NEARBY_WIFI_DEVICES)
-
-        if (!hasFineLocation) blockers += ReadinessBlocker.MISSING_FINE_LOCATION
-        if (!hasAccessWifiState) blockers += ReadinessBlocker.MISSING_ACCESS_WIFI_STATE
-        if (!hasChangeWifiState) blockers += ReadinessBlocker.MISSING_CHANGE_WIFI_STATE
-        if (!locationServicesEnabled) blockers += ReadinessBlocker.LOCATION_SERVICES_DISABLED
-        if (!hasNearbyWifiDevices) blockers += ReadinessBlocker.MISSING_NEARBY_WIFI_DEVICES
-
-        val wifiPermissionMissing =
-            !hasFineLocation ||
-                !hasAccessWifiState ||
-                !hasChangeWifiState ||
-                !hasNearbyWifiDevices
-
-        val wifiState =
-            when {
-                !hasWifiHardware || wifiManager == null -> CapabilityState.UNSUPPORTED_BY_HARDWARE
-                wifiPermissionMissing -> CapabilityState.SUPPORTED_PERMISSION_MISSING
-                !locationServicesEnabled -> CapabilityState.SUPPORTED_DISABLED_BY_SYSTEM
-                else -> CapabilityState.SUPPORTED_AND_READY
-            }
-
-        val hasBleHardware = packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)
-        val bleScanPermissionMissing =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                !hasPermission(Manifest.permission.BLUETOOTH_SCAN)
-            } else {
-                !hasFineLocation
-            }
-        val bleConnectPermissionMissing =
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                !hasPermission(Manifest.permission.BLUETOOTH_CONNECT)
-
-        if (bleScanPermissionMissing) blockers += ReadinessBlocker.MISSING_BLE_SCAN_PERMISSION
-        if (bleConnectPermissionMissing) blockers += ReadinessBlocker.MISSING_BLE_CONNECT_PERMISSION
-        if (bluetoothAdapter?.isEnabled == false) blockers += ReadinessBlocker.BLUETOOTH_DISABLED
-
-        val bleState =
-            when {
-                !hasBleHardware || bluetoothAdapter == null -> CapabilityState.UNSUPPORTED_BY_HARDWARE
-                bleScanPermissionMissing || bleConnectPermissionMissing ->
-                    CapabilityState.SUPPORTED_PERMISSION_MISSING
-                bluetoothAdapter.isEnabled == false -> CapabilityState.SUPPORTED_DISABLED_BY_SYSTEM
-                else -> CapabilityState.SUPPORTED_AND_READY
-            }
-
-        val cellularState =
-            if (hasFineLocation) {
-                CapabilityState.SUPPORTED_AND_READY
-            } else {
-                blockers += ReadinessBlocker.CELL_PERMISSION_MISSING
-                CapabilityState.SUPPORTED_PERMISSION_MISSING
-            }
-
-        return PermissionReadiness(
-            wifi = wifiState,
-            ble = bleState,
-            cellular = cellularState,
-            sensors = CapabilityState.SUPPORTED_AND_READY,
-            blockers = blockers,
+        return evaluate(
+            ReadinessInputs(
+                sdkInt = Build.VERSION.SDK_INT,
+                hasFineLocation = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION),
+                hasAccessWifiState = hasPermission(Manifest.permission.ACCESS_WIFI_STATE),
+                hasChangeWifiState = hasPermission(Manifest.permission.CHANGE_WIFI_STATE),
+                hasNearbyWifiDevicesPermission = hasPermission(Manifest.permission.NEARBY_WIFI_DEVICES),
+                locationServicesEnabled = isDeviceLocationEnabled(locationManager),
+                hasWifiHardware = packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI),
+                hasWifiManager = wifiManager != null,
+                hasBleHardware = packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE),
+                hasBluetoothAdapter = bluetoothAdapter != null,
+                bluetoothEnabled = bluetoothAdapter?.isEnabled == true,
+                hasBluetoothScanPermission = hasPermission(Manifest.permission.BLUETOOTH_SCAN),
+                hasBluetoothConnectPermission = hasPermission(Manifest.permission.BLUETOOTH_CONNECT),
+                hasTelephonyHardware = packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY),
+                hasTelephonyManager = telephonyManager != null,
+                hasAnySupportedSensor = hasAnySupportedSensor(sensorManager),
+            ),
         )
     }
 
     private fun hasPermission(permission: String): Boolean =
         ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+
+    private fun isDeviceLocationEnabled(locationManager: LocationManager?): Boolean =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            locationManager?.isLocationEnabled ?: false
+        } else {
+            @Suppress("DEPRECATION")
+            Settings.Secure.getInt(
+                context.contentResolver,
+                Settings.Secure.LOCATION_MODE,
+                Settings.Secure.LOCATION_MODE_OFF,
+            ) != Settings.Secure.LOCATION_MODE_OFF
+        }
+
+    private fun hasAnySupportedSensor(sensorManager: SensorManager?): Boolean =
+        sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null ||
+            sensorManager?.getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null ||
+            sensorManager?.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) != null ||
+            sensorManager?.getDefaultSensor(Sensor.TYPE_PRESSURE) != null ||
+            sensorManager?.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) != null
+
+    data class ReadinessInputs(
+        val sdkInt: Int,
+        val hasFineLocation: Boolean,
+        val hasAccessWifiState: Boolean,
+        val hasChangeWifiState: Boolean,
+        val hasNearbyWifiDevicesPermission: Boolean,
+        val locationServicesEnabled: Boolean,
+        val hasWifiHardware: Boolean,
+        val hasWifiManager: Boolean,
+        val hasBleHardware: Boolean,
+        val hasBluetoothAdapter: Boolean,
+        val bluetoothEnabled: Boolean,
+        val hasBluetoothScanPermission: Boolean,
+        val hasBluetoothConnectPermission: Boolean,
+        val hasTelephonyHardware: Boolean,
+        val hasTelephonyManager: Boolean,
+        val hasAnySupportedSensor: Boolean,
+    )
+
+    companion object {
+        internal fun evaluate(inputs: ReadinessInputs): PermissionReadiness {
+            val blockers = mutableSetOf<ReadinessBlocker>()
+            val hasWifiSupport = inputs.hasWifiHardware && inputs.hasWifiManager
+            val hasNearbyWifiDevices =
+                inputs.sdkInt < Build.VERSION_CODES.TIRAMISU ||
+                    inputs.hasNearbyWifiDevicesPermission
+
+            if (!inputs.hasFineLocation) blockers += ReadinessBlocker.MISSING_FINE_LOCATION
+            if (hasWifiSupport && !inputs.hasAccessWifiState) {
+                blockers += ReadinessBlocker.MISSING_ACCESS_WIFI_STATE
+            }
+            if (hasWifiSupport && !inputs.hasChangeWifiState) {
+                blockers += ReadinessBlocker.MISSING_CHANGE_WIFI_STATE
+            }
+            if (!inputs.locationServicesEnabled) {
+                blockers += ReadinessBlocker.LOCATION_SERVICES_DISABLED
+            }
+            if (hasWifiSupport && !hasNearbyWifiDevices) {
+                blockers += ReadinessBlocker.MISSING_NEARBY_WIFI_DEVICES
+            }
+
+            val wifiPermissionMissing =
+                hasWifiSupport &&
+                    (!inputs.hasFineLocation ||
+                        !inputs.hasAccessWifiState ||
+                        !inputs.hasChangeWifiState ||
+                        !hasNearbyWifiDevices)
+
+            val wifiState =
+                when {
+                    !hasWifiSupport -> CapabilityState.UNSUPPORTED_BY_HARDWARE
+                    wifiPermissionMissing -> CapabilityState.SUPPORTED_PERMISSION_MISSING
+                    !inputs.locationServicesEnabled -> CapabilityState.SUPPORTED_DISABLED_BY_SYSTEM
+                    else -> CapabilityState.SUPPORTED_AND_READY
+                }
+
+            val bleScanPermissionMissing =
+                if (inputs.sdkInt >= Build.VERSION_CODES.S) {
+                    !inputs.hasBluetoothScanPermission
+                } else {
+                    !inputs.hasFineLocation
+                }
+            val bleConnectPermissionMissing =
+                inputs.sdkInt >= Build.VERSION_CODES.S &&
+                    !inputs.hasBluetoothConnectPermission
+
+            if (bleScanPermissionMissing) blockers += ReadinessBlocker.MISSING_BLE_SCAN_PERMISSION
+            if (bleConnectPermissionMissing) {
+                blockers += ReadinessBlocker.MISSING_BLE_CONNECT_PERMISSION
+            }
+            if (inputs.hasBluetoothAdapter && !inputs.bluetoothEnabled) {
+                blockers += ReadinessBlocker.BLUETOOTH_DISABLED
+            }
+
+            val bleState =
+                when {
+                    !inputs.hasBleHardware || !inputs.hasBluetoothAdapter ->
+                        CapabilityState.UNSUPPORTED_BY_HARDWARE
+                    bleScanPermissionMissing || bleConnectPermissionMissing ->
+                        CapabilityState.SUPPORTED_PERMISSION_MISSING
+                    !inputs.bluetoothEnabled -> CapabilityState.SUPPORTED_DISABLED_BY_SYSTEM
+                    else -> CapabilityState.SUPPORTED_AND_READY
+                }
+
+            val hasCellularSupport = inputs.hasTelephonyHardware && inputs.hasTelephonyManager
+            val cellularState =
+                when {
+                    !hasCellularSupport -> CapabilityState.UNSUPPORTED_BY_HARDWARE
+                    !inputs.hasFineLocation -> {
+                        blockers += ReadinessBlocker.CELL_PERMISSION_MISSING
+                        CapabilityState.SUPPORTED_PERMISSION_MISSING
+                    }
+                    else -> CapabilityState.SUPPORTED_AND_READY
+                }
+
+            val sensorsState =
+                if (inputs.hasAnySupportedSensor) {
+                    CapabilityState.SUPPORTED_AND_READY
+                } else {
+                    blockers += ReadinessBlocker.SENSOR_UNAVAILABLE
+                    CapabilityState.UNSUPPORTED_BY_HARDWARE
+                }
+
+            return PermissionReadiness(
+                wifi = wifiState,
+                ble = bleState,
+                cellular = cellularState,
+                sensors = sensorsState,
+                blockers = blockers,
+            )
+        }
+    }
 }
