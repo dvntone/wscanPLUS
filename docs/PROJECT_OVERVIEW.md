@@ -20,7 +20,7 @@ An Android app that runs on your phone and detects WiFi-layer attacks in real ti
 
 **Three components:**
 
-1. **Android companion app** (Kotlin) — the field sensor. Runs on any Android 7+ device. Scans passively, detects threats, stores results locally, syncs to desktop.
+1. **Android companion app** (Kotlin) — the field sensor. Runs on Android API 24+ through the current target API. Scans passively, detects threats, stores results locally, syncs to desktop.
 2. **Desktop hub** (Electron, Linux-first) — aggregates data from one or more Android devices, runs deeper analysis, integrates with Kismet/BetterCap for professional use.
 3. **Web UI** (PWA) — dashboard served locally by the desktop. Not a standalone product.
 
@@ -31,7 +31,7 @@ An Android app that runs on your phone and detects WiFi-layer attacks in real ti
 **Phase 0–1 — Foundation + scanner (complete)**
 - WatchdogService: foreground service, survives background/keyguard/Android 15 restrictions
 - Scanner chain: USB adapter (priority) → Standard WiFi scan. Root is dev-only opt-in.
-- Permission handling for Android 7–15 (fine/coarse/background location)
+- Permission handling for Android API 24+ through the current target API (fine/coarse/background location)
 - App icon, versioning (v0.1.0), data extraction rules, settings deep links
 
 **Phase 2 — Local threat detection (complete)**
