@@ -5,7 +5,6 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -16,6 +15,7 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import com.wscanplus.app.capabilities.DeviceLocationState
 import com.wscanplus.app.privacy.ConsentStore
 
 class MainActivity : Activity() {
@@ -174,7 +174,7 @@ class MainActivity : Activity() {
             showPreciseLocationRequired()
             return
         }
-        if (isDeviceLocationEnabled().not()) {
+        if (DeviceLocationState.isLocationEnabled(this).not()) {
             showLocationServicesRequired()
             return
         }
@@ -224,20 +224,6 @@ class MainActivity : Activity() {
 
     private fun openDiagnostics() {
         startActivity(Intent(this, DiagnosticActivity::class.java))
-    }
-
-    private fun isDeviceLocationEnabled(): Boolean {
-        val locationManager = getSystemService(LocationManager::class.java)
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            locationManager.isLocationEnabled
-        } else {
-            @Suppress("DEPRECATION")
-            Settings.Secure.getInt(
-                contentResolver,
-                Settings.Secure.LOCATION_MODE,
-                Settings.Secure.LOCATION_MODE_OFF,
-            ) != Settings.Secure.LOCATION_MODE_OFF
-        }
     }
 
     private fun configureActionButton(
