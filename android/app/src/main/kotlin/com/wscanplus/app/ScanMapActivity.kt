@@ -1,17 +1,22 @@
 package com.wscanplus.app
 
+import android.Manifest
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import android.view.View
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -38,6 +43,8 @@ class ScanMapActivity :
     private var statusPanel: View? = null
     private var statusTitle: TextView? = null
     private var statusBody: TextView? = null
+    private var fabCenterOnMe: ImageButton? = null
+    private var googleMap: GoogleMap? = null
     private var isServiceBound = false
     private val dismissStatusRunnable = Runnable { statusPanel?.visibility = View.GONE }
 
@@ -82,6 +89,8 @@ class ScanMapActivity :
         statusPanel = findViewById(R.id.map_status_panel)
         statusTitle = findViewById(R.id.map_status_title)
         statusBody = findViewById(R.id.map_status_body)
+        fabCenterOnMe = findViewById(R.id.fab_center_on_me)
+        fabCenterOnMe?.setOnClickListener { centerOnMe() }
         setMapStatus("Loading scan map", "Preparing Google Maps and encrypted scan database.")
 
         val mapFragment = SupportMapFragment.newInstance()
@@ -133,6 +142,7 @@ class ScanMapActivity :
     }
 
     override fun onMapReady(map: GoogleMap) {
+        googleMap = map
         setMapStatus("Map ready", "Loading GPS-tagged scan records and heatmap points.")
         executor.execute {
             try {
@@ -239,6 +249,28 @@ class ScanMapActivity :
                 }
             }
         }
+    }
+
+    private fun centerOnMe() {
+        val map = googleMap ?: return
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            Toast.makeText(this, "Location permission required.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        LocationServices
+            .getFusedLocationProviderClient(this)
+            .lastLocation
+            .addOnSuccessListener { location ->
+                if (location != null) {
+                    map.animateCamera(
+                        CameraUpdateFactory.newLatLngZoom(LatLng(location.latitude, location.longitude), 16f),
+                    )
+                } else {
+                    Toast.makeText(this, "Location not yet available.", Toast.LENGTH_SHORT).show()
+                }
+            }
     }
 
     private fun setMapStatus(

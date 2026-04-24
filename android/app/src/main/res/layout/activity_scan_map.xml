@@ -39,6 +39,19 @@
             android:textSize="13sp" />
     </LinearLayout>
 
+    <ImageButton
+        android:id="@+id/fab_center_on_me"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:background="@drawable/bg_fab_center"
+        android:contentDescription="Center on my location"
+        android:src="@android:drawable/ic_menu_mylocation"
+        android:tint="#40C4FF"
+        android:elevation="6dp"
+        android:padding="14dp" />
+
     <TextView
         android:id="@+id/floor_badge"
         android:layout_width="wrap_content"
