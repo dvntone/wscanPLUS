@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:function-signature", "ktlint:standard:chain-wrapping")
+
 package com.wscanplus.app
 
 import android.app.Activity
