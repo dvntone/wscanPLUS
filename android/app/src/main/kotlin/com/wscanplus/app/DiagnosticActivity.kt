@@ -135,7 +135,14 @@ class DiagnosticActivity : Activity() {
             WscanUi.metricRow(capsCard, "UWB", caps.uwb.toReadyLabel(), WscanUi.statusColor(caps.uwb))
             WscanUi.metricRow(capsCard, "Barometer", caps.barometer.toReadyLabel(), WscanUi.statusColor(caps.barometer))
             WscanUi.metricRow(capsCard, "BLE", caps.bluetoothLe.toReadyLabel(), WscanUi.statusColor(caps.bluetoothLe))
-            WscanUi.metricRow(capsCard, "Camera depth/IR", caps.cameraIrCapable.toDisplayLabel(), caps.cameraIrCapable.statusColor())
+            val hasCamera = packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_CAMERA_ANY)
+            WscanUi.metricRow(
+                capsCard,
+                "Camera (photo)",
+                if (hasCamera) "READY" else "UNAVAILABLE",
+                if (hasCamera) WscanUi.COLOR_OK else WscanUi.COLOR_BAD,
+            )
+            WscanUi.metricRow(capsCard, "Depth camera (ToF)", caps.cameraIrCapable.toDisplayLabel(), caps.cameraIrCapable.statusColor())
             WscanUi.metricRow(capsCard, "Acoustic", caps.acousticSonarCapable.toDisplayLabel(), caps.acousticSonarCapable.statusColor())
         } else {
             WscanUi.body(capsCard, "Capability probe has not completed yet.", muted = true)
@@ -161,6 +168,38 @@ class DiagnosticActivity : Activity() {
             WscanUi.body(linkCard, "Desktop is not connected or has not acknowledged this device.", muted = true)
         } else {
             WscanUi.metricRow(linkCard, "Last ack seq", ackSeq.toString(), WscanUi.COLOR_OK)
+        }
+
+        val nmeaCard = WscanUi.card(content)
+        WscanUi.sectionTitle(nmeaCard, "NMEA tether")
+        WscanUi.metricRow(
+            nmeaCard,
+            "USB NMEA",
+            if (binder.isUsbNmeaRunning) "READY" else "NOT RUNNING",
+            if (binder.isUsbNmeaRunning) WscanUi.COLOR_OK else WscanUi.COLOR_WARN,
+        )
+        WscanUi.metricRow(nmeaCard, "USB port", binder.usbNmeaPort.toString(), WscanUi.COLOR_MUTED)
+        WscanUi.metricRow(nmeaCard, "USB clients", binder.usbNmeaClientCount.toString(), WscanUi.COLOR_MUTED)
+        WscanUi.metricRow(
+            nmeaCard,
+            "BLE NMEA",
+            if (binder.isBleNmeaRunning) "READY" else "NOT RUNNING",
+            if (binder.isBleNmeaRunning) WscanUi.COLOR_OK else WscanUi.COLOR_WARN,
+        )
+        WscanUi.metricRow(
+            nmeaCard,
+            "BLE advertising",
+            if (binder.isBleAdvertising) "ON" else "OFF",
+            if (binder.isBleAdvertising) WscanUi.COLOR_OK else WscanUi.COLOR_WARN,
+        )
+        WscanUi.metricRow(
+            nmeaCard,
+            "BLE subscribers",
+            binder.bleNmeaSubscriberCount.toString(),
+            WscanUi.COLOR_MUTED,
+        )
+        binder.nmeaLastError?.let { error ->
+            WscanUi.body(nmeaCard, "Last NMEA error: $error", muted = true)
         }
     }
 
