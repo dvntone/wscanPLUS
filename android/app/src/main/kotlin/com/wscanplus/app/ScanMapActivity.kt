@@ -11,6 +11,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import android.view.View
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
@@ -23,7 +24,6 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.TileOverlayOptions
-import android.widget.ImageButton
 import com.google.maps.android.heatmaps.HeatmapTileProvider
 import com.google.maps.android.heatmaps.WeightedLatLng
 import com.wscanplus.app.db.DbPassphraseProvider
@@ -259,7 +259,9 @@ class ScanMapActivity :
             Toast.makeText(this, "Location permission required.", Toast.LENGTH_SHORT).show()
             return
         }
-        LocationServices.getFusedLocationProviderClient(this).lastLocation
+        LocationServices
+            .getFusedLocationProviderClient(this)
+            .lastLocation
             .addOnSuccessListener { location ->
                 if (location != null) {
                     map.animateCamera(
