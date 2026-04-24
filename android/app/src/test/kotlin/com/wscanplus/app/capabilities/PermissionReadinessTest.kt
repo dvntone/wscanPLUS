@@ -109,13 +109,54 @@ class PermissionReadinessTest {
     }
 
     @Test
+    fun evaluate_ready_baseline_reports_all_modules_ready() {
+        val readiness = CapabilityReadinessSurveyor.evaluate(readyInputs())
+
+        assertEquals(CapabilityState.SUPPORTED_AND_READY, readiness.wifi)
+        assertEquals(CapabilityState.SUPPORTED_AND_READY, readiness.ble)
+        assertEquals(CapabilityState.SUPPORTED_AND_READY, readiness.cellular)
+        assertEquals(CapabilityState.SUPPORTED_AND_READY, readiness.sensors)
+        assertTrue(readiness.canRunMinimumScan)
+        assertFalse(readiness.degraded)
+    }
+
+    @Test
+    fun evaluate_location_services_disabled_marks_wifi_disabled_and_blocks_minimum_scan() {
+        val readiness =
+            CapabilityReadinessSurveyor.evaluate(
+                readyInputs(locationServicesEnabled = false),
+            )
+
+        assertEquals(CapabilityState.SUPPORTED_DISABLED_BY_SYSTEM, readiness.wifi)
+        assertTrue(readiness.blockers.contains(ReadinessBlocker.LOCATION_SERVICES_DISABLED))
+        assertFalse(readiness.canRunMinimumScan)
+        assertTrue(readiness.degraded)
+    }
+
+    @Test
     fun evaluate_does_not_emit_wifi_specific_blockers_without_wifi_support() {
-        val readiness = CapabilityReadinessSurveyor.evaluate(readyInputs(hasWifiHardware = false))
+        val readiness =
+            CapabilityReadinessSurveyor.evaluate(
+                readyInputs(
+                    hasWifiHardware = false,
+                    hasAccessWifiState = false,
+                    hasChangeWifiState = false,
+                    hasNearbyWifiDevicesPermission = false,
+                ),
+            )
 
         assertEquals(CapabilityState.UNSUPPORTED_BY_HARDWARE, readiness.wifi)
         assertFalse(readiness.blockers.contains(ReadinessBlocker.MISSING_ACCESS_WIFI_STATE))
         assertFalse(readiness.blockers.contains(ReadinessBlocker.MISSING_CHANGE_WIFI_STATE))
         assertFalse(readiness.blockers.contains(ReadinessBlocker.MISSING_NEARBY_WIFI_DEVICES))
+    }
+
+    @Test
+    fun evaluate_marks_wifi_unsupported_when_wifi_manager_unavailable() {
+        val readiness = CapabilityReadinessSurveyor.evaluate(readyInputs(hasWifiManager = false))
+
+        assertEquals(CapabilityState.UNSUPPORTED_BY_HARDWARE, readiness.wifi)
+        assertTrue(readiness.degraded)
     }
 
     @Test
@@ -147,6 +188,26 @@ class PermissionReadinessTest {
         assertEquals(CapabilityState.SUPPORTED_PERMISSION_MISSING, readiness.ble)
         assertTrue(readiness.blockers.contains(ReadinessBlocker.MISSING_BLE_SCAN_PERMISSION))
         assertTrue(readiness.blockers.contains(ReadinessBlocker.MISSING_BLE_CONNECT_PERMISSION))
+    }
+
+    @Test
+    fun evaluate_does_not_emit_ble_blockers_without_ble_support() {
+        val readiness =
+            CapabilityReadinessSurveyor.evaluate(
+                readyInputs(
+                    sdkInt = Build.VERSION_CODES.S,
+                    hasBleHardware = false,
+                    hasBluetoothAdapter = false,
+                    bluetoothEnabled = false,
+                    hasBluetoothScanPermission = false,
+                    hasBluetoothConnectPermission = false,
+                ),
+            )
+
+        assertEquals(CapabilityState.UNSUPPORTED_BY_HARDWARE, readiness.ble)
+        assertFalse(readiness.blockers.contains(ReadinessBlocker.MISSING_BLE_SCAN_PERMISSION))
+        assertFalse(readiness.blockers.contains(ReadinessBlocker.MISSING_BLE_CONNECT_PERMISSION))
+        assertFalse(readiness.blockers.contains(ReadinessBlocker.BLUETOOTH_DISABLED))
     }
 
     private fun readyInputs(
