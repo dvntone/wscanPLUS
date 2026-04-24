@@ -6,7 +6,6 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.view.View
-import android.view.Window
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -62,9 +61,6 @@ object WscanUi {
             applySystemInsets(this)
         }
     }
-
-    fun title(text: String): TextView =
-        TextView(null).also { _ -> }
 
     fun header(parent: LinearLayout, title: String, subtitle: String? = null) {
         parent.addView(
