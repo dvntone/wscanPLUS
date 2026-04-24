@@ -2,6 +2,7 @@
 
 ## Current State
 - docs/SESSION_STATE.md — architecture decisions, locked choices, current phase + next steps
+- docs/PRODUCT_SPEC.md — product architecture, evidence/output model, language rules, and capability status labels
 - [docs/SESSION_STATE.md#2026-03-20-handoff-snapshot](docs/SESSION_STATE.md#2026-03-20-handoff-snapshot) — fastest re-entry point for the next AI session
 
 ## Device Testing

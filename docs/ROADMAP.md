@@ -53,15 +53,15 @@ On-device heuristics engine is now live on Android and runs without third-party 
 
 Delivered through PRs `#96-#117`, `#127`, and follow-on device-validation/docs work on 2026-03-20.
 
-### Phase 2 follow-on items deferred beyond the baseline
+### Runtime hardening (in-progress, tracked separately from phase completion)
 
-These are real remaining tasks, but they are no longer reasons to treat Phase 2 as mostly incomplete:
+Phase 2 is complete. The following items are known gaps between the architecture and the current runtime behavior. They are tracked as drift corrections, not new features:
 
-- [ ] Scan history accumulation to populate `knownProfiles` and network baselines
-- [ ] OuiAssetLoader integration in `WatchdogService` so BSSID vendor lookup is no longer wired as `null`
+- [ ] Wire Room DB into `ScanContext` at decision time — `knownProfiles`, `baselineNetworkCount`, `baselineStdDev` are always empty/null at runtime; three heuristics (EncryptionDowngrade, BssidFingerprint, SsidFlooding) receive no historical data
+- [ ] Remove hardcoded `EnvironmentType.RESIDENTIAL` in `WatchdogService` — infer from context or default to `UNKNOWN`
+- [ ] Heuristic-aware gate hardening in `PolicyGate` — recurrence/corroboration weighting for behavioral detections; structural detections (WEP/Open) always pass
 - [ ] False-positive brakes backed by real CTI/context instead of stub logic
-- [ ] DAO instrumentation tests using an Android emulator path
-- [ ] Additional pure-logic unit tests around heuristic edge cases
+- [ ] Capability-aware scoring weight once context wiring is stable
 
 ### Locked permission stance from device validation
 
@@ -96,18 +96,22 @@ PRs: #183–#195
 
 Desktop receives and aggregates data from Android companion(s).
 
+### Complete
 - [x] Desktop flat layout + IPC bridge (PR #200)
 - [x] ADB transport — `@yume-chan/adb`, WatchdogService tcp:9000 (PRs #192–#195)
 - [x] Android ServerSocket(9000) implementation (PR #193)
 - [x] CompanionServer (WebSocket, token auth, rate limiting) (PR #200)
 - [x] Scanner + detector + store wired into Electron main (PR #200)
 - [x] CapabilityProbe layer — DeviceCapabilityManifest + DetectorGate + self-tests (PR #198)
-- [ ] Transport hello — include DeviceCapabilityManifest JSON in WatchdogService hello
-- [ ] Spatial WiFi floor tracking — barometer-based relative floor detection
+- [x] Transport hello — DeviceCapabilityManifest serialized in hello (PR #209 Android, PR #211 desktop)
+- [x] Spatial WiFi floor tracking — BarometerSampler + FloorEstimate (PR #217, #219, #221)
+
+### Remaining
+- [ ] darklotusLABS web UI — Sentinel Prism theme, NYX assistant, Vite build (app.darklotuslabs.com)
 - [ ] Desktop CTI client (fetch-based)
 - [ ] Unified timeline + map overlay
 
-~6-8 PRs remaining
+> **Authoritative state:** See SESSION_STATE.md. This checklist may lag.
 
 ## Phase 6 — Packaging + Release
 
