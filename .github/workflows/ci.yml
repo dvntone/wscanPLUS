@@ -17,7 +17,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Check for Node.js project files
         id: check_nodejs
@@ -36,7 +36,7 @@ jobs:
 
       - name: Setup Node.js from .nvmrc or fallback
         if: steps.check_nodejs.outputs.has_package_json == 'true'
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
         with:
           node-version-file: .nvmrc
           node-version: 22.x
@@ -75,7 +75,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout Code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Check for gradlew
         id: check_gradlew
@@ -89,14 +89,14 @@ jobs:
 
       - name: Set up JDK 17
         if: steps.check_gradlew.outputs.skip != 'true'
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
         with:
           distribution: temurin
           java-version: 17
 
       - name: Cache Gradle packages
         if: steps.check_gradlew.outputs.skip != 'true'
-        uses: actions/cache@3b0346c531297cd300fe2e9edee4777ce94cf486
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb
         with:
           path: |
             ~/.gradle/caches
@@ -156,7 +156,7 @@ jobs:
       # for mobile/device smoke testing without requiring a local SDK build.
       - name: Upload APK Artifact
         if: steps.check_gradlew.outputs.skip != 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: wscanplus-debug-apk-ci-mock
           path: android/app/build/outputs/apk/debug/app-debug.apk
@@ -167,7 +167,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Scan for accidental secrets
         run: |
