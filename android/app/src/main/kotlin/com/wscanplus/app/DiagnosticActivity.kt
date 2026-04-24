@@ -135,7 +135,14 @@ class DiagnosticActivity : Activity() {
             WscanUi.metricRow(capsCard, "UWB", caps.uwb.toReadyLabel(), WscanUi.statusColor(caps.uwb))
             WscanUi.metricRow(capsCard, "Barometer", caps.barometer.toReadyLabel(), WscanUi.statusColor(caps.barometer))
             WscanUi.metricRow(capsCard, "BLE", caps.bluetoothLe.toReadyLabel(), WscanUi.statusColor(caps.bluetoothLe))
-            WscanUi.metricRow(capsCard, "Camera depth/IR", caps.cameraIrCapable.toDisplayLabel(), caps.cameraIrCapable.statusColor())
+            val hasCamera = packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_CAMERA_ANY)
+            WscanUi.metricRow(
+                capsCard,
+                "Camera (photo)",
+                if (hasCamera) "READY" else "UNAVAILABLE",
+                if (hasCamera) WscanUi.COLOR_OK else WscanUi.COLOR_BAD,
+            )
+            WscanUi.metricRow(capsCard, "Depth camera (ToF)", caps.cameraIrCapable.toDisplayLabel(), caps.cameraIrCapable.statusColor())
             WscanUi.metricRow(capsCard, "Acoustic", caps.acousticSonarCapable.toDisplayLabel(), caps.acousticSonarCapable.statusColor())
         } else {
             WscanUi.body(capsCard, "Capability probe has not completed yet.", muted = true)
