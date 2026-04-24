@@ -1,4 +1,4 @@
-@file:Suppress("ktlint:standard:function-signature", "ktlint:standard:chain-wrapping")
+@file:Suppress("ktlint:standard:function-signature")
 
 package com.wscanplus.app
 
@@ -86,20 +86,21 @@ object WscanUi {
     }
 
     fun card(parent: LinearLayout): LinearLayout =
-        LinearLayout(parent.context).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(parent.dp(16), parent.dp(14), parent.dp(16), parent.dp(14))
-            background = rounded(COLOR_CARD, parent.dp(16), strokeColor = Color.rgb(38, 57, 87))
-            parent.addView(
-                this,
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                ).apply {
-                    bottomMargin = parent.dp(12)
-                },
-            )
-        }
+        LinearLayout(parent.context)
+            .apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(parent.dp(16), parent.dp(14), parent.dp(16), parent.dp(14))
+                background = rounded(COLOR_CARD, parent.dp(16), strokeColor = Color.rgb(38, 57, 87))
+                parent.addView(
+                    this,
+                    LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                    ).apply {
+                        bottomMargin = parent.dp(12)
+                    },
+                )
+            }
 
     fun sectionTitle(parent: LinearLayout, text: String) {
         parent.addView(
@@ -149,24 +150,25 @@ object WscanUi {
     }
 
     fun actionButton(parent: LinearLayout, text: String, onClick: () -> Unit): Button =
-        Button(parent.context).apply {
-            this.text = text
-            setTextColor(COLOR_TEXT)
-            textSize = 13f
-            typeface = Typeface.DEFAULT_BOLD
-            background = rounded(COLOR_CARD_ALT, parent.dp(14), strokeColor = COLOR_ACCENT)
-            setPadding(parent.dp(12), parent.dp(10), parent.dp(12), parent.dp(10))
-            setOnClickListener { onClick() }
-            parent.addView(
-                this,
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    parent.dp(52),
-                ).apply {
-                    bottomMargin = parent.dp(10)
-                },
-            )
-        }
+        Button(parent.context)
+            .apply {
+                this.text = text
+                setTextColor(COLOR_TEXT)
+                textSize = 13f
+                typeface = Typeface.DEFAULT_BOLD
+                background = rounded(COLOR_CARD_ALT, parent.dp(14), strokeColor = COLOR_ACCENT)
+                setPadding(parent.dp(12), parent.dp(10), parent.dp(12), parent.dp(10))
+                setOnClickListener { onClick() }
+                parent.addView(
+                    this,
+                    LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        parent.dp(52),
+                    ).apply {
+                        bottomMargin = parent.dp(10)
+                    },
+                )
+            }
 
     fun statusColor(value: Boolean): Int = if (value) COLOR_OK else COLOR_BAD
 
