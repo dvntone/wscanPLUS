@@ -127,12 +127,11 @@ class CapabilityReadinessSurveyor(
             val bleConnectPermissionMissing =
                 inputs.sdkInt >= Build.VERSION_CODES.S &&
                     !inputs.hasBluetoothConnectPermission
-
-            if (
-                hasBleSupport &&
-                    inputs.sdkInt >= Build.VERSION_CODES.S &&
+            val modernBleScanPermissionMissing =
+                inputs.sdkInt >= Build.VERSION_CODES.S &&
                     bleScanPermissionMissing
-            ) {
+
+            if (hasBleSupport && modernBleScanPermissionMissing) {
                 blockers += ReadinessBlocker.MISSING_BLE_SCAN_PERMISSION
             }
             if (hasBleSupport && bleConnectPermissionMissing) {
