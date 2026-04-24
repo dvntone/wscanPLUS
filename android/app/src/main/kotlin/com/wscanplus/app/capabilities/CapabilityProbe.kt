@@ -1,5 +1,3 @@
-@file:Suppress("ktlint:standard:function-expression-body")
-
 package com.wscanplus.app.capabilities
 
 import android.Manifest

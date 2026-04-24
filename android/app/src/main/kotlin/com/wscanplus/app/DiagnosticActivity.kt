@@ -166,7 +166,7 @@ class DiagnosticActivity : Activity() {
             CameraIrStatus.UNTESTED -> "UNTESTED"
             CameraIrStatus.CAPABLE -> "CAPABLE"
             CameraIrStatus.NOT_CAPABLE -> "NOT CAPABLE"
-            CameraIrStatus.PARTIAL -> "PARTIAL"
+            CameraIrStatus.PARTIAL -> "UNTESTED"
         }
 
     private fun AcousticStatus.toDisplayLabel(): String =
