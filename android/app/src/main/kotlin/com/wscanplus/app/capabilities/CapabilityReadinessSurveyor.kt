@@ -80,6 +80,10 @@ class CapabilityReadinessSurveyor(
             val blockers = mutableSetOf<ReadinessBlocker>()
             val hasWifiSupport = inputs.hasWifiHardware && inputs.hasWifiManager
             val hasBleSupport = inputs.hasBleHardware && inputs.hasBluetoothAdapter
+            val hasCellularSupport = inputs.hasTelephonyHardware && inputs.hasTelephonyManager
+            val legacyBleNeedsFineLocation = hasBleSupport && inputs.sdkInt < Build.VERSION_CODES.S
+            val fineLocationAffectsSupportedModule =
+                hasWifiSupport || hasCellularSupport || legacyBleNeedsFineLocation
             val legacyBleLocationDisabled =
                 inputs.sdkInt < Build.VERSION_CODES.S &&
                     !inputs.locationServicesEnabled
@@ -87,7 +91,9 @@ class CapabilityReadinessSurveyor(
                 inputs.sdkInt < Build.VERSION_CODES.TIRAMISU ||
                     inputs.hasNearbyWifiDevicesPermission
 
-            if (!inputs.hasFineLocation) blockers += ReadinessBlocker.MISSING_FINE_LOCATION
+            if (!inputs.hasFineLocation && fineLocationAffectsSupportedModule) {
+                blockers += ReadinessBlocker.MISSING_FINE_LOCATION
+            }
             if (hasWifiSupport && !inputs.hasAccessWifiState) {
                 blockers += ReadinessBlocker.MISSING_ACCESS_WIFI_STATE
             }
@@ -151,7 +157,6 @@ class CapabilityReadinessSurveyor(
                     else -> CapabilityState.SUPPORTED_AND_READY
                 }
 
-            val hasCellularSupport = inputs.hasTelephonyHardware && inputs.hasTelephonyManager
             val cellularState =
                 when {
                     !hasCellularSupport -> CapabilityState.UNSUPPORTED_BY_HARDWARE
