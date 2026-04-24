@@ -210,6 +210,35 @@ class PermissionReadinessTest {
         assertFalse(readiness.blockers.contains(ReadinessBlocker.BLUETOOTH_DISABLED))
     }
 
+    @Test
+    fun evaluate_pre_s_ble_location_services_disabled_marks_ble_disabled() {
+        val readiness =
+            CapabilityReadinessSurveyor.evaluate(
+                readyInputs(
+                    sdkInt = Build.VERSION_CODES.R,
+                    locationServicesEnabled = false,
+                ),
+            )
+
+        assertEquals(CapabilityState.SUPPORTED_DISABLED_BY_SYSTEM, readiness.ble)
+        assertTrue(readiness.blockers.contains(ReadinessBlocker.LOCATION_SERVICES_DISABLED))
+    }
+
+    @Test
+    fun evaluate_pre_s_missing_fine_location_does_not_emit_modern_ble_scan_permission_blocker() {
+        val readiness =
+            CapabilityReadinessSurveyor.evaluate(
+                readyInputs(
+                    sdkInt = Build.VERSION_CODES.R,
+                    hasFineLocation = false,
+                ),
+            )
+
+        assertEquals(CapabilityState.SUPPORTED_PERMISSION_MISSING, readiness.ble)
+        assertTrue(readiness.blockers.contains(ReadinessBlocker.MISSING_FINE_LOCATION))
+        assertFalse(readiness.blockers.contains(ReadinessBlocker.MISSING_BLE_SCAN_PERMISSION))
+    }
+
     private fun readyInputs(
         sdkInt: Int = Build.VERSION_CODES.TIRAMISU,
         hasFineLocation: Boolean = true,
