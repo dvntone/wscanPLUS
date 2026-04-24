@@ -199,7 +199,10 @@ class MainActivity : Activity() {
         startActivity(Intent(this, DiagnosticActivity::class.java))
     }
 
-    private fun configureActionButton(text: String, onClick: () -> Unit) {
+    private fun configureActionButton(
+        text: String,
+        onClick: () -> Unit,
+    ) {
         actionButton.text = text
         actionButton.setOnClickListener { onClick() }
         actionButton.visibility = View.VISIBLE
