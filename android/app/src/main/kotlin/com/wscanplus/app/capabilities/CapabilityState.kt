@@ -67,6 +67,7 @@ data class PermissionReadiness(
     val degraded: Boolean
         get() =
             blockers.isNotEmpty() ||
+                wifi != CapabilityState.SUPPORTED_AND_READY ||
                 ble != CapabilityState.SUPPORTED_AND_READY ||
                 cellular != CapabilityState.SUPPORTED_AND_READY ||
                 sensors != CapabilityState.SUPPORTED_AND_READY
