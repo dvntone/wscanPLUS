@@ -588,15 +588,19 @@ class WatchdogService : Service() {
                     error.message?.contains("closed", ignoreCase = true) == true
             )
 
-    private fun createSession(): Long =
-        database.scanSessionDao().insert(
+    private fun createSession(): Long {
+        val now = System.currentTimeMillis()
+        // Close any sessions left open by a previous crash or forced stop before starting a new one.
+        database.scanSessionDao().closeOrphanedSessions(endedAt = now)
+        return database.scanSessionDao().insert(
             ScanSessionEntity(
-                startedAt = System.currentTimeMillis(),
+                startedAt = now,
                 endedAt = null,
                 environmentType = EnvironmentType.RESIDENTIAL,
                 deviceSerial = buildDeviceIdentifier(),
             ),
         )
+    }
 
     private fun buildDeviceIdentifier(): String = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown-device"
 

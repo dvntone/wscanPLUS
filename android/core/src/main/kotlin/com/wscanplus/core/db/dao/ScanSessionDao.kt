@@ -27,6 +27,9 @@ interface ScanSessionDao {
         to: Long,
     ): List<ScanSessionEntity>
 
+    @Query("UPDATE scan_sessions SET endedAt = :endedAt WHERE endedAt IS NULL")
+    fun closeOrphanedSessions(endedAt: Long)
+
     /**
      * Delete completed sessions whose [ScanSessionEntity.endedAt] is before [cutoffMs].
      * Deletion cascades to scan_results and threat_signals via their FK constraints.
