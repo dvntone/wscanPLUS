@@ -17,7 +17,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@v6
 
       - name: Check for Node.js project files
         id: check_nodejs
@@ -36,7 +36,7 @@ jobs:
 
       - name: Setup Node.js from .nvmrc or fallback
         if: steps.check_nodejs.outputs.has_package_json == 'true'
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
           node-version: 22.x
@@ -75,7 +75,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout Code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@v6
 
       - name: Check for gradlew
         id: check_gradlew
@@ -89,14 +89,14 @@ jobs:
 
       - name: Set up JDK 17
         if: steps.check_gradlew.outputs.skip != 'true'
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
 
       - name: Cache Gradle packages
         if: steps.check_gradlew.outputs.skip != 'true'
-        uses: actions/cache@3b0346c531297cd300fe2e9edee4777ce94cf486
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
@@ -156,7 +156,7 @@ jobs:
       # for mobile/device smoke testing without requiring a local SDK build.
       - name: Upload APK Artifact
         if: steps.check_gradlew.outputs.skip != 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@v6
         with:
           name: wscanplus-debug-apk-ci-mock
           path: android/app/build/outputs/apk/debug/app-debug.apk
@@ -167,7 +167,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@v6
 
       - name: Scan for accidental secrets
         run: |
