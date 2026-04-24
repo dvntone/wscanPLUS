@@ -100,7 +100,7 @@ class CapabilityReadinessSurveyor(
             if (hasWifiSupport && !inputs.hasChangeWifiState) {
                 blockers += ReadinessBlocker.MISSING_CHANGE_WIFI_STATE
             }
-            if (!inputs.locationServicesEnabled) {
+            if (!inputs.locationServicesEnabled && fineLocationAffectsSupportedModule) {
                 blockers += ReadinessBlocker.LOCATION_SERVICES_DISABLED
             }
             if (hasWifiSupport && !hasNearbyWifiDevices) {
@@ -160,10 +160,7 @@ class CapabilityReadinessSurveyor(
             val cellularState =
                 when {
                     !hasCellularSupport -> CapabilityState.UNSUPPORTED_BY_HARDWARE
-                    !inputs.hasFineLocation -> {
-                        blockers += ReadinessBlocker.CELL_PERMISSION_MISSING
-                        CapabilityState.SUPPORTED_PERMISSION_MISSING
-                    }
+                    !inputs.hasFineLocation -> CapabilityState.SUPPORTED_PERMISSION_MISSING
                     else -> CapabilityState.SUPPORTED_AND_READY
                 }
 
