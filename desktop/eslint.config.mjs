@@ -21,6 +21,8 @@ export default [
         Buffer: "readonly",
         setTimeout: "readonly",
         clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
         ReadableStream: "readonly",
       },
     },
