@@ -72,8 +72,10 @@ class ScanMapActivity : Activity() {
         statusBody = findViewById(R.id.map_status_body)
         localHeatmapOverlay = findViewById(R.id.local_heatmap_overlay)
 
-        setMapStatus("Loading scan map", "Loading GPS-tagged scan records from encrypted database.")
-        loadHeatmap()
+        setMapStatus(
+            "Google Maps required",
+            "Custom local heatmap rendering is disabled here because Android mapping for this project must remain Google Maps-based until the authoritative docs are updated.",
+        )
     }
 
     override fun onStart() {
