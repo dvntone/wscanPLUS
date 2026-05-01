@@ -48,6 +48,16 @@
     <!-- Required for ServerSocket(9000) ADB communication (Phase 3) -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- BLE NMEA tethering: GATT server + advertising for desktop receivers -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_CONNECT"
+        tools:targetApi="31" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_ADVERTISE"
+        tools:targetApi="31" />
+
     <!-- Required for CameraIrSelfTest (user-triggered capability self-test only) -->
     <uses-permission android:name="android.permission.CAMERA" />
 
@@ -123,15 +133,6 @@
             android:name=".WatchdogService"
             android:foregroundServiceType="location|dataSync"
             android:exported="false" />
-
-        <!--
-            Google Maps API key — injected by secrets-gradle-plugin from local.properties.
-            Key name: GOOGLE_MAPS_API_KEY. Set GOOGLE_MAPS_API_KEY=your_key in android/local.properties.
-            Placeholder value (REPLACE_ME) sourced from android/secrets.defaults.properties.
-        -->
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="${GOOGLE_MAPS_API_KEY}" />
 
     </application>
 
