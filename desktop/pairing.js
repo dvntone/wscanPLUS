@@ -36,6 +36,43 @@ function formatAddress(result) {
   return 'Pairing endpoint unavailable';
 }
 
+function mountPairingControls() {
+  if (document.getElementById('pair-companion')) return;
+  const panel = document.querySelector('.companion-panel');
+  if (!panel) return;
+
+  const section = document.createElement('section');
+  section.className = 'pairing-box';
+  section.setAttribute('aria-label', 'Companion pairing');
+
+  const button = document.createElement('button');
+  button.id = 'pair-companion';
+  button.className = 'secondary-action pairing-action';
+  button.type = 'button';
+  button.textContent = 'Generate Pairing Token';
+
+  const block = document.createElement('div');
+  block.id = 'pairing-token-block';
+  block.className = 'pairing-token-block';
+  block.hidden = true;
+
+  const label = document.createElement('div');
+  label.className = 'muted pairing-label';
+  label.textContent = 'Token';
+
+  const token = document.createElement('div');
+  token.id = 'pairing-token-value';
+  token.className = 'pairing-token-value';
+
+  const address = document.createElement('div');
+  address.id = 'pairing-token-address';
+  address.className = 'muted pairing-token-address';
+
+  block.append(label, token, address);
+  section.append(button, block);
+  panel.appendChild(section);
+}
+
 async function pairCompanion() {
   const button = document.getElementById('pair-companion');
   if (button) button.disabled = true;
@@ -65,6 +102,7 @@ async function pairCompanion() {
 }
 
 function initPairing() {
+  mountPairingControls();
   document.getElementById('pair-companion')?.addEventListener('click', () => {
     void pairCompanion();
   });
