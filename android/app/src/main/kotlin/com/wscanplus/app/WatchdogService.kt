@@ -675,8 +675,11 @@ class WatchdogService : Service() {
     private val scanAnalysisCacheLock = Any()
 
     @Volatile private var knownProfilesCache: Map<String, com.wscanplus.core.threat.BssidProfile> = emptyMap()
+
     @Volatile private var knownProfilesCacheAtMillis: Long = 0L
+
     @Volatile private var baselineStatsCache: BaselineStats? = null
+
     @Volatile private var baselineStatsCacheAtMillis: Long = 0L
 
     private fun buildKnownProfiles(): Map<String, com.wscanplus.core.threat.BssidProfile> {
