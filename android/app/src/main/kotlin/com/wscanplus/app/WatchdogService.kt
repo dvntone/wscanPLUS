@@ -596,7 +596,7 @@ class WatchdogService : Service() {
             ScanSessionEntity(
                 startedAt = now,
                 endedAt = null,
-                environmentType = EnvironmentType.UNKNOWN,
+                environmentType = EnvironmentType.PUBLIC,
                 deviceSerial = buildDeviceIdentifier(),
             ),
         )
