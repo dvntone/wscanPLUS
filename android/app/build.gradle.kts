@@ -1,13 +1,15 @@
 plugins {
     id("com.android.application")
-    // Firebase/google-services is optional for CI and local dev builds.
-    // When absent, we skip the plugin so assembleDebug/Release can still run.
-    if (File("google-services.json").exists()) {
-        id("com.google.gms.google-services")
-    }
+    id("com.google.gms.google-services") apply false
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("org.jlleitschuh.gradle.ktlint")
+}
+
+// Conditionally apply google-services plugin if google-services.json is present.
+// This allows builds to succeed in CI and clean environments where Firebase is not configured.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }
 
 android {
@@ -22,8 +24,6 @@ android {
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-
-    // Note: when google-services is not applied, Firebase init will be absent.
 
     buildTypes {
         release {
