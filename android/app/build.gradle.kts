@@ -5,8 +5,35 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint")
 }
 
-if (file("google-services.json").exists()) {
+val googleServicesFile = file("google-services.json")
+val requestedTasks = gradle.startParameter.taskNames.map { it.lowercase() }
+val allowMissingGoogleServices =
+    requestedTasks.isEmpty() ||
+        requestedTasks.all { task ->
+            task.contains("test") ||
+                task.contains("androidtest") ||
+                task.contains("unittest") ||
+                task.contains("lint") ||
+                task.contains("ktlint") ||
+                task.contains("jacoco") ||
+                task.contains("check")
+        }
+
+if (googleServicesFile.exists()) {
     apply(plugin = "com.google.gms.google-services")
+} else if (allowMissingGoogleServices) {
+    logger.warn(
+        "google-services.json is missing; skipping com.google.gms.google-services. " +
+            "This is allowed for IDE sync/test-only tasks, but app build tasks will fail. " +
+            "Requested tasks: ${if (requestedTasks.isEmpty()) "<none>" else requestedTasks.joinToString()}"
+    )
+} else {
+    throw org.gradle.api.GradleException(
+        "Missing google-services.json for app build tasks. " +
+            "Firebase resources (such as google_app_id) will not be generated, which can cause runtime failures. " +
+            "Add android/app/google-services.json or run only test/sync tasks. " +
+            "Requested tasks: ${requestedTasks.joinToString()}"
+    )
 }
 
 android {
