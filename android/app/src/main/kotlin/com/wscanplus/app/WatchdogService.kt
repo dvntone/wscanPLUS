@@ -666,74 +666,130 @@ class WatchdogService : Service() {
      * Used to populate knownProfiles in ScanContext so heuristics can detect encryption
      * downgrades and BSSID fingerprint anomalies.
      */
-    private fun buildKnownProfiles(): Map<String, com.wscanplus.core.threat.BssidProfile> =
-        try {
-            val since = System.currentTimeMillis() - KNOWN_PROFILE_LOOKBACK_MS
-            val entities = database.bssidFingerprintDao().getRecentlyActive(since)
-            entities.associate { entity ->
-                entity.bssid to
-                    com.wscanplus.core.threat.BssidProfile(
-                        bssid = entity.bssid,
-                        firstSeenAt = entity.firstSeenAt,
-                        lastSeenAt = entity.lastSeenAt,
-                        ssids = entity.ssids,
-                        capabilitiesHistory = entity.capabilitiesHistory,
-                        observationCount = entity.observationCount,
-                        ouiVendor = entity.ouiVendor,
-                    )
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to load known profiles", e)
-            emptyMap()
+    private data class BaselineStats(
+        val meanNetworkCount: Int?,
+        val stdDev: Double?,
+    )
+
+    private val scanAnalysisCacheTtlMs = 60_000L
+    private val scanAnalysisCacheLock = Any()
+
+    @Volatile private var knownProfilesCache: Map<String, com.wscanplus.core.threat.BssidProfile> = emptyMap()
+    @Volatile private var knownProfilesCacheAtMillis: Long = 0L
+    @Volatile private var baselineStatsCache: BaselineStats? = null
+    @Volatile private var baselineStatsCacheAtMillis: Long = 0L
+
+    private fun buildKnownProfiles(): Map<String, com.wscanplus.core.threat.BssidProfile> {
+        val now = System.currentTimeMillis()
+        if (now - knownProfilesCacheAtMillis < scanAnalysisCacheTtlMs && knownProfilesCache.isNotEmpty()) {
+            return knownProfilesCache
         }
+
+        synchronized(scanAnalysisCacheLock) {
+            val refreshedAt = System.currentTimeMillis()
+            if (refreshedAt - knownProfilesCacheAtMillis < scanAnalysisCacheTtlMs && knownProfilesCache.isNotEmpty()) {
+                return knownProfilesCache
+            }
+
+            return try {
+                val since = refreshedAt - KNOWN_PROFILE_LOOKBACK_MS
+                val entities = database.bssidFingerprintDao().getRecentlyActive(since)
+                val profiles =
+                    entities.associate { entity ->
+                        entity.bssid to
+                            com.wscanplus.core.threat.BssidProfile(
+                                bssid = entity.bssid,
+                                firstSeenAt = entity.firstSeenAt,
+                                lastSeenAt = entity.lastSeenAt,
+                                ssids = entity.ssids,
+                                capabilitiesHistory = entity.capabilitiesHistory,
+                                observationCount = entity.observationCount,
+                                ouiVendor = entity.ouiVendor,
+                            )
+                    }
+                knownProfilesCache = profiles
+                knownProfilesCacheAtMillis = refreshedAt
+                profiles
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to load known profiles", e)
+                knownProfilesCache
+            }
+        }
+    }
+
+    private fun computeBaselineStats(): BaselineStats {
+        val now = System.currentTimeMillis()
+        val cachedStats = baselineStatsCache
+        if (cachedStats != null && now - baselineStatsCacheAtMillis < scanAnalysisCacheTtlMs) {
+            return cachedStats
+        }
+
+        synchronized(scanAnalysisCacheLock) {
+            val refreshedStats = baselineStatsCache
+            val refreshedAt = System.currentTimeMillis()
+            if (refreshedStats != null && refreshedAt - baselineStatsCacheAtMillis < scanAnalysisCacheTtlMs) {
+                return refreshedStats
+            }
+
+            return try {
+                val recentSessions = database.scanSessionDao().getRecent(BASELINE_SESSION_LIMIT)
+                if (recentSessions.isEmpty()) {
+                    val emptyStats = BaselineStats(meanNetworkCount = null, stdDev = null)
+                    baselineStatsCache = emptyStats
+                    baselineStatsCacheAtMillis = refreshedAt
+                    return emptyStats
+                }
+
+                val bssidCounts =
+                    recentSessions.mapNotNull { session ->
+                        val results = database.scanResultDao().getBySession(session.id)
+                        if (results.isEmpty()) null else results.map { it.bssid }.distinct().size
+                    }
+
+                if (bssidCounts.isEmpty()) {
+                    val emptyStats = BaselineStats(meanNetworkCount = null, stdDev = null)
+                    baselineStatsCache = emptyStats
+                    baselineStatsCacheAtMillis = refreshedAt
+                    return emptyStats
+                }
+
+                val mean = bssidCounts.sum() / bssidCounts.size
+                val stdDev =
+                    if (bssidCounts.size < 2) {
+                        null
+                    } else {
+                        val meanDouble = bssidCounts.sum() / bssidCounts.size.toDouble()
+                        val variance =
+                            bssidCounts
+                                .map { count ->
+                                    val diff = count - meanDouble
+                                    diff * diff
+                                }.sum() / (bssidCounts.size - 1)
+                        kotlin.math.sqrt(variance)
+                    }
+
+                val stats = BaselineStats(meanNetworkCount = mean, stdDev = stdDev)
+                baselineStatsCache = stats
+                baselineStatsCacheAtMillis = refreshedAt
+                stats
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to compute baseline statistics", e)
+                baselineStatsCache ?: BaselineStats(meanNetworkCount = null, stdDev = null)
+            }
+        }
+    }
 
     /**
      * Compute the baseline network count by averaging the count of distinct BSSIDs
      * seen in recent completed scan sessions.
      */
-    private fun computeBaselineNetworkCount(): Int? {
-        return try {
-            val recentSessions = database.scanSessionDao().getRecent(BASELINE_SESSION_LIMIT)
-            if (recentSessions.isEmpty()) return null
-            val bssidCounts =
-                recentSessions.mapNotNull { session ->
-                    val results = database.scanResultDao().getBySession(session.id)
-                    if (results.isEmpty()) null else results.map { it.bssid }.distinct().size
-                }
-            if (bssidCounts.isEmpty()) null else (bssidCounts.sum() / bssidCounts.size)
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to compute baseline network count", e)
-            null
-        }
-    }
+    private fun computeBaselineNetworkCount(): Int? = computeBaselineStats().meanNetworkCount
 
     /**
      * Compute the standard deviation of network counts across recent completed scan sessions.
      * Used by SsidFloodingHeuristic to detect abnormal network density.
      */
-    private fun computeBaselineStdDev(): Double? {
-        return try {
-            val recentSessions = database.scanSessionDao().getRecent(BASELINE_SESSION_LIMIT)
-            if (recentSessions.isEmpty()) return null
-            val bssidCounts =
-                recentSessions.mapNotNull { session ->
-                    val results = database.scanResultDao().getBySession(session.id)
-                    if (results.isEmpty()) null else results.map { it.bssid }.distinct().size
-                }
-            if (bssidCounts.size < 2) return null
-            val mean = bssidCounts.sum() / bssidCounts.size.toDouble()
-            val variance =
-                bssidCounts
-                    .map { count ->
-                        val diff = count - mean
-                        diff * diff
-                    }.sum() / (bssidCounts.size - 1)
-            kotlin.math.sqrt(variance)
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to compute baseline standard deviation", e)
-            null
-        }
-    }
+    private fun computeBaselineStdDev(): Double? = computeBaselineStats().stdDev
 
     private fun maybeSendKismetUpdate(sample: LocationSample) {
         val now = System.currentTimeMillis()
