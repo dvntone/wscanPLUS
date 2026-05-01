@@ -172,6 +172,32 @@ select { width: 100%; min-height: 34px; color: var(--text); border: 1px solid va
   overflow: hidden;
 }
 
+.workspace-with-demo-banner {
+  grid-template-rows: auto auto auto minmax(230px, 0.8fr) minmax(230px, 1fr);
+}
+
+.demo-data-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid rgba(249, 168, 37, 0.54);
+  border-radius: 14px;
+  background: rgba(249, 168, 37, 0.1);
+}
+
+.demo-data-banner p {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.demo-seeded-row,
+.demo-seeded-threat {
+  opacity: 0.72;
+}
+
 .primary-action,
 .secondary-action { min-height: 34px; border-radius: 10px; padding: 0 13px; font-weight: 800; }
 .primary-action { color: var(--text); border: 1px solid rgba(33, 150, 243, 0.7); background: linear-gradient(180deg, var(--primary), var(--primary-deep)); }
