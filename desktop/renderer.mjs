@@ -1,489 +1,459 @@
-const apMap = new Map();
-const riskMap = new Map();
-let selectedBssid = null;
+const api = window.wscan ?? window.wscanplus ?? window.wscanPlus ?? {};
 
-function formatRelTime(ts) {
-  if (!ts) return '-';
-  const d = Date.now() - ts;
-  if (d < 5_000) return 'just now';
-  if (d < 60_000) return `${Math.floor(d / 1_000)}s ago`;
-  if (d < 3_600_000) return `${Math.floor(d / 60_000)}m ago`;
-  return `${Math.floor(d / 3_600_000)}h ago`;
+const state = {
+  aps: new Map(),
+  risks: [],
+  events: [],
+  selectedBssid: null,
+  scanState: { running: false, scanning: false },
+  companion: null,
+  adb: { status: 'unknown' },
+  historyLimit: 40,
+};
+
+const severityRank = { high: 3, critical: 3, threat: 3, watch: 2, medium: 2, warning: 2, low: 1, info: 0 };
+const $ = (id) => document.getElementById(id);
+
+function normalizeBssid(value) {
+  return typeof value === 'string' ? value.trim().toUpperCase() : '';
+}
+
+function normalizeTimestamp(value) {
+  if (value instanceof Date) return value.getTime();
+  const n = Number(value);
+  if (Number.isFinite(n)) return n < 10_000_000_000 ? n * 1000 : n;
+  const parsed = Date.parse(String(value));
+  return Number.isFinite(parsed) ? parsed : Date.now();
+}
+
+function normalizeRisk(value) {
+  const risk = String(value ?? 'low').toLowerCase();
+  if (['critical', 'high', 'threat'].includes(risk)) return 'high';
+  if (['watch', 'medium', 'warning'].includes(risk)) return 'watch';
+  if (['none', 'info'].includes(risk)) return 'info';
+  return 'low';
+}
+
+function inferChannel(frequency) {
+  if (!Number.isFinite(frequency)) return null;
+  if (frequency === 2484) return 14;
+  if (frequency >= 2412 && frequency <= 2472) return Math.round((frequency - 2407) / 5);
+  if (frequency >= 5000 && frequency <= 5900) return Math.round((frequency - 5000) / 5);
+  if (frequency >= 5955 && frequency <= 7115) return Math.round((frequency - 5950) / 5);
+  return null;
+}
+
+function normalizeAp(input) {
+  if (!input || typeof input !== 'object') return null;
+  const bssid = normalizeBssid(input.bssid ?? input.BSSID ?? input.mac);
+  if (!bssid) return null;
+  const rssi = Number(input.rssi ?? input.signal ?? input.level);
+  const frequency = Number(input.frequency ?? input.freq);
+  const channel = Number(input.channel ?? input.ch);
+  return {
+    ssid: String(input.ssid ?? input.SSID ?? '<hidden>'),
+    bssid,
+    rssi: Number.isFinite(rssi) ? rssi : null,
+    channel: Number.isFinite(channel) ? channel : inferChannel(frequency),
+    frequency: Number.isFinite(frequency) ? frequency : null,
+    security: String(input.security ?? input.capabilities ?? input.encryption ?? 'unknown'),
+    risk: normalizeRisk(input.risk ?? input.severity ?? 'low'),
+    lastSeen: normalizeTimestamp(input.lastSeen ?? input.timestamp ?? Date.now()),
+    source: String(input.source ?? 'desktop'),
+  };
+}
+
+function upsertAp(input) {
+  const ap = normalizeAp(input);
+  if (!ap) return;
+  const existing = state.aps.get(ap.bssid);
+  const history = Array.isArray(existing?.history) ? existing.history.slice(-state.historyLimit) : [];
+  if (Number.isFinite(ap.rssi)) history.push({ rssi: ap.rssi, timestamp: ap.lastSeen });
+  state.aps.set(ap.bssid, {
+    ...existing,
+    ...ap,
+    seenCount: (existing?.seenCount ?? 0) + 1,
+    firstSeen: existing?.firstSeen ?? ap.lastSeen,
+    history,
+  });
+  state.selectedBssid ??= ap.bssid;
+}
+
+function setAps(payload) {
+  const list = Array.isArray(payload) ? payload : Array.isArray(payload?.aps) ? payload.aps : Array.isArray(payload?.networks) ? payload.networks : [];
+  for (const ap of list) upsertAp(ap);
+  render();
+}
+
+function addRisk(input) {
+  if (!input || typeof input !== 'object') return;
+  const bssid = normalizeBssid(input.bssid ?? input.BSSID ?? input.mac);
+  const severity = normalizeRisk(input.severity ?? input.risk ?? input.level ?? 'watch');
+  const confidenceRaw = Number(input.confidence ?? 0);
+  const confidence = Number.isFinite(confidenceRaw) ? Math.max(0, Math.min(100, confidenceRaw <= 1 ? confidenceRaw * 100 : confidenceRaw)) : 0;
+  const risk = {
+    id: String(input.id ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`),
+    bssid,
+    ssid: String(input.ssid ?? ''),
+    severity,
+    confidence,
+    reason: String(input.reason ?? input.message ?? (Array.isArray(input.reasons) ? input.reasons.join('; ') : 'Detector event')),
+    timestamp: normalizeTimestamp(input.timestamp ?? input.ts ?? Date.now()),
+    status: String(input.status ?? 'open'),
+  };
+  state.risks.unshift(risk);
+  state.risks = state.risks.slice(0, 80);
+  const ap = state.aps.get(bssid);
+  if (ap && (severityRank[severity] ?? 0) > (severityRank[ap.risk] ?? 0)) state.aps.set(bssid, { ...ap, risk: severity });
+  addEvent({ level: severity === 'high' ? 'HIGH' : severity === 'watch' ? 'WATCH' : 'INFO', source: 'detector', message: `${risk.reason}${bssid ? ` (${bssid})` : ''}` }, false);
+  render();
+}
+
+function addEvent(input, rerender = true) {
+  const event = {
+    time: normalizeTimestamp(input?.time ?? input?.timestamp ?? input?.ts ?? Date.now()),
+    level: String(input?.level ?? input?.severity ?? 'INFO').toUpperCase(),
+    source: String(input?.source ?? 'ui'),
+    message: String(input?.message ?? input?.reason ?? input ?? ''),
+  };
+  state.events.unshift(event);
+  state.events = state.events.slice(0, 220);
+  if (rerender) renderEvents();
+}
+
+function formatAge(ts) {
+  const delta = Math.max(0, Date.now() - ts);
+  if (delta < 1000) return 'now';
+  if (delta < 60_000) return `${Math.round(delta / 1000)}s`;
+  if (delta < 3_600_000) return `${Math.round(delta / 60_000)}m`;
+  return `${Math.round(delta / 3_600_000)}h`;
 }
 
 function formatTime(ts) {
-  if (!ts) return '-';
-  return new Date(ts).toLocaleTimeString();
+  return new Date(ts).toLocaleTimeString([], { hour12: false });
 }
 
-function severityRank(sev) {
-  return { high: 3, medium: 2, low: 1, info: 0 }[sev] ?? 0;
+function summarizeSecurity(value) {
+  const text = String(value ?? 'unknown');
+  if (/WPA3/i.test(text)) return 'WPA3';
+  if (/WPA2/i.test(text)) return 'WPA2';
+  if (/WPA/i.test(text)) return 'WPA';
+  if (/OPEN|ESS/i.test(text) && !/PRIVACY/i.test(text)) return 'OPEN';
+  return text.length > 12 ? `${text.slice(0, 12)}…` : text;
 }
 
-function signalClass(dbm) {
-  if (dbm >= -50) return 'sig-strong';
-  if (dbm >= -70) return '';
-  return 'sig-weak';
+function sortedAps() {
+  return [...state.aps.values()].sort((a, b) => ((severityRank[b.risk] ?? 0) - (severityRank[a.risk] ?? 0)) || ((b.rssi ?? -999) - (a.rssi ?? -999)));
 }
 
-function switchView(viewId) {
-  for (const btn of document.querySelectorAll('.nav-btn')) {
-    btn.classList.toggle('active', btn.dataset.view === viewId);
-  }
-  for (const view of document.querySelectorAll('.view')) {
-    view.classList.toggle('active', view.id === `view-${viewId}`);
-  }
+function renderTopStatus() {
+  $('clock').textContent = new Date().toLocaleTimeString([], { hour12: false });
+  const running = Boolean(state.scanState?.running ?? state.scanState?.scanning);
+  const scanBadge = $('scan-state-badge');
+  scanBadge.textContent = running ? 'SCAN LIVE' : 'SCAN IDLE';
+  scanBadge.className = `badge ${running ? 'badge-success' : 'badge-neutral'}`;
+  const online = state.companion?.status === 'online' || state.companion?.connected === true;
+  $('companion-state-badge').textContent = online ? 'COMPANION ONLINE' : 'COMPANION OFFLINE';
+  $('companion-state-badge').className = `badge ${online ? 'badge-success' : 'badge-neutral'}`;
+  const adbReady = state.adb?.status === 'ready' || state.adb?.ready === true;
+  $('adb-state-badge').textContent = adbReady ? 'ADB READY' : String(state.adb?.status ?? 'ADB UNKNOWN').toUpperCase();
+  $('adb-state-badge').className = `badge ${adbReady ? 'badge-success' : 'badge-neutral'}`;
 }
 
-function switchTab(tabId) {
-  for (const btn of document.querySelectorAll('.tab')) {
-    btn.classList.toggle('active', btn.dataset.tab === tabId);
-  }
-  for (const panel of document.querySelectorAll('.tab-panel')) {
-    panel.classList.toggle('active', panel.id === `panel-${tabId}`);
-  }
+function renderMetrics(aps) {
+  const high = aps.filter((ap) => ap.risk === 'high').length;
+  const watched = aps.filter((ap) => ap.risk === 'watch').length;
+  const strongest = aps.filter((ap) => Number.isFinite(ap.rssi)).sort((a, b) => b.rssi - a.rssi)[0];
+  const channels = new Map();
+  for (const ap of aps) if (Number.isFinite(ap.channel)) channels.set(ap.channel, (channels.get(ap.channel) ?? 0) + 1);
+  const crowded = [...channels.entries()].sort((a, b) => b[1] - a[1])[0];
+  $('metric-ap-count').textContent = String(aps.length);
+  $('metric-ap-sub').textContent = `${aps.length - watched} known / ${watched} watched`;
+  $('metric-high-risk').textContent = String(high);
+  $('metric-strongest').textContent = strongest ? `${strongest.rssi} dBm` : '--';
+  $('metric-channel-load').textContent = crowded ? `CH ${crowded[0]}` : '--';
+  $('sample-count').textContent = `${aps.reduce((acc, ap) => acc + (ap.history?.length ?? 0), 0)} SAMPLES`;
 }
 
-function updateScanControls(state) {
-  document.getElementById('btn-start').disabled = state.scanning;
-  document.getElementById('btn-stop').disabled = !state.scanning;
-  const badge = document.getElementById('scan-badge');
-  if (state.scanning) {
-    badge.textContent = `Scanning - ${state.interface ?? '?'}`;
-    badge.classList.add('scanning');
-  } else {
-    badge.textContent = 'Idle';
-    badge.classList.remove('scanning');
-  }
-  document.getElementById('ap-count').textContent = apMap.size;
-}
-
-async function startScan() {
-  const iface = document.getElementById('iface-select').value || undefined;
-  const result = await window.wscan.startScan(iface);
-  if (!result.ok) {
-    appendLogEntry({ message: `Scan start failed: ${result.error}`, ts: Date.now() });
-  }
-}
-
-async function stopScan() {
-  await window.wscan.stopScan();
-}
-
-async function manualScan() {
-  const btn = document.getElementById('btn-manual');
-  btn.disabled = true;
-  try {
-    const result = await window.wscan.manualScan();
-    if (!result.ok) {
-      appendLogEntry({ message: `Manual scan failed: ${result.error}`, ts: Date.now() });
-    }
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-async function populateInterfaces() {
-  const result = await window.wscan.getInterfaces();
-  if (!result.ok || result.interfaces.length === 0) return;
-  const sel = document.getElementById('iface-select');
-  for (const iface of result.interfaces) {
-    const opt = document.createElement('option');
-    opt.value = iface;
-    opt.textContent = iface;
-    sel.appendChild(opt);
-  }
-  if (result.interfaces.length === 1) {
-    sel.value = result.interfaces[0];
-  }
-}
-
-function handleAps(aps) {
+function renderApTable(aps) {
+  const body = $('ap-table-body');
+  body.replaceChildren();
   for (const ap of aps) {
-    apMap.set(ap.bssid, ap);
-  }
-  document.getElementById('ap-count').textContent = apMap.size;
-  renderApTable();
-}
-
-function renderApTable() {
-  const tbody = document.getElementById('ap-tbody');
-  const rows = Array.from(apMap.values())
-    .sort((a, b) => b.signal - a.signal)
-    .slice(0, 200);
-
-  const frag = document.createDocumentFragment();
-  for (const ap of rows) {
-    frag.appendChild(buildApRow(ap, riskMap.get(ap.bssid)));
-  }
-  tbody.replaceChildren(frag);
-}
-
-function buildApRow(ap, risk) {
-  const tr = document.createElement('tr');
-  tr.dataset.bssid = ap.bssid;
-  if (ap.bssid === selectedBssid) tr.classList.add('selected');
-
-  const cells = [
-    () => {
+    const tr = document.createElement('tr');
+    tr.className = `${ap.risk === 'high' ? 'high' : ap.risk === 'watch' ? 'watch' : ''} ${state.selectedBssid === ap.bssid ? 'selected' : ''}`;
+    tr.tabIndex = 0;
+    tr.dataset.bssid = ap.bssid;
+    const cells = [ap.ssid, ap.bssid, Number.isFinite(ap.rssi) ? `${ap.rssi}` : '--', Number.isFinite(ap.channel) ? `${ap.channel}` : '--', summarizeSecurity(ap.security), ap.risk.toUpperCase(), formatAge(ap.lastSeen)];
+    for (const cell of cells) {
       const td = document.createElement('td');
-      if (ap.ssid) {
-        td.textContent = ap.ssid;
-      } else {
-        td.textContent = '(hidden)';
-        td.classList.add('dim');
-      }
-      return td;
-    },
-    () => {
-      const td = document.createElement('td');
-      td.textContent = ap.bssid;
-      td.classList.add('mono');
-      return td;
-    },
-    () => {
-      const td = document.createElement('td');
-      td.textContent = `${ap.signal} dBm`;
-      const cls = signalClass(ap.signal);
-      if (cls) td.classList.add(cls);
-      return td;
-    },
-    () => {
-      const td = document.createElement('td');
-      td.textContent = ap.channel || '?';
-      td.classList.add('mono');
-      return td;
-    },
-    () => {
-      const td = document.createElement('td');
-      td.textContent = ap.security || 'open';
-      if (ap.security === 'open' || !ap.security) td.classList.add('sec-open');
-      return td;
-    },
-    () => {
-      const td = document.createElement('td');
-      if (risk) {
-        const span = document.createElement('span');
-        span.className = `risk-badge risk-${risk.severity}`;
-        span.textContent = risk.severity;
-        td.appendChild(span);
-      }
-      return td;
-    },
-    () => {
-      const td = document.createElement('td');
-      td.textContent = formatRelTime(ap.lastSeen);
-      td.classList.add('dim');
-      return td;
-    },
-  ];
-
-  for (const build of cells) tr.appendChild(build());
-
-  tr.addEventListener('click', () => selectAp(ap.bssid));
-  return tr;
-}
-
-function handleRiskLog(log) {
-  riskMap.clear();
-  for (const entry of log) riskMap.set(entry.bssid, entry);
-  document.getElementById('threat-count').textContent = log.length;
-  const badge = document.getElementById('threat-count');
-  if (log.length > 0) {
-    badge.classList.add('badge-danger');
-  } else {
-    badge.classList.remove('badge-danger');
-  }
-  renderApTable();
-  renderThreatQueue();
-  if (selectedBssid) renderInspector(selectedBssid);
-}
-
-function renderThreatQueue() {
-  const list = document.getElementById('threat-list');
-  const sorted = Array.from(riskMap.values())
-    .sort((a, b) => severityRank(b.severity) - severityRank(a.severity));
-
-  const frag = document.createDocumentFragment();
-  for (const entry of sorted) {
-    const ap = apMap.get(entry.bssid);
-
-    const li = document.createElement('li');
-    li.className = `threat-item ${entry.severity}`;
-
-    const header = document.createElement('div');
-    header.className = 'threat-header';
-
-    const ssidEl = document.createElement('span');
-    ssidEl.className = 'threat-ssid';
-    ssidEl.textContent = ap?.ssid || entry.ssid || '(hidden)';
-
-    const sevEl = document.createElement('span');
-    sevEl.className = `risk-badge risk-${entry.severity}`;
-    sevEl.textContent = entry.severity;
-
-    header.appendChild(ssidEl);
-    header.appendChild(sevEl);
-    li.appendChild(header);
-
-    const bssidEl = document.createElement('div');
-    bssidEl.className = 'threat-bssid mono';
-    bssidEl.textContent = entry.bssid;
-    li.appendChild(bssidEl);
-
-    for (const reason of entry.reasons) {
-      const r = document.createElement('div');
-      r.className = 'threat-reason';
-      r.textContent = reason;
-      li.appendChild(r);
+      td.textContent = cell;
+      tr.appendChild(td);
     }
-
-    li.addEventListener('click', () => {
-      selectAp(entry.bssid);
-      switchView('scan');
+    tr.addEventListener('click', () => { state.selectedBssid = ap.bssid; render(); });
+    tr.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') { state.selectedBssid = ap.bssid; render(); }
     });
-
-    frag.appendChild(li);
+    body.appendChild(tr);
   }
-  list.replaceChildren(frag);
+  $('inventory-count').textContent = `${aps.length} rows`;
 }
 
-function selectAp(bssid) {
-  selectedBssid = bssid;
-  for (const tr of document.querySelectorAll('#ap-tbody tr')) {
-    tr.classList.toggle('selected', tr.dataset.bssid === bssid);
-  }
-  renderInspector(bssid);
+function renderInspector() {
+  const ap = state.selectedBssid ? state.aps.get(state.selectedBssid) : null;
+  const risk = ap?.risk ?? 'none';
+  $('selected-bssid').textContent = ap?.bssid ?? 'No AP selected';
+  $('selected-ssid').textContent = ap ? ap.ssid : 'Select a row from AP Inventory.';
+  $('selected-rssi').textContent = Number.isFinite(ap?.rssi) ? `${ap.rssi} dBm` : '--';
+  $('selected-channel').textContent = Number.isFinite(ap?.channel) ? `CH ${ap.channel}` : '--';
+  $('selected-security').textContent = ap?.security ?? '--';
+  $('selected-last-seen').textContent = ap?.lastSeen ? formatAge(ap.lastSeen) : '--';
+  const badge = $('selected-risk');
+  badge.textContent = risk.toUpperCase();
+  badge.className = `badge ${risk === 'high' ? 'badge-threat' : risk === 'watch' ? 'badge-warning' : risk === 'low' ? 'badge-success' : 'badge-neutral'}`;
 }
 
-function renderInspector(bssid) {
-  const ap = apMap.get(bssid);
-  const risk = riskMap.get(bssid);
-  const content = document.getElementById('inspector-content');
-
-  if (!ap) {
-    const p = document.createElement('p');
-    p.className = 'inspector-empty';
-    p.textContent = 'Select an AP to inspect';
-    content.replaceChildren(p);
-    return;
-  }
-
-  const frag = document.createDocumentFragment();
-
-  const fields = [
-    ['SSID', ap.ssid || '(hidden)'],
-    ['BSSID', ap.bssid],
-    ['Signal', `${ap.signal} dBm`],
-    ['Frequency', ap.frequency ? `${ap.frequency} MHz` : '-'],
-    ['Channel', ap.channel || '-'],
-    ['Security', ap.security || 'open'],
-    ['Source', ap.source || 'desktop'],
-    ['Last seen', formatRelTime(ap.lastSeen)],
-  ];
-
-  for (const [label, value] of fields) {
-    const row = document.createElement('div');
-    row.className = 'insp-row';
-
-    const lbl = document.createElement('div');
-    lbl.className = 'insp-label';
-    lbl.textContent = label;
-
-    const val = document.createElement('div');
-    val.className = 'insp-value mono';
-    val.textContent = value;
-
-    row.appendChild(lbl);
-    row.appendChild(val);
-    frag.appendChild(row);
-  }
-
-  if (risk) {
-    const divider = document.createElement('div');
-    divider.className = 'insp-divider';
-    frag.appendChild(divider);
-
-    const section = document.createElement('div');
-    section.className = 'insp-section';
-
+function renderThreats() {
+  const list = $('threat-list');
+  list.replaceChildren();
+  const risks = state.risks.slice(0, 12);
+  for (const risk of risks) {
+    const li = document.createElement('li');
+    li.className = 'threat-item';
     const badge = document.createElement('span');
-    badge.className = `risk-badge risk-${risk.severity}`;
-    badge.textContent = risk.severity;
-
-    const conf = document.createElement('span');
-    conf.className = 'insp-conf';
-    conf.textContent = `${Math.round(risk.confidence * 100)}% confidence`;
-
-    section.appendChild(badge);
-    section.appendChild(conf);
-    frag.appendChild(section);
-
-    for (const reason of risk.reasons) {
-      const r = document.createElement('div');
-      r.className = 'insp-reason';
-      r.textContent = `- ${reason}`;
-      frag.appendChild(r);
-    }
+    badge.className = `badge ${risk.severity === 'high' ? 'badge-threat' : risk.severity === 'watch' ? 'badge-warning' : 'badge-neutral'}`;
+    badge.textContent = `${risk.severity.toUpperCase()} ${risk.confidence ? `${Math.round(risk.confidence)}%` : ''}`.trim();
+    const title = document.createElement('strong');
+    title.textContent = risk.bssid || risk.ssid || 'Detector event';
+    const body = document.createElement('p');
+    body.textContent = `${risk.reason} • ${formatAge(risk.timestamp)} ago`;
+    li.append(badge, title, body);
+    list.appendChild(li);
   }
-
-  content.replaceChildren(frag);
+  if (!risks.length) {
+    const li = document.createElement('li');
+    li.className = 'threat-item';
+    li.innerHTML = '<strong>No active detector events</strong><p>Threat queue will populate from RiskEvent data.</p>';
+    list.appendChild(li);
+  }
+  $('threat-count').textContent = `${state.risks.length} events`;
 }
 
-function appendLogEntry(entry) {
-  const container = document.getElementById('log-entries');
+function renderCompanion() {
+  const c = state.companion ?? {};
+  const online = c.status === 'online' || c.connected === true;
+  $('companion-summary').textContent = online ? `${c.deviceId ?? 'Companion'} online. Last heartbeat ${formatAge(normalizeTimestamp(c.heartbeat ?? c.timestamp ?? Date.now()))} ago.` : 'No companion feed yet. Pair Android sensor or run ADB preflight.';
+  $('companion-device').textContent = c.deviceId ?? '--';
+  $('companion-heartbeat').textContent = c.heartbeat ? `${formatAge(normalizeTimestamp(c.heartbeat))} ago` : '--';
+  $('companion-sequence').textContent = Number.isFinite(Number(c.sequence)) ? String(c.sequence) : '--';
+  $('companion-rejects').textContent = String(c.rejects ?? c.rejected ?? 0);
+  $('payload-rate').textContent = `${c.payloadRate ?? 0}/min`;
+}
 
-  const div = document.createElement('div');
-  div.className = 'log-entry';
-
-  const ts = document.createElement('span');
-  ts.className = 'log-ts';
-  ts.textContent = formatTime(entry.ts);
-
-  const msg = document.createElement('span');
-  msg.className = 'log-msg';
-  msg.textContent = entry.message;
-
-  div.appendChild(ts);
-  div.appendChild(msg);
-
-  container.insertBefore(div, container.firstChild);
-  while (container.childElementCount > 200) {
-    container.removeChild(container.lastChild);
+function renderChannelBars(aps) {
+  const wrap = $('channel-bars');
+  wrap.replaceChildren();
+  const counts = new Map();
+  for (const ap of aps) if (Number.isFinite(ap.channel)) counts.set(ap.channel, (counts.get(ap.channel) ?? 0) + 1);
+  const entries = [...counts.entries()].sort((a, b) => Number(a[0]) - Number(b[0]));
+  const max = Math.max(1, ...entries.map(([, count]) => count));
+  for (const [channel, count] of entries) {
+    const row = document.createElement('div');
+    row.className = 'channel-row';
+    const label = document.createElement('span');
+    label.textContent = `CH ${channel}`;
+    const track = document.createElement('div');
+    track.className = 'channel-track';
+    const fill = document.createElement('div');
+    fill.className = 'channel-fill';
+    fill.style.width = `${Math.max(6, (count / max) * 100)}%`;
+    const value = document.createElement('span');
+    value.textContent = String(count);
+    track.appendChild(fill);
+    row.append(label, track, value);
+    wrap.appendChild(row);
+  }
+  if (!entries.length) {
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent = 'No channel data yet.';
+    wrap.appendChild(empty);
   }
 }
 
-async function pairCompanion() {
-  const result = await window.wscan.pairCompanion();
-  if (!result.ok) {
-    appendLogEntry({ message: `Companion pair failed: ${result.error}`, ts: Date.now() });
-    return;
+function renderChart(aps) {
+  const grid = $('chart-grid');
+  const line = $('rssi-line');
+  const points = $('rssi-points');
+  grid.replaceChildren();
+  points.replaceChildren();
+  for (let y = 30; y <= 190; y += 40) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    el.setAttribute('x1', '28');
+    el.setAttribute('x2', '732');
+    el.setAttribute('y1', String(y));
+    el.setAttribute('y2', String(y));
+    el.setAttribute('stroke', '#26334A');
+    el.setAttribute('stroke-width', '1');
+    el.setAttribute('opacity', '0.72');
+    grid.appendChild(el);
   }
-  const block = document.getElementById('token-block');
-  block.hidden = false;
-  document.getElementById('token-value').textContent = result.token;
-  const addr = result.address;
-  document.getElementById('token-addr').textContent = addr
-    ? `ws://${addr.address}:${addr.port}`
-    : '-';
+  const selected = state.selectedBssid ? state.aps.get(state.selectedBssid) : aps[0];
+  const history = selected?.history?.length ? selected.history.slice(-24) : aps.filter((ap) => Number.isFinite(ap.rssi)).map((ap) => ({ rssi: ap.rssi, timestamp: ap.lastSeen })).slice(-24);
+  if (!history.length) { line.setAttribute('points', ''); return; }
+  const coords = history.map((sample, index) => {
+    const x = 28 + (history.length === 1 ? 352 : (index / (history.length - 1)) * 704);
+    const rssi = Math.max(-95, Math.min(-25, Number(sample.rssi)));
+    const y = 30 + 160 - ((rssi + 95) / 70) * 160;
+    return [x, y];
+  });
+  line.setAttribute('points', coords.map(([x, y]) => `${x},${y}`).join(' '));
+  for (const [x, y] of coords) {
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', String(x));
+    circle.setAttribute('cy', String(y));
+    circle.setAttribute('r', '3.5');
+    circle.setAttribute('fill', '#2196F3');
+    points.appendChild(circle);
+  }
 }
 
-function handleCompanionUpdate(update) {
-  const list = document.getElementById('companion-device-list');
-
-  let item = null;
-  for (const li of list.querySelectorAll('.companion-device-item')) {
-    if (li.dataset.deviceId === update.deviceId) {
-      item = li;
-      break;
-    }
-  }
-
-  if (!item) {
-    const empty = list.querySelector('.companion-empty');
-    if (empty) empty.remove();
-    item = document.createElement('li');
-    item.className = 'companion-device-item';
-    item.dataset.deviceId = update.deviceId;
-    list.appendChild(item);
-  }
-
-  item.textContent = '';
-
-  const id = document.createElement('span');
-  id.className = 'mono';
-  id.textContent = update.deviceId.slice(0, 16);
-  item.appendChild(id);
-
-  const detail = document.createElement('span');
-  detail.className = 'companion-detail';
-  detail.textContent = ` - ${update.networkCount} networks - ${formatTime(update.timestamp)}`;
-  item.appendChild(detail);
+function renderEvents() {
+  $('event-log').textContent = state.events.slice().reverse().map((event) => `[${formatTime(event.time)}] ${event.level.padEnd(5)} ${event.source.padEnd(10)} ${event.message}`).join('\n');
+  $('event-count').textContent = `${state.events.length} events`;
 }
 
-async function runPreflight() {
-  const statusEl = document.getElementById('status');
-  const guidanceEl = document.getElementById('guidance');
-  const runBtn = document.getElementById('run-preflight');
-  const listEl = document.getElementById('device-list');
+function render() {
+  const aps = sortedAps();
+  renderTopStatus();
+  renderMetrics(aps);
+  renderApTable(aps);
+  renderInspector();
+  renderThreats();
+  renderCompanion();
+  renderChannelBars(aps);
+  renderChart(aps);
+  renderEvents();
+}
 
-  statusEl.textContent = 'Running ADB preflight...';
-  guidanceEl.textContent = '';
-  runBtn.disabled = true;
-  listEl.replaceChildren();
-
+async function safeCall(name, ...args) {
+  if (typeof api?.[name] !== 'function') {
+    addEvent({ level: 'INFO', source: 'ui', message: `preload method unavailable: ${name}` });
+    return null;
+  }
   try {
-    const result = await window.wscan.runAdbPreflight();
-    const cls = result.classification;
-
-    if (!result.ok) {
-      statusEl.textContent = cls.title;
-      guidanceEl.textContent = `${cls.guidance} ${result.error}`;
-      return;
-    }
-
-    statusEl.textContent = `${result.adbVersion} | ${cls.title}`;
-    guidanceEl.textContent = cls.guidance;
-
-    for (const device of result.devices) {
-      const li = document.createElement('li');
-
-      const parts = [device.model || 'Unknown model', `state=${device.state}`];
-      if (device.product) parts.push(`product=${device.product}`);
-      if (device.device) parts.push(`device=${device.device}`);
-      if (device.companion?.status && device.companion.status !== 'unchecked') {
-        parts.push(`companion=${device.companion.status}`);
-        if (device.companion.versionName) {
-          parts.push(`version=${device.companion.versionName}`);
-        }
-      }
-
-      const main = document.createElement('div');
-      main.textContent = parts.join(' | ');
-      li.appendChild(main);
-
-      if (device.readiness?.label) {
-        const next = document.createElement('div');
-        next.textContent = `next: ${device.readiness.label}`;
-        li.appendChild(next);
-      }
-      if (device.readiness?.guidance) {
-        const guide = document.createElement('div');
-        guide.textContent = device.readiness.guidance;
-        li.appendChild(guide);
-      }
-
-      listEl.appendChild(li);
-    }
-  } finally {
-    runBtn.disabled = false;
+    return await api[name](...args);
+  } catch (error) {
+    addEvent({ level: 'ERROR', source: 'ui', message: `${name} failed: ${error?.message ?? error}` });
+    return null;
   }
 }
 
-async function init() {
-  for (const btn of document.querySelectorAll('.nav-btn')) {
-    btn.addEventListener('click', () => switchView(btn.dataset.view));
+function subscribe(name, handler) {
+  if (typeof api?.[name] !== 'function') return;
+  try {
+    const unsubscribe = api[name](handler);
+    if (typeof unsubscribe === 'function') window.addEventListener('beforeunload', unsubscribe, { once: true });
+  } catch (error) {
+    addEvent({ level: 'ERROR', source: 'ui', message: `${name} subscription failed: ${error?.message ?? error}` });
   }
-
-  for (const btn of document.querySelectorAll('.tab')) {
-    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-  }
-
-  document.getElementById('btn-start').addEventListener('click', () => void startScan());
-  document.getElementById('btn-stop').addEventListener('click', () => void stopScan());
-  document.getElementById('btn-manual').addEventListener('click', () => void manualScan());
-  document.getElementById('run-preflight').addEventListener('click', () => void runPreflight());
-  document.getElementById('btn-pair').addEventListener('click', () => void pairCompanion());
-
-  window.wscan.onAps(handleAps);
-  window.wscan.onRiskLog(handleRiskLog);
-  window.wscan.onScanState(updateScanControls);
-  window.wscan.onCompanionUpdate(handleCompanionUpdate);
-  window.wscan.onAppError(appendLogEntry);
-
-  const scanState = await window.wscan.getScanState();
-  updateScanControls(scanState);
-  await populateInterfaces();
 }
 
-void init();
+async function initInterfaces() {
+  const result = await safeCall('getInterfaces');
+  const interfaces = Array.isArray(result) ? result : Array.isArray(result?.interfaces) ? result.interfaces : [];
+  const select = $('iface-select');
+  for (const iface of interfaces) {
+    const name = typeof iface === 'string' ? iface : iface?.name;
+    if (!name) continue;
+    const option = document.createElement('option');
+    option.value = name;
+    option.textContent = name;
+    select.appendChild(option);
+  }
+}
+
+function wireControls() {
+  $('start-scan').addEventListener('click', async () => {
+    const iface = $('iface-select').value || undefined;
+    const result = await safeCall('startScan', iface);
+    state.scanState = { ...state.scanState, running: true, scanning: true, ...(result && typeof result === 'object' ? result : {}) };
+    addEvent({ level: 'INFO', source: 'scanner', message: `start requested${iface ? ` on ${iface}` : ''}` });
+    render();
+  });
+  $('stop-scan').addEventListener('click', async () => {
+    const result = await safeCall('stopScan');
+    state.scanState = { ...state.scanState, running: false, scanning: false, ...(result && typeof result === 'object' ? result : {}) };
+    addEvent({ level: 'INFO', source: 'scanner', message: 'stop requested' });
+    render();
+  });
+  $('manual-scan').addEventListener('click', async () => {
+    const result = await safeCall('manualScan');
+    if (Array.isArray(result) || Array.isArray(result?.aps) || Array.isArray(result?.networks)) setAps(result);
+    addEvent({ level: 'INFO', source: 'scanner', message: 'manual scan requested' });
+  });
+  $('adb-preflight').addEventListener('click', async () => {
+    const result = await safeCall('runAdbPreflight');
+    if (result && typeof result === 'object') {
+      state.adb = { ...result, status: String(result.status ?? (result.ready ? 'ready' : result.adbFound === false ? 'missing' : 'unknown')).toLowerCase() };
+      addEvent({ level: state.adb.status === 'ready' ? 'INFO' : 'WATCH', source: 'adb', message: `ADB preflight: ${state.adb.status}` });
+    }
+    render();
+  });
+  for (const button of document.querySelectorAll('.nav-item')) {
+    button.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach((item) => item.classList.remove('active'));
+      button.classList.add('active');
+      const view = button.dataset.view ?? 'overview';
+      $('workspace-title').textContent = view === 'overview' ? 'Live RF Workspace' : button.textContent;
+      $('workspace-subtitle').textContent = {
+        overview: 'Observed APs, signal trends, channel pressure, and detector output.',
+        inventory: 'Sortable AP/BSSID state from the shared scan store.',
+        threats: 'Detector events separated from observed telemetry.',
+        companion: 'Android companion and ADB ingestion health.',
+        baseline: 'Known, new, missing, and changed network state.',
+        exports: 'Session artifacts, redaction state, and reporting flow.',
+      }[view] ?? 'Observed APs, signal trends, channel pressure, and detector output.';
+    });
+  }
+}
+
+function wireSubscriptions() {
+  subscribe('onAps', setAps);
+  subscribe('onRiskLog', (payload) => {
+    const risks = Array.isArray(payload) ? payload : Array.isArray(payload?.risks) ? payload.risks : Array.isArray(payload?.events) ? payload.events : [payload];
+    for (const risk of risks) addRisk(risk);
+  });
+  subscribe('onScanState', (payload) => { if (payload && typeof payload === 'object') { state.scanState = { ...state.scanState, ...payload }; render(); } });
+  subscribe('onCompanionUpdate', (payload) => { if (payload && typeof payload === 'object') { state.companion = { ...state.companion, ...payload }; addEvent({ level: 'INFO', source: 'companion', message: `update from ${payload.deviceId ?? 'device'}` }, false); render(); } });
+  subscribe('onAppError', (payload) => addEvent({ level: 'ERROR', source: 'app', message: payload?.message ?? payload }));
+}
+
+function seedDemoIfEmpty() {
+  if (state.aps.size) return;
+  [
+    { ssid: 'Home-5G', bssid: '9C:3A:AF:22:10:8B', rssi: -48, channel: 149, frequency: 5745, security: 'WPA3', risk: 'low', lastSeen: Date.now() - 2000, source: 'demo' },
+    { ssid: 'xfinitywifi', bssid: '1E:89:41:77:A0:2C', rssi: -69, channel: 11, frequency: 2462, security: 'open', risk: 'watch', lastSeen: Date.now() - 4200, source: 'demo' },
+    { ssid: 'Unknown_AP', bssid: 'F2:1D:02:90:11:FE', rssi: -57, channel: 1, frequency: 2412, security: 'WPA2', risk: 'high', lastSeen: Date.now() - 8000, source: 'demo' },
+    { ssid: 'PrinterNet', bssid: '58:EF:68:41:90:7A', rssi: -73, channel: 3, frequency: 2422, security: 'WPA2', risk: 'low', lastSeen: Date.now() - 21000, source: 'demo' },
+  ].forEach(upsertAp);
+  addRisk({ bssid: 'F2:1D:02:90:11:FE', ssid: 'Unknown_AP', severity: 'high', confidence: 82, reason: 'Unknown AP near trusted SSID pattern' });
+  state.companion = { status: 'offline', deviceId: '--', payloadRate: 0, rejects: 0 };
+  addEvent({ level: 'INFO', source: 'ui', message: 'demo data loaded until scanner emits AP state' }, false);
+}
+
+async function boot() {
+  wireControls();
+  wireSubscriptions();
+  const scanState = await safeCall('getScanState');
+  if (scanState && typeof scanState === 'object') state.scanState = { ...state.scanState, ...scanState };
+  await initInterfaces();
+  seedDemoIfEmpty();
+  render();
+  setInterval(renderTopStatus, 1000);
+}
+
+boot().catch((error) => {
+  console.error(error);
+  addEvent({ level: 'ERROR', source: 'ui', message: `boot failed: ${error?.message ?? error}` });
+  render();
+});
