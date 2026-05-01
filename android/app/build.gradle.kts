@@ -25,14 +25,14 @@ if (googleServicesFile.exists()) {
     logger.warn(
         "google-services.json is missing; skipping com.google.gms.google-services. " +
             "This is allowed for IDE sync/test-only tasks, but app build tasks will fail. " +
-            "Requested tasks: ${if (requestedTasks.isEmpty()) "<none>" else requestedTasks.joinToString()}"
+            "Requested tasks: ${if (requestedTasks.isEmpty()) "<none>" else requestedTasks.joinToString()}",
     )
 } else {
     throw org.gradle.api.GradleException(
         "Missing google-services.json for app build tasks. " +
             "Firebase resources (such as google_app_id) will not be generated, which can cause runtime failures. " +
             "Add android/app/google-services.json or run only test/sync tasks. " +
-            "Requested tasks: ${requestedTasks.joinToString()}"
+            "Requested tasks: ${requestedTasks.joinToString()}",
     )
 }
 
