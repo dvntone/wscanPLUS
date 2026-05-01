@@ -7,17 +7,14 @@ plugins {
 
 val googleServicesFile = file("google-services.json")
 val requestedTasks = gradle.startParameter.taskNames.map { it.lowercase() }
-val allowMissingGoogleServices =
-    requestedTasks.isEmpty() ||
-        requestedTasks.all { task ->
-            task.contains("test") ||
-                task.contains("androidtest") ||
-                task.contains("unittest") ||
-                task.contains("lint") ||
-                task.contains("ktlint") ||
-                task.contains("jacoco") ||
-                task.contains("check")
-        }
+val requiresGoogleServices =
+    requestedTasks.any { task ->
+        task.contains("assemble") ||
+            task.contains("bundle") ||
+            task.contains("install") ||
+            task.contains("package")
+    }
+val allowMissingGoogleServices = requestedTasks.isEmpty() || !requiresGoogleServices
 
 if (googleServicesFile.exists()) {
     apply(plugin = "com.google.gms.google-services")
