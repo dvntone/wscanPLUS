@@ -265,7 +265,7 @@ class WatchdogService : Service() {
                             knownProfiles = buildKnownProfiles(),
                             baselineNetworkCount = computeBaselineNetworkCount(),
                             baselineStdDev = computeBaselineStdDev(),
-                            environmentType = EnvironmentType.UNKNOWN,
+                            environmentType = EnvironmentType.PUBLIC,
                         )
                     val rawSignals = engine.analyze(context)
                     val filtered = policyGate.filter(rawSignals)
