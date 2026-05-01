@@ -1,131 +1,203 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta
-    http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'"
-  >
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>wscan+</title>
-  <link rel="stylesheet" href="./styles.css">
-</head>
-<body>
-  <div class="shell">
-    <nav class="nav-rail">
-      <div class="nav-brand">wscan+</div>
-      <button class="nav-btn active" type="button" data-view="scan">Scan</button>
-      <button class="nav-btn" type="button" data-view="devices">Devices</button>
-      <button class="nav-btn" type="button" data-view="companion">Companion</button>
-    </nav>
-
-    <main class="workspace">
-      <section class="view active" id="view-scan">
-        <div class="view-header">
-          <span class="view-title">Scan</span>
-          <div class="tab-bar">
-            <button class="tab active" type="button" data-tab="aps">
-              Access Points <span class="badge" id="ap-count">0</span>
-            </button>
-            <button class="tab" type="button" data-tab="threats">
-              Threats <span class="badge" id="threat-count">0</span>
-            </button>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:* ws://localhost:*; object-src 'none'; base-uri 'none';"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>wscan+ Desktop Hub</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell" aria-label="wscan+ desktop hub">
+      <header class="topbar">
+        <section class="brand-lockup" aria-label="Product identity">
+          <div class="brand-mark" aria-hidden="true">W+</div>
+          <div>
+            <h1>wscan+</h1>
+            <p>Wireless signal intelligence + threat analysis</p>
           </div>
-          <div class="scan-controls">
-            <select class="iface-select" id="iface-select">
-              <option value="">Auto-detect</option>
-            </select>
-            <button class="btn btn-primary" id="btn-start" type="button">Start</button>
-            <button class="btn" id="btn-stop" type="button" disabled>Stop</button>
-            <button class="btn" id="btn-manual" type="button">Scan Now</button>
-            <span class="scan-badge" id="scan-badge">Idle</span>
+        </section>
+
+        <section class="status-strip" aria-label="Runtime status">
+          <span id="scan-state-badge" class="badge badge-neutral">SCAN IDLE</span>
+          <span id="companion-state-badge" class="badge badge-neutral">COMPANION OFFLINE</span>
+          <span id="adb-state-badge" class="badge badge-neutral">ADB UNKNOWN</span>
+          <span id="clock" class="clock">--:--:--</span>
+        </section>
+      </header>
+
+      <aside class="sidebar" aria-label="Primary navigation">
+        <nav>
+          <button class="nav-item active" data-view="overview" type="button">Overview</button>
+          <button class="nav-item" data-view="inventory" type="button">AP Inventory</button>
+          <button class="nav-item" data-view="threats" type="button">Threat Queue</button>
+          <button class="nav-item" data-view="companion" type="button">Companion Sensors</button>
+          <button class="nav-item" data-view="baseline" type="button">Baseline</button>
+          <button class="nav-item" data-view="exports" type="button">Exports</button>
+        </nav>
+
+        <section class="sidebar-card" aria-label="Companion quick state">
+          <h2>Companion</h2>
+          <p id="companion-summary">No companion feed yet.</p>
+        </section>
+
+        <section class="sidebar-card" aria-label="Interface selector">
+          <label for="iface-select">Interface</label>
+          <select id="iface-select">
+            <option value="">auto</option>
+          </select>
+        </section>
+      </aside>
+
+      <section class="workspace" aria-label="Live workspace">
+        <section class="workspace-header">
+          <div>
+            <h2 id="workspace-title">Live RF Workspace</h2>
+            <p id="workspace-subtitle">Observed APs, signal trends, channel pressure, and detector output.</p>
           </div>
-        </div>
-
-        <div class="tab-panel active" id="panel-aps">
-          <div class="table-wrap">
-            <table class="ap-table">
-              <thead>
-                <tr>
-                  <th>SSID</th>
-                  <th>BSSID</th>
-                  <th>Signal</th>
-                  <th>Ch</th>
-                  <th>Security</th>
-                  <th>Risk</th>
-                  <th>Last seen</th>
-                </tr>
-              </thead>
-              <tbody id="ap-tbody"></tbody>
-            </table>
+          <div class="control-row">
+            <button id="start-scan" class="primary-action" type="button">Start</button>
+            <button id="stop-scan" class="secondary-action" type="button">Stop</button>
+            <button id="manual-scan" class="secondary-action" type="button">Scan Now</button>
+            <button id="adb-preflight" class="secondary-action" type="button">ADB Check</button>
           </div>
-        </div>
+        </section>
 
-        <div class="tab-panel" id="panel-threats">
-          <ul class="threat-list" id="threat-list"></ul>
-        </div>
-      </section>
+        <section class="metrics-grid" aria-label="Scan summary metrics">
+          <article class="metric-card">
+            <span class="metric-label">Observed APs</span>
+            <strong id="metric-ap-count">0</strong>
+            <small id="metric-ap-sub">0 known / 0 watched</small>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">High Risk</span>
+            <strong id="metric-high-risk">0</strong>
+            <small>detector events</small>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Strongest RSSI</span>
+            <strong id="metric-strongest">--</strong>
+            <small>selected scan window</small>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Channel Load</span>
+            <strong id="metric-channel-load">--</strong>
+            <small>most crowded channel</small>
+          </article>
+        </section>
 
-      <section class="view" id="view-devices">
-        <div class="view-header">
-          <span class="view-title">Devices</span>
-          <button class="btn btn-primary" id="run-preflight" type="button">
-            Run ADB Preflight
-          </button>
-        </div>
-        <div class="devices-content">
-          <p class="trusted-host-notice" id="trusted-host">
-            Only trust this desktop if it is private and under your control.
-          </p>
-          <p id="status">Ready.</p>
-          <p id="guidance">Run the preflight to see the next operator step.</p>
-          <ul id="device-list"></ul>
-        </div>
-      </section>
-
-      <section class="view" id="view-companion">
-        <div class="view-header">
-          <span class="view-title">Companion</span>
-        </div>
-        <div class="companion-content">
-          <div class="companion-section">
-            <div class="section-label">Pairing</div>
-            <p class="section-note">
-              Generate a token and enter it in the companion app to authorise
-              the connection. The server binds to localhost only unless
-              <code>COMPANION_HOST</code> is set.
-            </p>
-            <button class="btn btn-primary" id="btn-pair" type="button">
-              Generate Pairing Token
-            </button>
-            <div class="token-block" id="token-block" hidden>
-              <div class="token-label">Token</div>
-              <div class="token-value mono" id="token-value"></div>
-              <div class="token-addr" id="token-addr"></div>
+        <section class="panel graph-panel" aria-label="RSSI and channel activity">
+          <div class="panel-header">
+            <div>
+              <h3>RSSI + Channel Activity</h3>
+              <p>Signal strength, churn, and channel pressure from current AP state.</p>
             </div>
+            <span id="sample-count" class="badge badge-blue">0 SAMPLES</span>
           </div>
-          <div class="companion-section">
-            <div class="section-label">Connected devices</div>
-            <ul class="companion-device-list" id="companion-device-list">
-              <li class="companion-empty">No devices connected</li>
-            </ul>
+          <div class="chart-wrap">
+            <svg id="rssi-chart" viewBox="0 0 760 220" role="img" aria-label="RSSI trend chart">
+              <defs>
+                <linearGradient id="chartGlow" x1="0" x2="1" y1="0" y2="0">
+                  <stop offset="0%" stop-color="#1565C0" />
+                  <stop offset="100%" stop-color="#2196F3" />
+                </linearGradient>
+              </defs>
+              <g id="chart-grid"></g>
+              <polyline id="rssi-line" fill="none" stroke="url(#chartGlow)" stroke-width="3" points="" />
+              <g id="rssi-points"></g>
+            </svg>
           </div>
+        </section>
+
+        <section class="lower-grid">
+          <section class="panel ap-panel" aria-label="Access point inventory">
+            <div class="panel-header compact">
+              <h3>AP Inventory</h3>
+              <span id="inventory-count" class="muted">0 rows</span>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>SSID</th>
+                    <th>BSSID</th>
+                    <th>RSSI</th>
+                    <th>CH</th>
+                    <th>SEC</th>
+                    <th>RISK</th>
+                    <th>LAST</th>
+                  </tr>
+                </thead>
+                <tbody id="ap-table-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel channel-panel" aria-label="Channel congestion">
+            <div class="panel-header compact">
+              <h3>Channel Congestion</h3>
+              <span class="muted">AP count by channel</span>
+            </div>
+            <div id="channel-bars" class="channel-bars"></div>
+          </section>
+        </section>
+      </section>
+
+      <aside class="inspector" aria-label="Selected device inspector">
+        <section class="panel selected-panel">
+          <div class="panel-header compact">
+            <h3>Selected BSSID</h3>
+            <span id="selected-risk" class="badge badge-neutral">NONE</span>
+          </div>
+          <h2 id="selected-bssid">No AP selected</h2>
+          <p id="selected-ssid" class="muted">Select a row from AP Inventory.</p>
+
+          <dl class="detail-list">
+            <div><dt>RSSI</dt><dd id="selected-rssi">--</dd></div>
+            <div><dt>Channel</dt><dd id="selected-channel">--</dd></div>
+            <div><dt>Security</dt><dd id="selected-security">--</dd></div>
+            <div><dt>Last seen</dt><dd id="selected-last-seen">--</dd></div>
+          </dl>
+        </section>
+
+        <section class="panel threat-panel" aria-label="Threat queue">
+          <div class="panel-header compact">
+            <h3>Threat Queue</h3>
+            <span id="threat-count" class="muted">0 events</span>
+          </div>
+          <ol id="threat-list" class="threat-list"></ol>
+        </section>
+
+        <section class="panel companion-panel" aria-label="Companion health">
+          <div class="panel-header compact">
+            <h3>Companion Health</h3>
+            <span id="payload-rate" class="muted">0/min</span>
+          </div>
+          <dl class="detail-list">
+            <div><dt>Device</dt><dd id="companion-device">--</dd></div>
+            <div><dt>Heartbeat</dt><dd id="companion-heartbeat">--</dd></div>
+            <div><dt>Sequence</dt><dd id="companion-sequence">--</dd></div>
+            <div><dt>Rejects</dt><dd id="companion-rejects">0</dd></div>
+          </dl>
+        </section>
+      </aside>
+
+      <section class="event-console" aria-label="Event console">
+        <div class="console-header">
+          <h2>Event Log</h2>
+          <span id="event-count" class="muted">0 events</span>
         </div>
+        <pre id="event-log" tabindex="0"></pre>
       </section>
     </main>
 
-    <aside class="inspector">
-      <div class="inspector-header">Inspector</div>
-      <div id="inspector-content">
-        <p class="inspector-empty">Select an AP to inspect</p>
-      </div>
-    </aside>
-
-    <footer class="log-drawer">
-      <div class="log-header">Event Log</div>
-      <div class="log-entries" id="log-entries"></div>
-    </footer>
-  </div>
-  <script type="module" src="./renderer.mjs"></script>
-</body>
+    <script type="module" src="./renderer.mjs"></script>
+    <script type="module" src="./pairing.js"></script>
+    <script type="module" src="./demoMode.js"></script>
+    <script type="module" src="./apInventoryControls.js"></script>
+    <script type="module" src="./bssidInspector.js"></script>
+  </body>
 </html>

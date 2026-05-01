@@ -1,0 +1,25 @@
+# Claude Code Review Workflow
+# This workflow is disabled (workflow_dispatch only) to prevent automatic runs
+# The workflow registration exists in GitHub but is intentionally not triggered automatically
+# Reference: https://github.com/dvntone/wscanplus/actions/workflows/claude-code-review.yml
+
+name: Claude Code Review
+
+on:
+  workflow_dispatch:  # Manual trigger only - prevents automatic runs
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  placeholder:
+    name: Disabled Workflow
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Workflow Disabled
+        run: |
+          echo "This workflow is disabled and only registered to satisfy GitHub Actions workflow references."
+          echo "It will only run when manually triggered via workflow_dispatch."
+          echo "Reference: https://github.com/dvntone/wscanplus/actions/workflows/claude-code-review.yml"
