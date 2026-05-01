@@ -23,8 +23,9 @@ This document describes the hardware available for development and testing of ws
 |--------|------|
 | **OnePlus 10T** | Android phone available for development, not the archived device-evidence baseline |
 | **Pixel 10 Pro XL** | High-end test target, latest Android |
-| **Motorola G4 Play 2024** | Previous verified ADB/device-testing baseline — ADB over TCP via device LAN IP (e.g. `adb connect <phone-ip>:5555`). On LG Gram with WSL2 mirrored networking, `adb` runs on Windows and WSL2 reaches it via `127.0.0.1` — no `usbipd-win` required. |
-| **Revvl Tab 2** | Current Android 15 active test target |
+| **Orbic RC400L** | Cellular threat detection node — runs Rayhunter (EFF) for IMSI catcher / rogue base station detection. Connected to desktop via USB; accessible at `http://192.168.1.1:8080` (WiFi) or `http://localhost:8080` via `adb forward tcp:8080 tcp:8080`. |
+
+> **Motorola G4 Play 2024 and Revvl Tab 2 were stolen — removed from hardware inventory.**
 
 ---
 
@@ -50,7 +51,62 @@ This document describes the hardware available for development and testing of ws
 
 ---
 
-## 🐬 Flipper Zero
+## 🔭 Cellular Detection — Orbic RC400L + Rayhunter
+
+| Device | Firmware | Connection | Role |
+|--------|----------|------------|------|
+| **Orbic RC400L** | [Rayhunter (EFF)](https://github.com/EFForg/rayhunter) | USB (preferred) or WiFi | IMSI catcher / rogue base station detection via QMDL modem packet analysis |
+
+### Rayhunter API
+
+Rayhunter exposes an Axum (Rust) HTTP server on port 8080. All endpoints return JSON unless noted.
+
+**Connect from desktop:**
+```bash
+# USB (preferred — no WiFi dependency)
+adb forward tcp:8080 tcp:8080
+# then access http://localhost:8080
+
+# WiFi fallback
+# http://192.168.1.1:8080
+```
+
+**Key endpoints for wscanplus integration:**
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/qmdl-manifest` | GET | List recordings; `current_entry` identifies active capture |
+| `/api/analysis-report/{name}` | GET | Threat report for a recording |
+| `/api/analysis` | GET | Analysis queue status (`queued`, `running`, `finished`) |
+| `/api/system-stats` | GET | Battery, disk, memory, runtime metadata |
+| `/api/start-recording` | POST | Begin QMDL capture |
+| `/api/stop-recording` | POST | End QMDL capture |
+
+**Analysis report structure:**
+```json
+{
+  "packet_timestamp": "2026-04-16T21:00:00Z",
+  "events": [
+    {
+      "event_type": { "type": "QualitativeWarning", "severity": "High" },
+      "message": "Null cipher usage detected on NAS layer"
+    }
+  ]
+}
+```
+
+**Detected threat categories:**
+- IMSI capture requests
+- Null cipher / encryption downgrade (2G, NAS, RRC layers)
+- Forced 2G downgrade attacks
+- Incomplete / malformed SIB transmissions
+- Protocol anomalies in cellular signaling
+
+**Severity levels:** `Informational` → `Low` → `Medium` → `High`
+
+---
+
+
 
 | Device | Firmware | Module | Capabilities |
 |--------|----------|--------|-------------|
@@ -88,7 +144,7 @@ LG Gram (Win11 + WSL2 / Live USB Kali)  → Electron desktop dev
 Flipper Zero (Momentum + Marauder)       → Pocket attack simulator
 GL.iNet Mango                            → Captive portal / travel router simulation
 OnePlus 10T / Pixel 10 Pro XL           → Android app primary test devices
-Motorola G4 Play / Revvl Tab 2          → Low-end + tablet UI testing
+Orbic RC400L (Rayhunter)                → Cellular / IMSI catcher detection
 ```
 
 ---
@@ -104,4 +160,4 @@ No hardware or techniques documented here are used offensively or against networ
 
 ---
 
-*Last updated: 2026-03-23*
+*Last updated: 2026-05-01*
