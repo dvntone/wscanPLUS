@@ -1,5 +1,6 @@
 package com.wscanplus.app
 
+import android.app.Activity
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
@@ -10,43 +11,22 @@ import android.os.Looper
 import android.util.Log
 import android.view.View
 import android.widget.TextView
-import android.widget.Toast
-import androidx.fragment.app.FragmentActivity
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
-import com.google.android.gms.maps.model.TileOverlayOptions
-import com.google.maps.android.heatmaps.HeatmapTileProvider
-import com.google.maps.android.heatmaps.WeightedLatLng
 import com.wscanplus.app.db.DbPassphraseProvider
 import com.wscanplus.core.db.WscanDatabase
 import net.sqlcipher.database.SQLiteDatabase
 import net.sqlcipher.database.SupportFactory
 import java.util.concurrent.Executors
 
-/**
- * Displays a GPS-tagged scan history heatmap using Google Maps.
- *
- * Each point corresponds to a scan result with a recorded GPS location.
- * Points are weighted by the maximum threat signal confidence for that BSSID — threat
- * detections appear as hot zones; clean BSSIDs contribute minimal baseline heat.
- *
- * When WatchdogService is running and the device has a barometer, a floor badge is
- * shown in the top-left corner reflecting the current relative floor estimate.
- *
- * Requires GOOGLE_MAPS_API_KEY in local.properties (injected via secrets-gradle-plugin).
- */
-class ScanMapActivity :
-    FragmentActivity(),
-    OnMapReadyCallback {
+class ScanMapActivity : Activity() {
     private val executor = Executors.newSingleThreadExecutor()
     private val handler = Handler(Looper.getMainLooper())
 
     private var watchdogService: WatchdogService? = null
     private var floorBadge: TextView? = null
+    private var statusPanel: View? = null
+    private var statusTitle: TextView? = null
+    private var statusBody: TextView? = null
+    private var localHeatmapOverlay: LocalHeatmapView? = null
     private var isServiceBound = false
 
     private val serviceConnection =
@@ -77,21 +57,29 @@ class ScanMapActivity :
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WscanUi.prepareWindow(this)
         setContentView(R.layout.activity_scan_map)
 
+        WscanUi.applySystemInsets(
+            findViewById(R.id.scan_map_root),
+            horizontalPadding = 0,
+            topPadding = 0,
+            bottomPadding = 0,
+        )
         floorBadge = findViewById(R.id.floor_badge)
+        statusPanel = findViewById(R.id.map_status_panel)
+        statusTitle = findViewById(R.id.map_status_title)
+        statusBody = findViewById(R.id.map_status_body)
+        localHeatmapOverlay = findViewById(R.id.local_heatmap_overlay)
 
-        val mapFragment = SupportMapFragment.newInstance()
-        supportFragmentManager
-            .beginTransaction()
-            .replace(R.id.map_container, mapFragment)
-            .commit()
-        mapFragment.getMapAsync(this)
+        setMapStatus(
+            "Google Maps required",
+            "Custom local heatmap rendering is disabled here because Android mapping for this project must remain Google Maps-based until the authoritative docs are updated.",
+        )
     }
 
     override fun onStart() {
         super.onStart()
-        // Bind only if the service is already running — do not create it just for the badge.
         val bindIntent = Intent(this, WatchdogService::class.java)
         isServiceBound = bindService(bindIntent, serviceConnection, 0)
     }
@@ -124,107 +112,108 @@ class ScanMapActivity :
                 estimate.relativeFloor < 0 -> "Floor ${estimate.relativeFloor}"
                 else -> "Floor 0"
             }
-        val confidenceLabel = "±${estimate.confidenceMeters.toInt()}m"
-        badge.text = "$floorLabel ($confidenceLabel)"
+        badge.text = "$floorLabel (±${estimate.confidenceMeters.toInt()}m)"
         badge.visibility = View.VISIBLE
     }
 
-    override fun onMapReady(map: GoogleMap) {
+    private fun loadHeatmap() {
         executor.execute {
             try {
-                loadAndRender(map)
+                renderHeatmap()
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load scan map data", e)
                 if (!isDestroyed) {
                     runOnUiThread {
-                        Toast.makeText(this, "Failed to load map data.", Toast.LENGTH_LONG).show()
+                        setMapStatus(
+                            "Map data unavailable",
+                            "Failed to load scan map data. Check database state.",
+                        )
                     }
                 }
             }
         }
     }
 
-    private fun loadAndRender(map: GoogleMap) {
+    private fun renderHeatmap() {
         val passphrase = DbPassphraseProvider(applicationContext).getOrCreate()
         if (passphrase == null) {
             Log.e(TAG, "Encrypted database unavailable — cannot load map data")
             if (!isDestroyed) {
                 runOnUiThread {
-                    Toast.makeText(this, "Encrypted database unavailable.", Toast.LENGTH_LONG).show()
+                    localHeatmapOverlay?.clearPoints()
+                    setMapStatus(
+                        "Encrypted database unavailable",
+                        "The scan database could not be opened.",
+                    )
                 }
             }
             return
         }
+
         SQLiteDatabase.loadLibs(applicationContext)
         val db = WscanDatabase.getInstance(applicationContext, SupportFactory(passphrase))
         val scanResults = db.scanResultDao().getGpsTagged(limit = 500)
         if (scanResults.isEmpty()) {
             if (!isDestroyed) {
                 runOnUiThread {
-                    Toast.makeText(this, "No GPS-tagged scan data yet.", Toast.LENGTH_LONG).show()
+                    localHeatmapOverlay?.clearPoints()
+                    setMapStatus(
+                        "No GPS-tagged scan data",
+                        "Run a scan with location enabled to populate the heatmap.",
+                    )
                 }
             }
             return
         }
 
-        // BSSID → max threat confidence from stored high-confidence signals.
         val rawSignals = db.threatSignalDao().getHighConfidence(minConfidence = 0.3f, limit = 1000)
         val threatMap =
             rawSignals
                 .groupBy { signal -> signal.bssid }
                 .mapValues { (_, signalList) -> signalList.maxOf { signal -> signal.confidence } }
 
-        // Keep LatLng alongside weight so bounds can be built without re-deriving coordinates.
-        data class MapPoint(
-            val latLng: LatLng,
-            val weight: Double,
-        )
-
         val points =
             scanResults.mapNotNull { result ->
                 val lat = result.latitude ?: return@mapNotNull null
                 val lng = result.longitude ?: return@mapNotNull null
-                // Threat BSSIDs weighted by confidence (0.3–1.0); clean BSSIDs at 0.1.
-                val weight = (threatMap[result.bssid] ?: 0.1f).toDouble()
-                MapPoint(LatLng(lat, lng), weight)
+                LocalHeatmapView.Point(lat, lng, (threatMap[result.bssid] ?: 0.1f).toDouble())
             }
 
         if (points.isEmpty()) {
             if (!isDestroyed) {
                 runOnUiThread {
-                    Toast.makeText(this, "Scan results have no GPS coordinates.", Toast.LENGTH_LONG).show()
+                    localHeatmapOverlay?.clearPoints()
+                    setMapStatus(
+                        "Scan records lack coordinates",
+                        "Stored scan rows exist but none include GPS coordinates yet.",
+                    )
                 }
             }
             return
         }
 
-        val weightedPoints = points.map { p -> WeightedLatLng(p.latLng, p.weight) }
-
-        val heatmapBuilder = HeatmapTileProvider.Builder()
-        heatmapBuilder.weightedData(weightedPoints)
-        heatmapBuilder.radius(50)
-        val provider = heatmapBuilder.build()
-
-        val boundsBuilder = LatLngBounds.Builder()
-        points.forEach { p -> boundsBuilder.include(p.latLng) }
-        val bounds = boundsBuilder.build()
-
         if (!isDestroyed) {
             runOnUiThread {
-                map.addTileOverlay(TileOverlayOptions().tileProvider(provider))
-                try {
-                    map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 64))
-                } catch (e: Exception) {
-                    Log.w(TAG, "Camera bounds fit failed — map may be too small", e)
-                }
+                localHeatmapOverlay?.setPoints(points)
+                setMapStatus(
+                    "Heatmap ready",
+                    "${points.size} GPS-tagged scan points loaded.",
+                )
             }
         }
     }
 
+    private fun setMapStatus(
+        title: String,
+        body: String,
+    ) {
+        statusTitle?.text = title
+        statusBody?.text = body
+        statusPanel?.visibility = View.VISIBLE
+    }
+
     override fun onDestroy() {
         super.onDestroy()
-        // shutdownNow() interrupts any in-flight task; isDestroyed guards prevent
-        // runOnUiThread calls from reaching a destroyed activity.
         executor.shutdownNow()
     }
 

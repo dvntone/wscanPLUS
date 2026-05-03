@@ -53,9 +53,8 @@ android {
 }
 
 secrets {
-    // Reads GOOGLE_MAPS_API_KEY and CROWDSEC_CTI_API_KEY from android/local.properties (gitignored).
+    // Injects CROWDSEC_CTI_API_KEY from local.properties into BuildConfig.
     // Fallback placeholder values from android/secrets.defaults.properties (committed).
-    // Both keys are injected into BuildConfig fields automatically by the plugin.
     propertiesFileName = "local.properties"
     defaultPropertiesFileName = "secrets.defaults.properties"
 }
@@ -71,12 +70,6 @@ dependencies {
     // initialises at runtime.
     implementation(platform("com.google.firebase:firebase-bom:34.11.0"))
     implementation("com.google.firebase:firebase-ai")
-
-    // Google Maps SDK — scan history heatmap + GPS-tagged scan visualisation
-    // API key injected from local.properties via secrets-gradle-plugin (GOOGLE_MAPS_API_KEY)
-    implementation("com.google.android.gms:play-services-maps:20.0.0")
-    // Maps utility library — HeatmapTileProvider for threat-weighted GPS heatmap (#9)
-    implementation("com.google.maps.android:android-maps-utils:3.8.2")
 
     // Kotlin coroutines — required by CrowdSecCtiClient (withContext) and other async flows
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")

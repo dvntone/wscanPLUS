@@ -2,10 +2,13 @@
 
 ## Current State
 - docs/SESSION_STATE.md — architecture decisions, locked choices, current phase + next steps
+- docs/PRODUCT_SPEC.md — product architecture, evidence/output model, language rules, and capability status labels
+- docs/architecture/android-spatial-baseline-implementation-plan.md — Android-first local spatial baseline MVP implementation handoff
 - [docs/SESSION_STATE.md#2026-03-20-handoff-snapshot](docs/SESSION_STATE.md#2026-03-20-handoff-snapshot) — fastest re-entry point for the next AI session
 
 ## Device Testing
 - docs/testing/README.md — testing layout, rules, and per-device organization
+- docs/testing/scan-reliability-matrix.md — required matrix for Wi-Fi/BLE/cell scan behavior across connectivity, FGS, lockscreen, battery, and OEM states
 - docs/testing/shared/38_operational_checklist.md — repeatable adb/device validation checklist
 - docs/testing/shared/50_desktop_adb_handoff.md — host-side adb commands and state checks for future desktop integration
 - docs/testing/devices/motorola-g4-play-2024/README.md — archived prior-device testing context

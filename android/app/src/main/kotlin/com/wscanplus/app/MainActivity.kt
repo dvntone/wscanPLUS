@@ -5,7 +5,6 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -16,57 +15,49 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import com.wscanplus.app.capabilities.DeviceLocationState
 import com.wscanplus.app.privacy.ConsentStore
 
 class MainActivity : Activity() {
     private lateinit var statusView: TextView
     private lateinit var rootLayout: LinearLayout
     private lateinit var actionButton: Button
-    private lateinit var settingsButton: Button
+    private lateinit var scannerCard: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        rootLayout =
-            LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(48, 48, 48, 48)
-            }
-        statusView =
-            TextView(this).apply {
-                text = "wscan+ needs Wi-Fi scan permissions to start the scanner."
-                textSize = 16f
-            }
+        rootLayout = WscanUi.shell(this)
+        WscanUi.header(
+            rootLayout,
+            title = "wscan+",
+            subtitle = "Wireless signal intelligence · readiness · field diagnostics",
+        )
+
+        scannerCard = WscanUi.card(rootLayout)
+        WscanUi.sectionTitle(scannerCard, "Scanner status")
+        statusView = WscanUi.body(scannerCard, "Preparing scanner readiness checks…")
         actionButton =
-            Button(this).apply {
+            WscanUi.actionButton(scannerCard, "Open App Settings") { openAppSettings() }.apply {
                 visibility = View.GONE
             }
-        settingsButton =
-            Button(this).apply {
-                text = "Kismet Settings"
-                setOnClickListener { openKismetSettings() }
-            }
-        val mapButton =
-            Button(this).apply {
-                text = "View Scan Map"
-                setOnClickListener { openScanMap() }
-            }
-        val threatResultsButton =
-            Button(this).apply {
-                text = "View Threat Results"
-                setOnClickListener { openThreatResults() }
-            }
-        val historyButton =
-            Button(this).apply {
-                text = "View Scan History"
-                setOnClickListener { openScanHistory() }
-            }
-        rootLayout.addView(statusView)
-        rootLayout.addView(actionButton)
-        rootLayout.addView(settingsButton)
-        rootLayout.addView(mapButton)
-        rootLayout.addView(threatResultsButton)
-        rootLayout.addView(historyButton)
+
+        val toolsCard = WscanUi.card(rootLayout)
+        WscanUi.sectionTitle(toolsCard, "Field tools")
+        WscanUi.actionButton(toolsCard, "Kismet Settings") { openKismetSettings() }
+        WscanUi.actionButton(toolsCard, "View Scan Map") { openScanMap() }
+        WscanUi.actionButton(toolsCard, "View Threat Results") { openThreatResults() }
+        WscanUi.actionButton(toolsCard, "View Scan History") { openScanHistory() }
+        WscanUi.actionButton(toolsCard, "Diagnostics") { openDiagnostics() }
+
+        val noteCard = WscanUi.card(rootLayout)
+        WscanUi.sectionTitle(noteCard, "Test build")
+        WscanUi.body(
+            noteCard,
+            "Debug artifact build. Google services may use CI placeholders; validate local scanner and UI behavior first.",
+            muted = true,
+        )
+
         setContentView(rootLayout)
 
         if (!ConsentStore(this).isConsentGiven()) {
@@ -80,7 +71,6 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        // Re-check permissions when returning from Settings
         refreshScannerState()
     }
 
@@ -100,14 +90,12 @@ class MainActivity : Activity() {
     }
 
     private fun showPermissionDenied() {
-        statusView.text =
-            "Scanning disabled. Grant Wi-Fi and location permissions in Settings to start."
+        statusView.text = "Scanning disabled. Grant Wi-Fi and location permissions in Settings to start."
         configureActionButton("Open App Settings") { openAppSettings() }
     }
 
     private fun showPreciseLocationRequired() {
-        statusView.text =
-            "Precise location is required for Wi-Fi scanning. Enable it in App Settings."
+        statusView.text = "Precise location is required for Wi-Fi scanning. Enable it in App Settings."
         configureActionButton("Open App Settings") { openAppSettings() }
     }
 
@@ -168,12 +156,10 @@ class MainActivity : Activity() {
             showPreciseLocationRequired()
             return
         }
-        if (isDeviceLocationEnabled().not()) {
+        if (DeviceLocationState.isLocationEnabled(this).not()) {
             showLocationServicesRequired()
             return
         }
-        // Background location missing: start in degraded mode (no GPS sampler, limited to
-        // foreground sessions). Scanner chain still runs with ACCESS_FINE_LOCATION.
         val degraded = requiresBackgroundLocationPrompt()
         startWatchdog(degraded = degraded)
     }
@@ -183,15 +169,8 @@ class MainActivity : Activity() {
             hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) &&
             hasPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION).not()
 
-    private fun showBackgroundLocationRequired() {
-        statusView.text =
-            "Field mode needs 'Allow all the time' location access. Without it, locked-screen and background scanning is unreliable."
-        configureActionButton("Open App Settings") { openAppSettings() }
-    }
-
     private fun showLocationServicesRequired() {
-        statusView.text =
-            "Scanning cannot start until device location services are turned on."
+        statusView.text = "Scanning cannot start until device location services are turned on."
         configureActionButton("Open Location Settings") { openLocationSettings() }
     }
 
@@ -216,18 +195,8 @@ class MainActivity : Activity() {
         startActivity(Intent(this, ScanHistoryActivity::class.java))
     }
 
-    private fun isDeviceLocationEnabled(): Boolean {
-        val locationManager = getSystemService(LocationManager::class.java)
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            locationManager.isLocationEnabled
-        } else {
-            @Suppress("DEPRECATION")
-            Settings.Secure.getInt(
-                contentResolver,
-                Settings.Secure.LOCATION_MODE,
-                Settings.Secure.LOCATION_MODE_OFF,
-            ) != Settings.Secure.LOCATION_MODE_OFF
-        }
+    private fun openDiagnostics() {
+        startActivity(Intent(this, DiagnosticActivity::class.java))
     }
 
     private fun configureActionButton(
@@ -242,9 +211,9 @@ class MainActivity : Activity() {
     private fun startWatchdog(degraded: Boolean = false) {
         statusView.text =
             if (degraded) {
-                "Starting scanner (degraded — fine location only, without background location)..."
+                "Scanner running in degraded mode: foreground fine-location scanning only."
             } else {
-                "Starting scanner..."
+                "Scanner service running. Ready for local field validation."
             }
         actionButton.visibility = View.GONE
         val intent =

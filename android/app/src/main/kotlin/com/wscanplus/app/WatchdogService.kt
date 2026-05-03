@@ -121,6 +121,8 @@ class WatchdogService : Service() {
     private lateinit var ctiCacheRepository: CtiCacheRepository
     private lateinit var retentionManager: RetentionManager
     private lateinit var geminiThreatAnalyzer: GeminiThreatAnalyzer
+
+    @Volatile
     private var capabilityManifest: DeviceCapabilityManifest? = null
     private var barometerSampler: BarometerSampler? = null
 
@@ -131,6 +133,12 @@ class WatchdogService : Service() {
     @Volatile
     var lastDesktopAckSeq: Int = -1
         private set
+
+    @Volatile
+    var latestCellObservations: List<com.wscanplus.app.collection.cell.CellObservation> = emptyList()
+        private set
+
+    private var cellCollector: com.wscanplus.app.collection.cell.CellCollector? = null
     private var helloServerSocket: ServerSocket? = null
     private var helloClientSocket: Socket? = null
     private var helloServerJob: Job? = null
@@ -173,11 +181,26 @@ class WatchdogService : Service() {
         val quotaTracker = SharedPrefsQuotaTracker(applicationContext)
         ctiCacheRepository = CtiCacheRepository(database.ctiCacheDao(), ctiClient, quotaTracker)
         geminiThreatAnalyzer = GeminiThreatAnalyzer(consentStore)
+        val telephonyManager = getSystemService(android.telephony.TelephonyManager::class.java)
+        if (telephonyManager != null) {
+            cellCollector =
+                com.wscanplus.app.collection.cell
+                    .CellCollector(telephonyManager, applicationContext)
+        }
         Log.i(TAG, "Service created")
     }
 
     inner class LocalBinder : Binder() {
         fun getService(): WatchdogService = this@WatchdogService
+
+        val capabilityManifest: DeviceCapabilityManifest?
+            get() = this@WatchdogService.capabilityManifest
+
+        val isDegraded: Boolean
+            get() = this@WatchdogService.degradedMode
+
+        val latestCellObservations: List<com.wscanplus.app.collection.cell.CellObservation>
+            get() = this@WatchdogService.latestCellObservations
     }
 
     private val binder = LocalBinder()
@@ -270,6 +293,10 @@ class WatchdogService : Service() {
                         results = results,
                         filteredSignals = filtered,
                     )
+                    cellCollector?.collect()?.takeIf { it.isNotEmpty() }?.let { observations ->
+                        latestCellObservations = observations
+                        Log.d(TAG, "Cell observations: ${observations.size} tower(s)")
+                    }
                     if (filtered.isNotEmpty()) {
                         val now = System.currentTimeMillis()
                         if (now - lastGeminiAnalysisAtMs >= GEMINI_COOLDOWN_MS &&
@@ -427,6 +454,8 @@ class WatchdogService : Service() {
         barometerSampler?.stop()
         barometerSampler = null
         currentFloorEstimate = null
+        latestCellObservations = emptyList()
+        cellCollector = null
         val sessionId = currentSessionId
         currentSessionId = null
         // stop() must run on a background thread per ScannerChain/StandardScanner threading rule.
@@ -500,6 +529,7 @@ class WatchdogService : Service() {
 
     private fun handleHelloConnection(clientSocket: Socket) {
         helloClientSocket = clientSocket
+        lastDesktopAckSeq = -1
 
         try {
             val seq = helloSeq.getAndIncrement()
@@ -543,14 +573,14 @@ class WatchdogService : Service() {
     }
 
     private fun parseDesktopMessage(line: String) {
-        try {
-            val msg = inboundJson.decodeFromString<DesktopMessageEnvelope>(line)
-            if (msg.type == "ack") {
-                lastDesktopAckSeq = msg.seq
-                Log.d(TAG, "Desktop ack received: seq=${msg.seq}")
+        val msg =
+            parseDesktopMessageLine(line, inboundJson) ?: run {
+                Log.w(TAG, "Failed to parse desktop message")
+                return
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to parse desktop message", e)
+        if (msg.type == "ack") {
+            lastDesktopAckSeq = msg.seq
+            Log.d(TAG, "Desktop ack received: seq=${msg.seq}")
         }
     }
 
@@ -579,15 +609,19 @@ class WatchdogService : Service() {
                     error.message?.contains("closed", ignoreCase = true) == true
             )
 
-    private fun createSession(): Long =
-        database.scanSessionDao().insert(
+    private fun createSession(): Long {
+        val now = System.currentTimeMillis()
+        // Close any sessions left open by a previous crash or forced stop before starting a new one.
+        database.scanSessionDao().closeOrphanedSessions(endedAt = now)
+        return database.scanSessionDao().insert(
             ScanSessionEntity(
-                startedAt = System.currentTimeMillis(),
+                startedAt = now,
                 endedAt = null,
                 environmentType = EnvironmentType.RESIDENTIAL,
                 deviceSerial = buildDeviceIdentifier(),
             ),
         )
+    }
 
     private fun buildDeviceIdentifier(): String = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown-device"
 
@@ -709,9 +743,22 @@ class WatchdogService : Service() {
     }
 
     private fun buildNotification(): android.app.Notification {
+        // Explicit intent to MainActivity — avoids implicit-intent PendingIntent warning.
+        val tapIntent =
+            Intent(applicationContext, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+        val tapPendingIntent =
+            PendingIntent.getActivity(
+                this,
+                1,
+                tapIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
         builder.setContentTitle(if (degradedMode) "wscan+ scanning (degraded)" else "wscan+ scanning")
         builder.setSmallIcon(R.mipmap.ic_launcher)
+        builder.setContentIntent(tapPendingIntent)
         builder.setOngoing(true)
         return builder.build()
     }
@@ -758,6 +805,16 @@ internal data class DesktopMessageEnvelope(
     val type: String,
     val seq: Int = -1,
 )
+
+internal fun parseDesktopMessageLine(
+    line: String,
+    json: Json = Json { ignoreUnknownKeys = true },
+): DesktopMessageEnvelope? =
+    try {
+        json.decodeFromString<DesktopMessageEnvelope>(line)
+    } catch (_: Exception) {
+        null
+    }
 
 internal fun buildWatchdogHelloJson(
     deviceId: String,
