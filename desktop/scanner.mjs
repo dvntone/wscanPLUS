@@ -161,19 +161,25 @@ export function freqToChannel(freqMHz) {
 }
 
 let activeScanPromise = null;
+let activeScanGeneration = null;
+let activeScanRequiresActive = false;
 let scanLoopTimer = null;
 let scanGeneration = 0;
 
-async function runScanAndProcess(generation) {
+async function runScanAndProcess({ generation, requireActive }) {
   const iface = store.state.interface;
   if (!iface) {
     throw new ScanError('No wireless interface configured');
   }
 
+  if (requireActive && (!store.state.scanning || generation !== scanGeneration)) {
+    return [];
+  }
+
   const raw = await runCommand('iw', ['dev', iface, 'scan']);
   const aps = parseScanOutput(raw);
 
-  if (!store.state.scanning || generation !== scanGeneration) {
+  if (requireActive && (!store.state.scanning || generation !== scanGeneration)) {
     return [];
   }
 
@@ -190,11 +196,22 @@ async function runScanAndProcess(generation) {
   return aps;
 }
 
-export async function executeScanCycle() {
-  if (!activeScanPromise) {
-    const generation = scanGeneration;
-    activeScanPromise = runScanAndProcess(generation).finally(() => {
-      activeScanPromise = null;
+export async function executeScanCycle({ requireActive = false } = {}) {
+  const generation = scanGeneration;
+  const canReuseActiveScan =
+    activeScanPromise &&
+    activeScanGeneration === generation &&
+    activeScanRequiresActive === requireActive;
+
+  if (!canReuseActiveScan) {
+    activeScanGeneration = generation;
+    activeScanRequiresActive = requireActive;
+    activeScanPromise = runScanAndProcess({ generation, requireActive }).finally(() => {
+      if (activeScanGeneration === generation && activeScanRequiresActive === requireActive) {
+        activeScanPromise = null;
+        activeScanGeneration = null;
+        activeScanRequiresActive = false;
+      }
     });
   }
   return activeScanPromise;
@@ -211,7 +228,7 @@ function scheduleNextScan() {
 async function scanLoop() {
   if (!store.state.scanning) return;
   try {
-    await executeScanCycle();
+    await executeScanCycle({ requireActive: true });
   } catch (err) {
     store.addError(err);
   } finally {
