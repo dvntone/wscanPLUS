@@ -85,27 +85,85 @@ function setAps(payload) {
   render();
 }
 
-function addRisk(input) {
-  if (!input || typeof input !== 'object') return;
+function normalizeRiskEntry(input) {
+  if (!input || typeof input !== 'object') return null;
   const bssid = normalizeBssid(input.bssid ?? input.BSSID ?? input.mac);
   const severity = normalizeRisk(input.severity ?? input.risk ?? input.level ?? 'watch');
   const confidenceRaw = Number(input.confidence ?? 0);
   const confidence = Number.isFinite(confidenceRaw) ? Math.max(0, Math.min(100, confidenceRaw <= 1 ? confidenceRaw * 100 : confidenceRaw)) : 0;
-  const risk = {
-    id: String(input.id ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`),
+  const reason = String(input.reason ?? input.message ?? (Array.isArray(input.reasons) ? input.reasons.join('; ') : 'Detector event'));
+  const timestamp = normalizeTimestamp(input.timestamp ?? input.ts ?? Date.now());
+
+  return {
+    id: String(input.id ?? `${bssid || 'risk'}:${severity}:${reason}`),
     bssid,
     ssid: String(input.ssid ?? ''),
     severity,
     confidence,
-    reason: String(input.reason ?? input.message ?? (Array.isArray(input.reasons) ? input.reasons.join('; ') : 'Detector event')),
-    timestamp: normalizeTimestamp(input.timestamp ?? input.ts ?? Date.now()),
+    reason,
+    timestamp,
     status: String(input.status ?? 'open'),
   };
-  state.risks.unshift(risk);
-  state.risks = state.risks.slice(0, 80);
-  const ap = state.aps.get(bssid);
-  if (ap && (severityRank[severity] ?? 0) > (severityRank[ap.risk] ?? 0)) state.aps.set(bssid, { ...ap, risk: severity });
-  addEvent({ level: severity === 'high' ? 'HIGH' : severity === 'watch' ? 'WATCH' : 'INFO', source: 'detector', message: `${risk.reason}${bssid ? ` (${bssid})` : ''}` }, false);
+}
+
+function riskKey(risk) {
+  return `${risk.bssid}:${risk.severity}`;
+}
+
+function applyRiskToAp(risk) {
+  const ap = state.aps.get(risk.bssid);
+  if (ap && (severityRank[risk.severity] ?? 0) > (severityRank[ap.risk] ?? 0)) {
+    state.aps.set(risk.bssid, { ...ap, risk: risk.severity });
+  }
+}
+
+function emitRiskEvent(risk) {
+  addEvent({
+    level: risk.severity === 'high' ? 'HIGH' : risk.severity === 'watch' ? 'WATCH' : 'INFO',
+    source: 'detector',
+    message: `${risk.reason}${risk.bssid ? ` (${risk.bssid})` : ''}`,
+  }, false);
+}
+
+function addRisk(input, rerender = true) {
+  const risk = normalizeRiskEntry(input);
+  if (!risk) return;
+  const key = riskKey(risk);
+  const existingIndex = state.risks.findIndex((item) => riskKey(item) === key);
+  const isNew = existingIndex === -1;
+  if (isNew) {
+    state.risks.unshift(risk);
+  } else {
+    state.risks[existingIndex] = risk;
+  }
+  state.risks = state.risks
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, 80);
+  applyRiskToAp(risk);
+  if (isNew) emitRiskEvent(risk);
+  if (rerender) render();
+}
+
+function setRiskSnapshot(payload) {
+  const list = Array.isArray(payload) ? payload : Array.isArray(payload?.risks) ? payload.risks : Array.isArray(payload?.events) ? payload.events : payload ? [payload] : [];
+  const existingKeys = new Set(state.risks.map(riskKey));
+  const nextRisks = new Map();
+
+  for (const input of list) {
+    const risk = normalizeRiskEntry(input);
+    if (!risk) continue;
+    nextRisks.set(riskKey(risk), risk);
+  }
+
+  state.risks = [...nextRisks.values()]
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, 80);
+
+  for (const risk of state.risks) {
+    applyRiskToAp(risk);
+    if (!existingKeys.has(riskKey(risk))) emitRiskEvent(risk);
+  }
+
   render();
 }
 
@@ -419,10 +477,7 @@ function wireControls() {
 
 function wireSubscriptions() {
   subscribe('onAps', setAps);
-  subscribe('onRiskLog', (payload) => {
-    const risks = Array.isArray(payload) ? payload : Array.isArray(payload?.risks) ? payload.risks : Array.isArray(payload?.events) ? payload.events : [payload];
-    for (const risk of risks) addRisk(risk);
-  });
+  subscribe('onRiskLog', setRiskSnapshot);
   subscribe('onScanState', (payload) => { if (payload && typeof payload === 'object') { state.scanState = { ...state.scanState, ...payload }; render(); } });
   subscribe('onCompanionUpdate', (payload) => { if (payload && typeof payload === 'object') { state.companion = { ...state.companion, ...payload }; addEvent({ level: 'INFO', source: 'companion', message: `update from ${payload.deviceId ?? 'device'}` }, false); render(); } });
   subscribe('onAppError', (payload) => addEvent({ level: 'ERROR', source: 'app', message: payload?.message ?? payload }));
