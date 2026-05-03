@@ -1,6 +1,36 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { freqToChannel, parseIwDevOutput, parseScanOutput } from './scanner.mjs';
+import {
+  executeScanCycle,
+  freqToChannel,
+  parseIwDevOutput,
+  parseScanOutput,
+  resetScannerForTests,
+  setCommandRunnerForTests,
+  startScanning,
+  stopScanning,
+} from './scanner.mjs';
+import { store } from './store.mjs';
+
+const SCAN_OUTPUT = `
+BSS aa:bb:cc:dd:ee:ff(on wlan0)
+	freq: 2412
+	signal: -42.00 dBm
+	SSID: testnet
+	RSN:
+`;
+
+function resetStore() {
+  store.update({ scanning: false, interface: null, scanIntervalMs: 30_000 });
+  store.state.aps.clear();
+  store.state.riskLog = [];
+  store.state.errors = [];
+}
+
+test.afterEach(() => {
+  resetScannerForTests();
+  resetStore();
+});
 
 test('parseIwDevOutput extracts interface names', () => {
   const raw = `
@@ -49,4 +79,57 @@ test('freqToChannel maps common Wi-Fi frequencies', () => {
   assert.equal(freqToChannel(5180), 36);
   assert.equal(freqToChannel(5955), 1);
   assert.equal(freqToChannel(1234), 0);
+});
+
+test('manual scan can mutate store while continuous scanning is stopped', async () => {
+  resetStore();
+  store.update({ scanning: false, interface: 'wlan0' });
+  setCommandRunnerForTests(async () => SCAN_OUTPUT);
+
+  const aps = await executeScanCycle();
+
+  assert.equal(aps.length, 1);
+  assert.equal(store.state.aps.size, 1);
+  assert.equal(store.state.aps.get('aa:bb:cc:dd:ee:ff')?.ssid, 'testnet');
+});
+
+test('active scan discards stale results after stop before store mutation', async () => {
+  resetStore();
+  let resolveScan;
+  const scanPromise = new Promise((resolve) => {
+    resolveScan = resolve;
+  });
+  setCommandRunnerForTests(async () => scanPromise);
+  await startScanning('wlan0');
+
+  stopScanning();
+  resolveScan(SCAN_OUTPUT);
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(store.state.scanning, false);
+  assert.equal(store.state.aps.size, 0);
+});
+
+test('restart starts a fresh scan instead of waiting on stale in-flight promise', async () => {
+  resetStore();
+  let firstResolve;
+  let callCount = 0;
+  setCommandRunnerForTests(async () => {
+    callCount += 1;
+    if (callCount === 1) {
+      return new Promise((resolve) => {
+        firstResolve = resolve;
+      });
+    }
+    return SCAN_OUTPUT;
+  });
+
+  await startScanning('wlan0');
+  stopScanning();
+  await startScanning('wlan0');
+  firstResolve(SCAN_OUTPUT);
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(callCount, 2);
+  assert.equal(store.state.aps.size, 1);
 });
