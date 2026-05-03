@@ -2,6 +2,8 @@ import { EventEmitter } from 'node:events';
 
 const RISK_LOG_MAX = 1000;
 const RISK_LOG_TTL_MS = 60_000;
+const CELLULAR_LOG_MAX = 200;
+const CELLULAR_TTL_MS = 5 * 60_000;
 
 class Store extends EventEmitter {
   #state;
@@ -16,6 +18,8 @@ class Store extends EventEmitter {
       riskLog: [],
       errors: [],
       companionDevices: new Map(),
+      cellularThreats: [],
+      rayhunterStats: null,
     };
   }
 
@@ -60,6 +64,37 @@ class Store extends EventEmitter {
     }
 
     this.emit('riskLog', this.#state.riskLog);
+  }
+
+  addCellularThreats(entries) {
+    const now = Date.now();
+
+    this.#state.cellularThreats = this.#state.cellularThreats.filter(
+      (e) => now - e.ts < CELLULAR_TTL_MS,
+    );
+
+    for (const entry of entries) {
+      const key = `${entry.recordingName}:${entry.eventType}:${entry.message}`;
+      const idx = this.#state.cellularThreats.findIndex(
+        (e) => `${e.recordingName}:${e.eventType}:${e.message}` === key,
+      );
+      if (idx >= 0) {
+        this.#state.cellularThreats[idx] = { ...entry, ts: now };
+      } else {
+        this.#state.cellularThreats.push({ ...entry, ts: now });
+      }
+    }
+
+    if (this.#state.cellularThreats.length > CELLULAR_LOG_MAX) {
+      this.#state.cellularThreats = this.#state.cellularThreats.slice(-CELLULAR_LOG_MAX);
+    }
+
+    this.emit('cellularThreats', this.#state.cellularThreats);
+  }
+
+  updateRayhunterStats(stats) {
+    this.#state.rayhunterStats = stats;
+    this.emit('rayhunterStats', stats);
   }
 
   addError(err) {

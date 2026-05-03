@@ -24,6 +24,10 @@ const wscanApi = {
   onScanState: (callback) => registerListener('scan:statechange', callback, 'onScanState'),
   onCompanionUpdate: (callback) => registerListener('companion:update', callback, 'onCompanionUpdate'),
   onAppError: (callback) => registerListener('app:error', callback, 'onAppError'),
+  getCellularThreats: () => ipcRenderer.invoke('cellular:getThreats'),
+  getCellularStats: () => ipcRenderer.invoke('cellular:getStats'),
+  onCellularThreats: (cb) => registerListener('cellular:threats', cb, 'onCellularThreats'),
+  onCellularStats: (cb) => registerListener('cellular:stats', cb, 'onCellularStats'),
 };
 
 function registerListener(channel, callback, label) {

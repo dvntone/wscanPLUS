@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AdbTransport } from './adb/AdbTransport.js';
+import { RayhunterTransport } from './rayhunter/RayhunterTransport.js';
 import {
   PRELIGHT_CLASSIFICATIONS,
   describeDeviceReadiness,
@@ -27,6 +28,7 @@ const COMPANION_PORT = parseInt(process.env.COMPANION_PORT ?? '47392', 10);
 const COMPANION_HOST = process.env.COMPANION_HOST ?? '127.0.0.1';
 
 let adbTransport;
+let rayhunterTransport;
 let companionServer;
 let mainWindow = null;
 
@@ -195,6 +197,32 @@ async function initAdbTransport() {
   }
 }
 
+async function initRayhunterTransport() {
+  rayhunterTransport = new RayhunterTransport();
+
+  rayhunterTransport.on('connect', ({ url }) => {
+    console.info(`[rayhunter] Connected at ${url}`);
+  });
+
+  rayhunterTransport.on('disconnect', ({ url }) => {
+    console.info(`[rayhunter] Disconnected from ${url}`);
+  });
+
+  rayhunterTransport.on('threats', ({ entries }) => {
+    store.addCellularThreats(entries);
+  });
+
+  rayhunterTransport.on('stats', (stats) => {
+    store.updateRayhunterStats(stats);
+  });
+
+  rayhunterTransport.on('error', (e) => {
+    console.warn('[rayhunter] poll error', e.message);
+  });
+
+  await rayhunterTransport.init();
+}
+
 function pushToRenderer(channel, data) {
   if (
     mainWindow !== null &&
@@ -275,6 +303,11 @@ store.on('change', (state) =>
   }),
 );
 store.on('appError', (entry) => pushToRenderer('app:error', entry));
+store.on('cellularThreats', (t) => pushToRenderer('cellular:threats', t));
+store.on('rayhunterStats', (s) => pushToRenderer('cellular:stats', s));
+
+ipcMain.handle('cellular:getThreats', () => store.state.cellularThreats);
+ipcMain.handle('cellular:getStats', () => store.state.rayhunterStats);
 
 ipcMain.handle('adb:listDevices', async () => {
   if (!adbTransport) return [];
@@ -427,6 +460,7 @@ ipcMain.handle('sessions:importArtifact', async () => {
 app.whenReady().then(async () => {
   createWindow();
   await initAdbTransport();
+  await initRayhunterTransport();
 
   const server = ensureCompanionServer();
   try {
@@ -442,6 +476,7 @@ app.whenReady().then(async () => {
 
 app.on('before-quit', () => {
   stopScanning();
+  rayhunterTransport?.stop();
   companionServer?.stop().catch((error) => {
     console.error('[companion] Failed to stop server during quit', error);
   });
@@ -452,6 +487,7 @@ app.on('before-quit', () => {
 
 app.on('window-all-closed', () => {
   stopScanning();
+  rayhunterTransport?.stop();
   companionServer?.stop().catch((error) => {
     console.error('[companion] Failed to stop server', error);
   });
