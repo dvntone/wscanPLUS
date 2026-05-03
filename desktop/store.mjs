@@ -7,6 +7,8 @@ const CELLULAR_TTL_MS = 5 * 60_000;
 
 class Store extends EventEmitter {
   #state;
+  /** @type {import('./ntfy/NtfyPublisher.js').NtfyPublisher | null} */
+  #ntfyPublisher = null;
 
   constructor() {
     super();
@@ -25,6 +27,10 @@ class Store extends EventEmitter {
 
   get state() {
     return this.#state;
+  }
+
+  setNtfyPublisher(publisher) {
+    this.#ntfyPublisher = publisher;
   }
 
   update(patch) {
@@ -56,6 +62,14 @@ class Store extends EventEmitter {
         this.#state.riskLog[idx] = { ...entry, ts: now };
       } else {
         this.#state.riskLog.push({ ...entry, ts: now });
+        if (entry.severity === 'high') {
+          void this.#ntfyPublisher?.publish({
+            title: `WiFi Threat: ${entry.ssid || entry.bssid}`,
+            message: entry.reasons?.[0] ?? entry.bssid,
+            priority: 4,
+            tags: ['warning', 'wifi'],
+          });
+        }
       }
     }
 
@@ -82,6 +96,14 @@ class Store extends EventEmitter {
         this.#state.cellularThreats[idx] = { ...entry, ts: now };
       } else {
         this.#state.cellularThreats.push({ ...entry, ts: now });
+        if (entry.severity === 'High' || entry.severity === 'Medium') {
+          void this.#ntfyPublisher?.publish({
+            title: `Cell Threat: ${entry.eventType}`,
+            message: entry.message,
+            priority: entry.severity === 'High' ? 5 : 4,
+            tags: ['warning', 'cellular'],
+          });
+        }
       }
     }
 

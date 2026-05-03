@@ -28,6 +28,8 @@ const wscanApi = {
   getCellularStats: () => ipcRenderer.invoke('cellular:getStats'),
   onCellularThreats: (cb) => registerListener('cellular:threats', cb, 'onCellularThreats'),
   onCellularStats: (cb) => registerListener('cellular:stats', cb, 'onCellularStats'),
+  getNtfyTopic: () => ipcRenderer.invoke('ntfy:getTopic'),
+  setNtfyTopic: (topic) => ipcRenderer.invoke('ntfy:setTopic', topic),
 };
 
 function registerListener(channel, callback, label) {

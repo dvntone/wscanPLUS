@@ -31,6 +31,7 @@ import com.wscanplus.app.kismet.KismetConfigStore
 import com.wscanplus.app.kismet.KismetGpsClient
 import com.wscanplus.app.location.FusedLocationSampler
 import com.wscanplus.app.location.LocationSample
+import com.wscanplus.app.notification.NtfyNotifier
 import com.wscanplus.app.privacy.ConsentStore
 import com.wscanplus.app.sensor.BarometerSampler
 import com.wscanplus.app.sensor.FloorEstimate
@@ -139,6 +140,7 @@ class WatchdogService : Service() {
         private set
 
     private var cellCollector: com.wscanplus.app.collection.cell.CellCollector? = null
+    private var ntfyNotifier: NtfyNotifier? = null
     private var helloServerSocket: ServerSocket? = null
     private var helloClientSocket: Socket? = null
     private var helloServerJob: Job? = null
@@ -187,6 +189,7 @@ class WatchdogService : Service() {
                 com.wscanplus.app.collection.cell
                     .CellCollector(telephonyManager, applicationContext)
         }
+        ntfyNotifier = NtfyNotifier(applicationContext)
         Log.i(TAG, "Service created")
     }
 
@@ -298,6 +301,13 @@ class WatchdogService : Service() {
                         Log.d(TAG, "Cell observations: ${observations.size} tower(s)")
                     }
                     if (filtered.isNotEmpty()) {
+                        if (lastDesktopAckSeq == -1) {
+                            val topSignal = filtered.first()
+                            ntfyNotifier?.notify(
+                                title = "WiFi Threat: ${topSignal.bssid}",
+                                message = topSignal.reasons?.firstOrNull() ?: topSignal.bssid,
+                            )
+                        }
                         val now = System.currentTimeMillis()
                         if (now - lastGeminiAnalysisAtMs >= GEMINI_COOLDOWN_MS &&
                             geminiAnalysisInFlight.compareAndSet(false, true)
@@ -456,6 +466,7 @@ class WatchdogService : Service() {
         currentFloorEstimate = null
         latestCellObservations = emptyList()
         cellCollector = null
+        ntfyNotifier = null
         val sessionId = currentSessionId
         currentSessionId = null
         // stop() must run on a background thread per ScannerChain/StandardScanner threading rule.

@@ -6,6 +6,12 @@ import { fileURLToPath } from 'node:url';
 import { AdbTransport } from './adb/AdbTransport.js';
 import { RayhunterTransport } from './rayhunter/RayhunterTransport.js';
 import {
+  NtfyPublisher,
+  generateTopic,
+  loadTopic,
+  saveTopic,
+} from './ntfy/NtfyPublisher.js';
+import {
   PRELIGHT_CLASSIFICATIONS,
   describeDeviceReadiness,
   parseCompanionPackagePath,
@@ -29,6 +35,7 @@ const COMPANION_HOST = process.env.COMPANION_HOST ?? '127.0.0.1';
 
 let adbTransport;
 let rayhunterTransport;
+let ntfyPublisher;
 let companionServer;
 let mainWindow = null;
 
@@ -197,6 +204,18 @@ async function initAdbTransport() {
   }
 }
 
+async function initNtfyPublisher() {
+  const configDir = app.getPath('userData');
+  const existingTopic = await loadTopic(configDir);
+  const topic = existingTopic ?? generateTopic();
+  if (!existingTopic) {
+    await saveTopic(configDir, topic);
+  }
+  ntfyPublisher = new NtfyPublisher({ topic });
+  store.setNtfyPublisher(ntfyPublisher);
+  console.info(`[ntfy] Topic: ${topic}`);
+}
+
 async function initRayhunterTransport() {
   rayhunterTransport = new RayhunterTransport();
 
@@ -308,6 +327,12 @@ store.on('rayhunterStats', (s) => pushToRenderer('cellular:stats', s));
 
 ipcMain.handle('cellular:getThreats', () => store.state.cellularThreats);
 ipcMain.handle('cellular:getStats', () => store.state.rayhunterStats);
+
+ipcMain.handle('ntfy:getTopic', () => ntfyPublisher?.topic ?? null);
+ipcMain.handle('ntfy:setTopic', async (_event, topic) => {
+  ntfyPublisher?.setTopic(topic);
+  await saveTopic(app.getPath('userData'), topic);
+});
 
 ipcMain.handle('adb:listDevices', async () => {
   if (!adbTransport) return [];
@@ -461,6 +486,7 @@ app.whenReady().then(async () => {
   createWindow();
   await initAdbTransport();
   await initRayhunterTransport();
+  await initNtfyPublisher();
 
   const server = ensureCompanionServer();
   try {

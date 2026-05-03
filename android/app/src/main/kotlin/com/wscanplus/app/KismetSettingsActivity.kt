@@ -15,6 +15,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.wscanplus.app.kismet.KismetConfig
 import com.wscanplus.app.kismet.KismetConfigStore
+import com.wscanplus.app.notification.NtfyNotifier
 import com.wscanplus.app.privacy.ConsentStore
 
 class KismetSettingsActivity : Activity() {
@@ -22,6 +23,7 @@ class KismetSettingsActivity : Activity() {
     private lateinit var baseUrlInput: EditText
     private lateinit var tokenInput: EditText
     private lateinit var consentCheckbox: CheckBox
+    private lateinit var ntfyTopicInput: EditText
     private lateinit var statusView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,6 +31,7 @@ class KismetSettingsActivity : Activity() {
 
         val config = KismetConfigStore(this).load()
         val consentGiven = ConsentStore(this).isConsentGiven()
+        val ntfyTopic = NtfyNotifier(this).loadTopic() ?: ""
 
         val root =
             LinearLayout(this).apply {
@@ -63,6 +66,7 @@ class KismetSettingsActivity : Activity() {
                 text = "Allow external threat intelligence API calls (CrowdSec CTI)"
                 isChecked = consentGiven
             }
+        ntfyTopicInput = buildInput("ntfy topic (optional)", ntfyTopic)
         statusView =
             TextView(this).apply {
                 text =
@@ -80,6 +84,7 @@ class KismetSettingsActivity : Activity() {
         root.addView(baseUrlInput)
         root.addView(tokenInput)
         root.addView(consentCheckbox)
+        root.addView(ntfyTopicInput)
         root.addView(statusView)
         root.addView(saveButton)
         setContentView(scrollView)
@@ -101,6 +106,11 @@ class KismetSettingsActivity : Activity() {
 
     private fun saveConfig() {
         ConsentStore(this).setConsentGiven(consentCheckbox.isChecked)
+
+        val ntfyTopic = ntfyTopicInput.text.toString().trim()
+        if (ntfyTopic.isNotEmpty()) {
+            NtfyNotifier(this).saveTopic(ntfyTopic)
+        }
 
         val config =
             KismetConfig(
