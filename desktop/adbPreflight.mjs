@@ -57,7 +57,7 @@ export function parseCompanionPackagePath(output, packageName) {
   return {
     status: 'missing',
     packageName,
-    versionName: '',
+    versionName,
     versionCode: '',
   };
 }
@@ -176,6 +176,8 @@ export const PREFLIGHT_CLASSIFICATIONS = {
       'Connected devices are not in a normal ADB session state. Put at least one device into the OS with USB debugging enabled and retry.',
   },
 };
+
+export const PRELIGHT_CLASSIFICATIONS = PREFLIGHT_CLASSIFICATIONS;
 
 export function classifyPreflight(result) {
   if (result.ok === false) {
