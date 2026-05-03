@@ -50,10 +50,10 @@ class WepOpenHeuristicTest {
     }
 
     @Test
-    fun `wpa network returns confidence 0_2`() {
+    fun `wpa network returns confidence 0_3`() {
         val signal: ThreatSignal? = heuristic.evaluate(scanInput("[WPA-PSK-TKIP]"), emptyContext)
         assertNotNull(signal)
-        assertEquals(0.2f, signal!!.confidence)
+        assertEquals(0.3f, signal!!.confidence)
         assertTrue(signal.reasons[0].contains("deprecated"))
     }
 

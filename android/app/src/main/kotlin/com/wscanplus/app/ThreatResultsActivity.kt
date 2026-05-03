@@ -30,41 +30,33 @@ import java.util.concurrent.Executors
 class ThreatResultsActivity : Activity() {
     private val executor = Executors.newSingleThreadExecutor()
     private lateinit var contentLayout: LinearLayout
+    private lateinit var exportButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         title = "Threat Results"
 
-        val scrollView = ScrollView(this)
+        val root = WscanUi.shell(this)
+        WscanUi.header(root, "Threat Results", "Recent scan sessions with persisted Gemini narratives and local threat context")
+        val scrollView = ScrollView(this).apply { isFillViewport = true }
         contentLayout =
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(dp(20), dp(20), dp(20), dp(20))
             }
 
-        contentLayout.addView(
-            TextView(this).apply {
-                text = "Threat Results"
-                textSize = 24f
-                setTypeface(typeface, Typeface.BOLD)
-            },
-        )
-        contentLayout.addView(
-            TextView(this).apply {
-                text = "Recent scan sessions with persisted Gemini narratives and local threat context."
-                textSize = 14f
-                setPadding(0, dp(8), 0, dp(16))
-            },
-        )
-
-        val exportButton = Button(this)
-        exportButton.text = "Export JSON"
-        exportButton.setOnClickListener { exportJson(exportButton) }
-        contentLayout.addView(exportButton)
+        exportButton = WscanUi.actionButton(contentLayout, "Export JSON") { exportJson() }
 
         scrollView.addView(contentLayout)
-        setContentView(scrollView)
+        root.addView(
+            scrollView,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f,
+            ),
+        )
+        setContentView(root)
 
         loadThreatResults()
     }
@@ -106,12 +98,8 @@ class ThreatResultsActivity : Activity() {
 
     private fun renderSummaries(summaries: List<SessionThreatSummary>) {
         if (summaries.isEmpty()) {
-            contentLayout.addView(
-                TextView(this).apply {
-                    text = "No scan sessions found yet."
-                    textSize = 16f
-                },
-            )
+            val card = WscanUi.card(contentLayout)
+            WscanUi.body(card, "No scan sessions found yet.", muted = true)
             return
         }
 
@@ -129,8 +117,8 @@ class ThreatResultsActivity : Activity() {
                     GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
                         cornerRadius = dp(16).toFloat()
-                        setColor(0xFFF6F4EE.toInt())
-                        setStroke(dp(1), 0xFFCCBFA3.toInt())
+                        setColor(WscanUi.COLOR_CARD)
+                        setStroke(dp(1), WscanUi.COLOR_CARD_ALT)
                     }
             }
 
@@ -213,6 +201,7 @@ class ThreatResultsActivity : Activity() {
         TextView(this).apply {
             this.text = text
             textSize = 18f
+            setTextColor(WscanUi.COLOR_TEXT)
             setTypeface(typeface, Typeface.BOLD)
         }
 
@@ -220,6 +209,7 @@ class ThreatResultsActivity : Activity() {
         TextView(this).apply {
             this.text = text
             textSize = 13f
+            setTextColor(WscanUi.COLOR_ACCENT)
             setTypeface(typeface, Typeface.BOLD)
             setPadding(0, dp(12), 0, dp(6))
         }
@@ -228,6 +218,7 @@ class ThreatResultsActivity : Activity() {
         TextView(this).apply {
             this.text = text
             textSize = 14f
+            setTextColor(WscanUi.COLOR_TEXT)
             setLineSpacing(0f, 1.15f)
             setPadding(0, 0, 0, dp(6))
         }
@@ -236,7 +227,7 @@ class ThreatResultsActivity : Activity() {
         TextView(this).apply {
             this.text = text
             textSize = 12f
-            alpha = 0.75f
+            setTextColor(WscanUi.COLOR_MUTED)
             setPadding(0, 0, 0, dp(4))
         }
 
@@ -251,13 +242,14 @@ class ThreatResultsActivity : Activity() {
                 TextView(this).apply {
                     text = label
                     textSize = 12f
+                    setTextColor(WscanUi.COLOR_TEXT)
                     setPadding(dp(10), dp(6), dp(10), dp(6))
                     background =
                         GradientDrawable().apply {
                             shape = GradientDrawable.RECTANGLE
                             cornerRadius = dp(999).toFloat()
-                            setColor(0xFFE3E8D8.toInt())
-                            setStroke(dp(1), 0xFFB6C29A.toInt())
+                            setColor(WscanUi.COLOR_CARD_ALT)
+                            setStroke(dp(1), WscanUi.COLOR_ACCENT)
                         }
                     if (index < labels.lastIndex) {
                         val lp =
@@ -287,9 +279,9 @@ class ThreatResultsActivity : Activity() {
         }
     }
 
-    private fun exportJson(button: Button) {
-        button.isEnabled = false
-        button.text = "Exporting…"
+    private fun exportJson() {
+        exportButton.isEnabled = false
+        exportButton.text = "Exporting…"
         executor.execute {
             try {
                 val file = ScanDataExporter(applicationContext).export()
@@ -306,16 +298,16 @@ class ThreatResultsActivity : Activity() {
                     intent.putExtra(Intent.EXTRA_STREAM, uri)
                     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     startActivity(Intent.createChooser(intent, "Export scan data"))
-                    button.text = "Export JSON"
-                    button.isEnabled = true
+                    exportButton.text = "Export JSON"
+                    exportButton.isEnabled = true
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Export failed", e)
                 if (isDestroyed) return@execute
                 runOnUiThread {
                     Toast.makeText(this, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
-                    button.text = "Export JSON"
-                    button.isEnabled = true
+                    exportButton.text = "Export JSON"
+                    exportButton.isEnabled = true
                 }
             }
         }

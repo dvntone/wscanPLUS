@@ -74,7 +74,7 @@ class ScanMapActivity : Activity() {
 
         setMapStatus(
             "Google Maps required",
-            "Custom local heatmap rendering is disabled here because Android mapping for this project must remain Google Maps-based until the authoritative docs are updated.",
+            "Custom local heatmap rendering remains disabled here because Android mapping is locked to Google Maps until the authoritative docs are updated.",
         )
     }
 
