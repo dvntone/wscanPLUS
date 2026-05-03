@@ -57,7 +57,7 @@ export function parseCompanionPackagePath(output, packageName) {
   return {
     status: 'missing',
     packageName,
-    versionName,
+    versionName: '',
     versionCode: '',
   };
 }
