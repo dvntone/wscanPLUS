@@ -73,8 +73,8 @@ class ScanMapActivity : Activity() {
         localHeatmapOverlay = findViewById(R.id.local_heatmap_overlay)
 
         setMapStatus(
-            "Loading heatmap",
-            "Loading locally stored GPS-tagged scan data while Google Maps integration remains the authoritative map target.",
+            "Google Maps required",
+            "Custom local heatmap rendering remains disabled here because Android mapping is locked to Google Maps until the authoritative docs are updated.",
         )
     }
 
@@ -82,7 +82,6 @@ class ScanMapActivity : Activity() {
         super.onStart()
         val bindIntent = Intent(this, WatchdogService::class.java)
         isServiceBound = bindService(bindIntent, serviceConnection, 0)
-        loadHeatmap()
     }
 
     override fun onStop() {
