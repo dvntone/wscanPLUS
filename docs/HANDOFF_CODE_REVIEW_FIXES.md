@@ -16,6 +16,7 @@
 - Fixed `desktop/renderer.mjs` risk-log handling so emitted snapshots replace/dedupe local risk state and render once, instead of appending every snapshot entry repeatedly.
 - Raised WPA heuristic confidence from `0.2f` to `0.3f` so the WPA warning path can actually pass the default `PolicyGate` floor.
 - Wired `ScanMapActivity.loadHeatmap()` from `onStart()` instead of marking implemented code unused.
+- Refactored `ScanHistoryActivity` and `ThreatResultsActivity` onto the shared `WscanUi.shell()` / `WscanUi.header()` path so they inherit the same window preparation and system-inset handling as `DiagnosticActivity`.
 
 ---
 
@@ -48,7 +49,6 @@ If WPA should be a low-priority warning, it must meet the current `PolicyGate` f
   - `helloServerSocket`
   - `helloClientSocket`
   - `lastGeminiAnalysisAtMs`
-- Refactor `ScanHistoryActivity` and `ThreatResultsActivity` to use `WscanUi.shell()`, `WscanUi.header()`, `WscanUi.prepareWindow()`, and `WscanUi.applySystemInsets()` following the `DiagnosticActivity` pattern.
 - Run required checks:
   - `cd desktop && npm test && npm run lint`
   - `cd android && ./gradlew :core:test :app:ktlintCheck :core:ktlintCheck`
