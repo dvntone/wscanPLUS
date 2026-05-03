@@ -162,8 +162,9 @@ export function freqToChannel(freqMHz) {
 
 let activeScanPromise = null;
 let scanLoopTimer = null;
+let scanGeneration = 0;
 
-async function runScanAndProcess() {
+async function runScanAndProcess(generation) {
   const iface = store.state.interface;
   if (!iface) {
     throw new ScanError('No wireless interface configured');
@@ -171,6 +172,10 @@ async function runScanAndProcess() {
 
   const raw = await runCommand('iw', ['dev', iface, 'scan']);
   const aps = parseScanOutput(raw);
+
+  if (!store.state.scanning || generation !== scanGeneration) {
+    return [];
+  }
 
   if (aps.length > 0) {
     store.addAps(aps);
@@ -187,7 +192,8 @@ async function runScanAndProcess() {
 
 export async function executeScanCycle() {
   if (!activeScanPromise) {
-    activeScanPromise = runScanAndProcess().finally(() => {
+    const generation = scanGeneration;
+    activeScanPromise = runScanAndProcess(generation).finally(() => {
       activeScanPromise = null;
     });
   }
@@ -232,11 +238,13 @@ export async function startScanning(iface) {
     resolvedIface = ifaces[0];
   }
 
+  scanGeneration += 1;
   store.update({ scanning: true, interface: resolvedIface });
   void scanLoop();
 }
 
 export function stopScanning() {
+  scanGeneration += 1;
   store.update({ scanning: false });
   clearTimeout(scanLoopTimer);
   scanLoopTimer = null;
