@@ -46,7 +46,7 @@ If WPA should be a low-priority warning, it must meet the current `PolicyGate` f
 
 - Run required checks:
   - `cd desktop && npm test && npm run lint`
-  - `cd android && ./gradlew :core:test :app:ktlintCheck :core:ktlintCheck`
+  - `cd android && ./gradlew :core:test :app:assembleDebug :app:ktlintCheck :core:ktlintCheck`
 
 ---
 

@@ -115,6 +115,20 @@ test('active scan discards stale results after stop before store mutation', asyn
   assert.equal(store.state.aps.size, 0);
 });
 
+test('manual scan during active continuous scan reuses the in-flight promise', async () => {
+  resetStore();
+  let callCount = 0;
+  setCommandRunnerForTests(async () => {
+    callCount += 1;
+    return SCAN_OUTPUT;
+  });
+
+  await startScanning('wlan0');
+  await executeScanCycle();
+
+  assert.equal(callCount, 1);
+});
+
 test('restart starts a fresh scan instead of waiting on stale in-flight promise', async () => {
   resetStore();
   let firstResolve;

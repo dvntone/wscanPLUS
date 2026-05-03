@@ -216,8 +216,7 @@ export async function executeScanCycle({ requireActive = false } = {}) {
   const generation = scanGeneration;
   const canReuseActiveScan =
     activeScanPromise &&
-    activeScanGeneration === generation &&
-    activeScanRequiresActive === requireActive;
+    activeScanGeneration === generation;
 
   if (!canReuseActiveScan) {
     activeScanGeneration = generation;
