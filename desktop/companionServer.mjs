@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { WebSocketServer } from 'ws';
 
 const MAX_STALE_MS = 2 * 60 * 1000;
@@ -22,6 +22,28 @@ export function isSequenceMonotonic(deviceId, sequence, sessions) {
 
 function newSession() {
   return { sequence: -1, rateCount: 0, rateWindowStart: Date.now() };
+}
+
+function formatAddress(addressInfo) {
+  if (!addressInfo || typeof addressInfo === 'string') {
+    return addressInfo ?? null;
+  }
+
+  const host = addressInfo.family === 'IPv6'
+    ? `[${addressInfo.address}]`
+    : addressInfo.address;
+  return `${host}:${addressInfo.port}`;
+}
+
+function tokenMatches(candidate, expected) {
+  if (typeof candidate !== 'string' || typeof expected !== 'string') {
+    return false;
+  }
+
+  const candidateBuffer = Buffer.from(candidate);
+  const expectedBuffer = Buffer.from(expected);
+  return candidateBuffer.length === expectedBuffer.length &&
+    timingSafeEqual(candidateBuffer, expectedBuffer);
 }
 
 export class CompanionServer {
@@ -48,7 +70,7 @@ export class CompanionServer {
   }
 
   get address() {
-    return this.#httpServer?.address() ?? null;
+    return formatAddress(this.#httpServer?.address() ?? null);
   }
 
   start(port = 0, host = '127.0.0.1') {
@@ -94,8 +116,7 @@ export class CompanionServer {
         if (
           msg.type !== 'auth' ||
           !this.#token ||
-          typeof msg.token !== 'string' ||
-          msg.token !== this.#token
+          !tokenMatches(msg.token, this.#token)
         ) {
           ws.close(1008, 'Authentication failed');
           return;
