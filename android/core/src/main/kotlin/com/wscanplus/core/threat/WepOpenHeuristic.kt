@@ -12,7 +12,7 @@ class WepOpenHeuristic : Heuristic {
             when (security) {
                 SecurityType.OPEN -> 0.4f
                 SecurityType.WEP -> 0.6f
-                SecurityType.WPA -> 0.2f
+                SecurityType.WPA -> 0.3f
                 SecurityType.WPA2, SecurityType.OWE, SecurityType.WPA3 -> return null
             }
         return ThreatSignal(
