@@ -44,11 +44,6 @@ If WPA should be a low-priority warning, it must meet the current `PolicyGate` f
 
 ## Remaining required fixes before ready-for-review
 
-- Add `@Volatile` to `WatchdogService.kt` fields crossing main/executor/IO threads:
-  - `degradedMode`
-  - `helloServerSocket`
-  - `helloClientSocket`
-  - `lastGeminiAnalysisAtMs`
 - Run required checks:
   - `cd desktop && npm test && npm run lint`
   - `cd android && ./gradlew :core:test :app:ktlintCheck :core:ktlintCheck`
