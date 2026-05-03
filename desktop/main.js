@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AdbTransport } from './adb/AdbTransport.js';
 import {
-  PRELIGHT_CLASSIFICATIONS,
+  PREFLIGHT_CLASSIFICATIONS,
   describeDeviceReadiness,
   parseCompanionPackagePath,
   parseCompanionVersionInfo,
@@ -316,8 +316,8 @@ ipcMain.handle('adb:preflight', async () => {
     return {
       ...failure,
       classification: isAdbMissing
-        ? PRELIGHT_CLASSIFICATIONS.adbMissing
-        : PRELIGHT_CLASSIFICATIONS.preflightFailed,
+        ? PREFLIGHT_CLASSIFICATIONS.adbMissing
+        : PREFLIGHT_CLASSIFICATIONS.preflightFailed,
     };
   }
 });
