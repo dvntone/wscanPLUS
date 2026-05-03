@@ -20,6 +20,11 @@ BSS aa:bb:cc:dd:ee:ff(on wlan0)
 	RSN:
 `;
 
+async function flushMicrotasks() {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
 function resetStore() {
   store.update({ scanning: false, interface: null, scanIntervalMs: 30_000 });
   store.state.aps.clear();
@@ -104,7 +109,7 @@ test('active scan discards stale results after stop before store mutation', asyn
 
   stopScanning();
   resolveScan(SCAN_OUTPUT);
-  await new Promise((resolve) => setImmediate(resolve));
+  await flushMicrotasks();
 
   assert.equal(store.state.scanning, false);
   assert.equal(store.state.aps.size, 0);
@@ -128,7 +133,7 @@ test('restart starts a fresh scan instead of waiting on stale in-flight promise'
   stopScanning();
   await startScanning('wlan0');
   firstResolve(SCAN_OUTPUT);
-  await new Promise((resolve) => setImmediate(resolve));
+  await flushMicrotasks();
 
   assert.equal(callCount, 2);
   assert.equal(store.state.aps.size, 1);
