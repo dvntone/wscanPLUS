@@ -44,23 +44,25 @@ class ThreatResultsActivity : Activity() {
                 orientation = LinearLayout.VERTICAL
             }
 
-        val exportButton = Button(this).apply {
-            text = "Export JSON"
-            setTextColor(WscanUi.COLOR_TEXT)
-            textSize = 13f
-            typeface = Typeface.DEFAULT_BOLD
-            background = WscanUi.rounded(WscanUi.COLOR_CARD_ALT, dp(14), strokeColor = WscanUi.COLOR_ACCENT)
-            setPadding(dp(12), dp(10), dp(12), dp(10))
-            setOnClickListener { exportJson(this) }
-        }
+        val exportButton =
+            Button(this).apply {
+                text = "Export JSON"
+                setTextColor(WscanUi.COLOR_TEXT)
+                textSize = 13f
+                typeface = Typeface.DEFAULT_BOLD
+                background = WscanUi.rounded(WscanUi.COLOR_CARD_ALT, dp(14), strokeColor = WscanUi.COLOR_ACCENT)
+                setPadding(dp(12), dp(10), dp(12), dp(10))
+                setOnClickListener { exportJson(this) }
+            }
         contentLayout.addView(
             exportButton,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(52),
-            ).apply {
-                bottomMargin = dp(12)
-            },
+            LinearLayout
+                .LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    dp(52),
+                ).apply {
+                    bottomMargin = dp(12)
+                },
         )
 
         scrollView.addView(contentLayout)
