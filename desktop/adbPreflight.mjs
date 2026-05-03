@@ -177,8 +177,6 @@ export const PREFLIGHT_CLASSIFICATIONS = {
   },
 };
 
-export const PRELIGHT_CLASSIFICATIONS = PREFLIGHT_CLASSIFICATIONS;
-
 export function classifyPreflight(result) {
   if (result.ok === false) {
     return result.classification ?? PREFLIGHT_CLASSIFICATIONS.adbMissing;
