@@ -69,6 +69,12 @@ export function runCommand(
   });
 }
 
+let commandRunner = runCommand;
+
+export function setCommandRunnerForTests(runner) {
+  commandRunner = typeof runner === 'function' ? runner : runCommand;
+}
+
 export function parseIwDevOutput(raw) {
   const ifaces = [];
   for (const line of raw.split('\n')) {
@@ -166,6 +172,16 @@ let activeScanRequiresActive = false;
 let scanLoopTimer = null;
 let scanGeneration = 0;
 
+export function resetScannerForTests() {
+  commandRunner = runCommand;
+  activeScanPromise = null;
+  activeScanGeneration = null;
+  activeScanRequiresActive = false;
+  clearTimeout(scanLoopTimer);
+  scanLoopTimer = null;
+  scanGeneration = 0;
+}
+
 async function runScanAndProcess({ generation, requireActive }) {
   const iface = store.state.interface;
   if (!iface) {
@@ -176,7 +192,7 @@ async function runScanAndProcess({ generation, requireActive }) {
     return [];
   }
 
-  const raw = await runCommand('iw', ['dev', iface, 'scan']);
+  const raw = await commandRunner('iw', ['dev', iface, 'scan']);
   const aps = parseScanOutput(raw);
 
   if (requireActive && (!store.state.scanning || generation !== scanGeneration)) {
@@ -239,7 +255,7 @@ async function scanLoop() {
 }
 
 export async function detectInterfaces() {
-  const raw = await runCommand('iw', ['dev']);
+  const raw = await commandRunner('iw', ['dev']);
   return parseIwDevOutput(raw);
 }
 
