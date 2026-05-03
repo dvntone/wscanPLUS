@@ -25,23 +25,24 @@ class ScanHistoryActivity : Activity() {
         super.onCreate(savedInstanceState)
         title = "Scan History"
 
-        val scrollView = ScrollView(this)
+        val root = WscanUi.shell(this)
+        WscanUi.header(root, "Scan History", "Recent scanner sessions, AP observations, threat counts, and narrative availability")
+        val scrollView = ScrollView(this).apply { isFillViewport = true }
         contentLayout =
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(dp(20), dp(20), dp(20), dp(20))
             }
 
-        contentLayout.addView(
-            TextView(this).apply {
-                text = "Scan History"
-                textSize = 24f
-                setTypeface(typeface, Typeface.BOLD)
-            },
-        )
-
         scrollView.addView(contentLayout)
-        setContentView(scrollView)
+        root.addView(
+            scrollView,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f,
+            ),
+        )
+        setContentView(root)
         loadHistory()
     }
 
@@ -80,13 +81,8 @@ class ScanHistoryActivity : Activity() {
 
     private fun renderHistory(rows: List<SessionHistoryRow>) {
         if (rows.isEmpty()) {
-            contentLayout.addView(
-                TextView(this).apply {
-                    text = "No scan sessions recorded yet."
-                    textSize = 14f
-                    setPadding(0, dp(12), 0, 0)
-                },
-            )
+            val card = WscanUi.card(contentLayout)
+            WscanUi.body(card, "No scan sessions recorded yet.", muted = true)
             return
         }
 
@@ -108,14 +104,9 @@ class ScanHistoryActivity : Activity() {
                 append("$totalAps AP observations  \u2022  $totalThreats threat signals")
             }
 
-        contentLayout.addView(
-            TextView(this).apply {
-                text = summaryText
-                textSize = 13f
-                alpha = 0.85f
-                setPadding(0, dp(8), 0, dp(20))
-            },
-        )
+        val summaryCard = WscanUi.card(contentLayout)
+        WscanUi.sectionTitle(summaryCard, "Summary")
+        WscanUi.body(summaryCard, summaryText)
 
         rows.forEach { row -> contentLayout.addView(buildRow(row)) }
     }
@@ -127,8 +118,8 @@ class ScanHistoryActivity : Activity() {
         val bg = GradientDrawable()
         bg.shape = GradientDrawable.RECTANGLE
         bg.cornerRadius = dp(12).toFloat()
-        bg.setColor(0xFFF6F4EE.toInt())
-        bg.setStroke(dp(1), 0xFFCCBFA3.toInt())
+        bg.setColor(WscanUi.COLOR_CARD)
+        bg.setStroke(dp(1), WscanUi.COLOR_CARD_ALT)
         card.background = bg
 
         val lp =
@@ -147,6 +138,7 @@ class ScanHistoryActivity : Activity() {
             TextView(this).apply {
                 text = formatDateTime(row.session.startedAt)
                 textSize = 15f
+                setTextColor(WscanUi.COLOR_TEXT)
                 setTypeface(typeface, Typeface.BOLD)
             },
         )
@@ -163,7 +155,7 @@ class ScanHistoryActivity : Activity() {
             TextView(this).apply {
                 text = meta
                 textSize = 13f
-                alpha = 0.8f
+                setTextColor(WscanUi.COLOR_MUTED)
                 setPadding(0, dp(4), 0, 0)
             },
         )
