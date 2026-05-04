@@ -176,8 +176,10 @@ out/
 # Android Studio IDE files
 android/.idea/
 
-# Claude AI local files
-.claude/
+# Claude AI local files (keep hook and settings tracked; ignore transcripts and cache)
+.claude/*
+!.claude/settings.json
+!.claude/hooks/
 
 # VS Code local settings (not project config)
 .vscode/
