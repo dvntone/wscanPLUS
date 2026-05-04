@@ -149,7 +149,7 @@ Both fields are written from the `Dispatchers.IO` coroutine and read/written fro
 
 Some activities use `WscanUi.shell()/header()`, while others already use alternate root/inset patterns. These two screens can still be improved for consistency/insets, but this is better framed as targeted UX hardening than as a universal-rule bug.
 
-**Fix:** If prioritized, align these screens with the preferred shell/header/inset pattern in a focused UI cleanup PR and validate on gesture-nav/cutout devices.
+**Follow-up (optional cleanup):** If prioritized, align these screens with the preferred shell/header/inset pattern in a focused UI cleanup PR and validate on gesture-nav/cutout devices. Do not treat this as a confirmed universal-rule bugfix.
 
 ---
 
