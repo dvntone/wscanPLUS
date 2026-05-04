@@ -12,6 +12,9 @@ import android.util.Log
 import android.view.View
 import android.widget.TextView
 import com.wscanplus.app.db.DbPassphraseProvider
+import com.wscanplus.app.spatial.LocalCanvasSpatialRenderer
+import com.wscanplus.app.spatial.SpatialMapRenderer
+import com.wscanplus.app.spatial.SpatialObservation
 import com.wscanplus.core.db.WscanDatabase
 import net.sqlcipher.database.SQLiteDatabase
 import net.sqlcipher.database.SupportFactory
@@ -27,6 +30,7 @@ class ScanMapActivity : Activity() {
     private var statusTitle: TextView? = null
     private var statusBody: TextView? = null
     private var localHeatmapOverlay: LocalHeatmapView? = null
+    private var spatialRenderer: SpatialMapRenderer? = null
     private var isServiceBound = false
 
     private val serviceConnection =
@@ -72,10 +76,13 @@ class ScanMapActivity : Activity() {
         statusBody = findViewById(R.id.map_status_body)
         localHeatmapOverlay = findViewById(R.id.local_heatmap_overlay)
 
+        spatialRenderer = createSpatialRenderer()
+
         setMapStatus(
-            "Google Maps required",
-            "Custom local heatmap rendering remains disabled here because Android mapping is locked to Google Maps until the authoritative docs are updated.",
+            "Local spatial view",
+            "Rendering uses the provider-neutral local canvas (no map tiles).",
         )
+        loadHeatmap()
     }
 
     override fun onStart() {
@@ -166,41 +173,31 @@ class ScanMapActivity : Activity() {
             return
         }
 
-        val rawSignals = db.threatSignalDao().getHighConfidence(minConfidence = 0.3f, limit = 1000)
-        val threatMap =
-            rawSignals
-                .groupBy { signal -> signal.bssid }
-                .mapValues { (_, signalList) -> signalList.maxOf { signal -> signal.confidence } }
-
-        val points =
-            scanResults.mapNotNull { result ->
-                val lat = result.latitude ?: return@mapNotNull null
-                val lng = result.longitude ?: return@mapNotNull null
-                LocalHeatmapView.Point(lat, lng, (threatMap[result.bssid] ?: 0.1f).toDouble())
-            }
-
-        if (points.isEmpty()) {
-            if (!isDestroyed) {
-                runOnUiThread {
-                    localHeatmapOverlay?.clearPoints()
-                    setMapStatus(
-                        "Scan records lack coordinates",
-                        "Stored scan rows exist but none include GPS coordinates yet.",
-                    )
-                }
-            }
-            return
-        }
-
-        if (!isDestroyed) {
-            runOnUiThread {
-                localHeatmapOverlay?.setPoints(points)
-                setMapStatus(
-                    "Heatmap ready",
-                    "${points.size} GPS-tagged scan points loaded.",
+        val observations =
+            scanResults.map { result ->
+                SpatialObservation(
+                    bssid = result.bssid,
+                    ssid = result.ssid,
+                    latitude = result.latitude,
+                    longitude = result.longitude,
+                    accuracyMeters = result.accuracyMeters,
+                    rssiDbm = result.rssiDbm,
+                    channel = null,
+                    capturedAtEpochMillis = result.timestamp,
+                    source = result.locationProvider ?: "room",
                 )
             }
+
+        if (!isDestroyed) {
+            handler.post {
+                spatialRenderer?.renderObservations(observations)
+            }
         }
+    }
+
+    private fun createSpatialRenderer(): SpatialMapRenderer? {
+        val overlay = localHeatmapOverlay ?: return null
+        return LocalCanvasSpatialRenderer(overlay, ::setMapStatus)
     }
 
     private fun setMapStatus(

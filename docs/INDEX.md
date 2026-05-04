@@ -5,6 +5,7 @@
 - docs/HANDOFF_CODE_REVIEW_FIXES.md — code-review fix handoff (PR #280): completed changes, no-bypass guidance
 - docs/PRODUCT_SPEC.md — product architecture, evidence/output model, language rules, and capability status labels
 - docs/architecture/android-spatial-baseline-implementation-plan.md — Android-first local spatial baseline MVP implementation handoff
+- docs/research/spatial-map-provider-neutral-plan.md — provider-neutral spatial renderer plan (MapLibre primary, local fallback)
 - [docs/SESSION_STATE.md#2026-03-20-handoff-snapshot](docs/SESSION_STATE.md#2026-03-20-handoff-snapshot) — fastest re-entry point for the next AI session
 
 ## Device Testing
