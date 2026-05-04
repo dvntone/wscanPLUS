@@ -23,7 +23,7 @@ Scanner Results (from WatchdogService)
   ThreatSignal list (score + reasons per check)
         |
         v
-  Policy Gate (threshold filter + false-positive brakes)
+  Policy Gate (threshold filter)
         |
         v
   Filtered ThreatSignals → stored in Room DB (Phase 2 PR #7/8)
@@ -225,13 +225,12 @@ class PolicyGate(private val config: PolicyConfig) {
 
 data class PolicyConfig(
     val minimumConfidence: Float = 0.3f,
-    val falsePositiveBrakes: Boolean = true
 )
 ```
 
 - Filters out signals below minimum confidence threshold
-- False-positive brakes: suppress escalation when known corp ASN + clean history + stable RSSI (all conditions must be true)
 - Passes through signals that exceed threshold for potential CTI/Gemini escalation (Phase 3/4)
+- Note: `falsePositiveBrakes` was removed — it was never implemented and had no effect on filtering
 
 ## WatchdogService Integration
 
@@ -265,7 +264,7 @@ Every heuristic gets dedicated unit tests in `:core` module. No Android dependen
 
 **OUI tests:** lookup correctness, suspicious vendor matching, locally-administered MAC bit check
 
-**Policy Gate tests:** below-threshold filtering, false-positive brake conditions, empty input
+**Policy Gate tests:** below-threshold filtering, empty input
 
 ## PR Sequence (~9 PRs)
 
@@ -279,7 +278,7 @@ Every heuristic gets dedicated unit tests in `:core` module. No Android dependen
 | 6 | OUI asset loader + OuiLookup + suspicious vendor set | Lookup correctness, suspicious matching, locally-administered |
 | 7 | Room + KSP setup: DB class, 5 entities, TypeConverters | Entity construction, TypeConverter round-trips |
 | 8 | Room DAOs (5 DAOs) + in-memory DB integration tests | DAO queries via Room in-memory test DB |
-| 9 | PolicyGate + HeuristicEngine coordinator + WatchdogService wiring + `WifiScanResult.toScanInput()` mapping | Threshold filtering, false-positive brakes, end-to-end flow |
+| 9 | PolicyGate + HeuristicEngine coordinator + WatchdogService wiring + `WifiScanResult.toScanInput()` mapping | Threshold filtering, end-to-end flow |
 
 Each PR: <200 LOC (tests excluded), one concern, references one GitHub issue.
 

@@ -51,5 +51,6 @@ class Converters {
     fun fromEnvironmentType(value: EnvironmentType): String = value.name
 
     @TypeConverter
-    fun toEnvironmentType(value: String): EnvironmentType = EnvironmentType.valueOf(value)
+    fun toEnvironmentType(value: String): EnvironmentType =
+        runCatching { EnvironmentType.valueOf(value) }.getOrDefault(EnvironmentType.UNKNOWN)
 }

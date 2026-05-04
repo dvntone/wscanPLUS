@@ -60,7 +60,7 @@
 | `threat/RssiAnomalyHeuristicTest.kt` | Environment thresholds, known vs new |
 | `threat/BssidFingerprintHeuristicTest.kt` | MAC bit check, rotation window, OUI overlap |
 | `threat/OuiLookupTest.kt` | Lookup, suspicious vendor, locally-administered |
-| `threat/PolicyGateTest.kt` | Threshold filtering, false-positive brakes |
+| `threat/PolicyGateTest.kt` | Threshold filtering |
 | `threat/HeuristicEngineTest.kt` | Coordinator wiring, empty input |
 
 ### Modified files
@@ -676,7 +676,6 @@ package com.wscanplus.core.threat
 
 data class PolicyConfig(
     val minimumConfidence: Float = 0.3f,
-    val falsePositiveBrakes: Boolean = true
 )
 
 class PolicyGate(private val config: PolicyConfig = PolicyConfig()) {
@@ -686,7 +685,7 @@ class PolicyGate(private val config: PolicyConfig = PolicyConfig()) {
 }
 ```
 
-False-positive brakes (corp ASN + clean history) require CTI data — stub for now, full implementation in Phase 3.
+Note: false-positive brakes (corp ASN + clean history) require CTI data and have been deferred to Phase 3. `PolicyGate` currently applies a confidence threshold filter only.
 
 - [ ] **Step 2: Create `HeuristicEngine.kt`**
 

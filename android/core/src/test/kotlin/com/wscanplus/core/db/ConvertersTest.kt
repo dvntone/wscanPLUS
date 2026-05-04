@@ -54,4 +54,14 @@ class ConvertersTest {
         val decoded = converters.toEnvironmentType(encoded)
         assertEquals(EnvironmentType.OFFICE, decoded)
     }
+
+    @Test
+    fun `environment type unknown string decodes to UNKNOWN`() {
+        assertEquals(EnvironmentType.UNKNOWN, converters.toEnvironmentType("LEGACY_VALUE"))
+    }
+
+    @Test
+    fun `environment type blank string decodes to UNKNOWN`() {
+        assertEquals(EnvironmentType.UNKNOWN, converters.toEnvironmentType(""))
+    }
 }

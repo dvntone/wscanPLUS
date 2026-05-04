@@ -10,7 +10,7 @@ data class BssidProfile(
     val ouiVendor: String?,
 )
 
-enum class EnvironmentType { RESIDENTIAL, OFFICE, PUBLIC }
+enum class EnvironmentType { RESIDENTIAL, OFFICE, PUBLIC, UNKNOWN }
 
 data class ScanInput(
     val bssid: String,
