@@ -13,6 +13,7 @@ import android.view.View
 import android.widget.TextView
 import com.wscanplus.app.db.DbPassphraseProvider
 import com.wscanplus.app.spatial.LocalCanvasSpatialRenderer
+import com.wscanplus.app.spatial.SpatialMapRenderer
 import com.wscanplus.app.spatial.SpatialObservation
 import com.wscanplus.core.db.WscanDatabase
 import net.sqlcipher.database.SQLiteDatabase
@@ -29,7 +30,7 @@ class ScanMapActivity : Activity() {
     private var statusTitle: TextView? = null
     private var statusBody: TextView? = null
     private var localHeatmapOverlay: LocalHeatmapView? = null
-    private var spatialRenderer: LocalCanvasSpatialRenderer? = null
+    private var spatialRenderer: SpatialMapRenderer? = null
     private var isServiceBound = false
 
     private val serviceConnection =
@@ -75,10 +76,7 @@ class ScanMapActivity : Activity() {
         statusBody = findViewById(R.id.map_status_body)
         localHeatmapOverlay = findViewById(R.id.local_heatmap_overlay)
 
-        val overlay = localHeatmapOverlay
-        if (overlay != null) {
-            spatialRenderer = LocalCanvasSpatialRenderer(overlay, ::setMapStatus)
-        }
+        spatialRenderer = createSpatialRenderer()
 
         setMapStatus(
             "Local spatial view",
@@ -175,12 +173,6 @@ class ScanMapActivity : Activity() {
             return
         }
 
-        val rawSignals = db.threatSignalDao().getHighConfidence(minConfidence = 0.3f, limit = 1000)
-        val threatMap =
-            rawSignals
-                .groupBy { signal -> signal.bssid }
-                .mapValues { (_, signalList) -> signalList.maxOf { signal -> signal.confidence } }
-
         val observations =
             scanResults.map { result ->
                 SpatialObservation(
@@ -191,16 +183,21 @@ class ScanMapActivity : Activity() {
                     accuracyMeters = result.accuracyMeters,
                     rssiDbm = result.rssiDbm,
                     channel = null,
-                    capturedAt = result.timestamp,
+                    capturedAtEpochMillis = result.timestamp,
                     source = result.locationProvider ?: "room",
                 )
             }
 
         if (!isDestroyed) {
-            runOnUiThread {
+            handler.post {
                 spatialRenderer?.renderObservations(observations)
             }
         }
+    }
+
+    private fun createSpatialRenderer(): SpatialMapRenderer? {
+        val overlay = localHeatmapOverlay ?: return null
+        return LocalCanvasSpatialRenderer(overlay, ::setMapStatus)
     }
 
     private fun setMapStatus(

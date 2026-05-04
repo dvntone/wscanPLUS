@@ -5,5 +5,5 @@ data class ThreatMarker(
     val latitude: Double?,
     val longitude: Double?,
     val confidence: Float,
-    val capturedAt: Long,
+    val capturedAtEpochMillis: Long,
 )

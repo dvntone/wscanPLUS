@@ -8,6 +8,6 @@ data class SpatialObservation(
     val accuracyMeters: Float?,
     val rssiDbm: Int?,
     val channel: Int?,
-    val capturedAt: Long,
+    val capturedAtEpochMillis: Long,
     val source: String,
 )

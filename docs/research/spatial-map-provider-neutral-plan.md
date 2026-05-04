@@ -1,6 +1,6 @@
 # Provider-neutral spatial map plan (MapLibre + local fallback)
 
-Status: planning-only (no dependency changes in this PR)
+Status: planning + boundary scaffolding (no map SDK dependencies)
 
 This document captures the agreed approach for replacing the previous Google Maps-centric spatial visualization path with a provider-neutral renderer boundary.
 
@@ -19,7 +19,9 @@ Non-goals:
 
 ## Renderer boundary
 
-Create an interface owned by the Android app UI layer (not ) so that map SDK dependencies remain optional and local to the visualization surface.
+Create an interface owned by the Android app UI layer (not `android/core`) so that map SDK dependencies remain optional and local to the visualization surface.
+
+This PR includes minimal Android scaffolding for this boundary (interface + local canvas renderer) but intentionally does not add MapLibre or any other map SDK dependency.
 
 
 
@@ -29,7 +31,7 @@ Provider-neutral data types should remain free of any map SDK types:
 
 ## Primary renderer: MapLibre (future implementation)
 
-- MapLibre lives behind  and is created only by the map screen/module.
+- MapLibre lives behind `SpatialMapRenderer` and is created only by the spatial map screen/module.
 - Map/tile style must be configurable via app config (not hard-coded in scanner/detector).
 - MapLibre is a renderer only; scan/session data remains in the Room DB/state store.
 
@@ -65,4 +67,3 @@ Each failure should log a single structured event and switch to a stable fallbac
 - permission denied for location
 - low-memory / renderer crash
 - no lat/lon available
-
