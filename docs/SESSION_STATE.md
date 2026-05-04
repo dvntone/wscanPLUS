@@ -20,7 +20,7 @@ Audience: professional / advanced users (defensive detection & assessment)
 
 ## Key Decisions (locked)
 
-- Drop WiGLE service. Mapping via Google Maps (Android) + optional web map.
+- Drop WiGLE service. Mapping via MapLibre (LibreMaps) + optional web map.
 - Export formats: PCAP/PCAPNG (Wireshark-compatible) + JSON.
 - Kismet: OPTIONAL integration. Primary near-term use: Android as remote GPS source.
 - BetterCap: OPTIONAL integration. Reference: https://github.com/bettercap/caplets
@@ -334,7 +334,7 @@ AGP 9.x ships with built-in Kotlin. No `org.jetbrains.kotlin.android` plugin nee
   ```
 - **Auth:** API key via `secrets-gradle-plugin:2.0.1` in `local.properties`. No WIF for Android runtime.
 - **WIF (gemini_findings.md):** Valid for CI/CD → GCP server-side only. Filed for Phase 4+.
-- **Google Maps SDK:** `com.google.android.gms:play-services-maps:20.0.0`
+- Map rendering: MapLibre (LibreMaps) when enabled; local provider-neutral canvas fallback otherwise.
 
 ### WiFi scanning API (confirmed — 2026-03-16)
 

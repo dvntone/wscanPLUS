@@ -37,7 +37,7 @@ The top risk themes are local trust-boundary confusion, integrity of device-to-d
 - External providers:
   - CrowdSec CTI over HTTPS. Evidence: `android/app/src/main/kotlin/com/wscanplus/app/cti/CrowdSecCtiClient.kt`.
   - Firebase AI Gemini over SDK-managed network transport. Evidence: `android/app/src/main/kotlin/com/wscanplus/app/gemini/GeminiThreatAnalyzer.kt`.
-  - Google Maps SDK and maps-utils heatmap rendering. Evidence: `android/app/build.gradle.kts`, `android/app/src/main/kotlin/com/wscanplus/app/ScanMapActivity.kt`.
+  - Map tile/style providers used by MapLibre (LibreMaps). Evidence: `android/app/src/main/kotlin/com/wscanplus/app/ScanMapActivity.kt`.
   - Kismet GPS upload path. Evidence: `android/app/src/main/kotlin/com/wscanplus/app/kismet/KismetGpsClient.kt`.
 
 ### Data flows and trust boundaries
@@ -56,7 +56,7 @@ The top risk themes are local trust-boundary confusion, integrity of device-to-d
   - Evidence: `android/app/src/main/kotlin/com/wscanplus/app/WatchdogService.kt`, `android/core/src/main/kotlin/com/wscanplus/core/db/WscanDatabase.kt`.
 - Android app -> External CTI / AI / Kismet / Maps providers
   - Data types: IP reputation queries, threat summaries/prompts, GPS data, API-backed map tiles.
-  - Channel/protocol: HTTPS via OkHttp / Firebase SDK / Google Maps SDK / Kismet HTTP config.
+  - Channel/protocol: HTTPS via OkHttp / Firebase SDK / Map tile/style fetches (MapLibre) / Kismet HTTP config.
   - Security guarantees: consent checks for CTI/Gemini/Kismet, TLS through SDK/client stacks, local secret injection via gradle/secrets files.
   - Validation/normalization: consent checks and placeholder-key guards exist; quota and response validation are partial.
   - Evidence: `android/app/src/main/kotlin/com/wscanplus/app/cti/CrowdSecCtiClient.kt`, `android/app/src/main/kotlin/com/wscanplus/app/gemini/GeminiThreatAnalyzer.kt`, `android/app/src/main/kotlin/com/wscanplus/app/kismet/KismetGpsClient.kt`, `android/app/build.gradle.kts`.
