@@ -69,6 +69,12 @@ export function runCommand(
   });
 }
 
+let commandRunner = runCommand;
+
+export function setCommandRunnerForTests(runner) {
+  commandRunner = typeof runner === 'function' ? runner : runCommand;
+}
+
 export function parseIwDevOutput(raw) {
   const ifaces = [];
   for (const line of raw.split('\n')) {
@@ -161,16 +167,37 @@ export function freqToChannel(freqMHz) {
 }
 
 let activeScanPromise = null;
+let activeScanGeneration = null;
+let activeScanRequiresActive = false;
 let scanLoopTimer = null;
+let scanGeneration = 0;
 
-async function runScanAndProcess() {
+export function resetScannerForTests() {
+  commandRunner = runCommand;
+  activeScanPromise = null;
+  activeScanGeneration = null;
+  activeScanRequiresActive = false;
+  clearTimeout(scanLoopTimer);
+  scanLoopTimer = null;
+  scanGeneration = 0;
+}
+
+async function runScanAndProcess({ generation, requireActive }) {
   const iface = store.state.interface;
   if (!iface) {
     throw new ScanError('No wireless interface configured');
   }
 
-  const raw = await runCommand('iw', ['dev', iface, 'scan']);
+  if (requireActive && (!store.state.scanning || generation !== scanGeneration)) {
+    return [];
+  }
+
+  const raw = await commandRunner('iw', ['dev', iface, 'scan']);
   const aps = parseScanOutput(raw);
+
+  if (requireActive && (!store.state.scanning || generation !== scanGeneration)) {
+    return [];
+  }
 
   if (aps.length > 0) {
     store.addAps(aps);
@@ -185,10 +212,21 @@ async function runScanAndProcess() {
   return aps;
 }
 
-export async function executeScanCycle() {
-  if (!activeScanPromise) {
-    activeScanPromise = runScanAndProcess().finally(() => {
-      activeScanPromise = null;
+export async function executeScanCycle({ requireActive = false } = {}) {
+  const generation = scanGeneration;
+  const canReuseActiveScan =
+    activeScanPromise &&
+    activeScanGeneration === generation;
+
+  if (!canReuseActiveScan) {
+    activeScanGeneration = generation;
+    activeScanRequiresActive = requireActive;
+    activeScanPromise = runScanAndProcess({ generation, requireActive }).finally(() => {
+      if (activeScanGeneration === generation && activeScanRequiresActive === requireActive) {
+        activeScanPromise = null;
+        activeScanGeneration = null;
+        activeScanRequiresActive = false;
+      }
     });
   }
   return activeScanPromise;
@@ -205,7 +243,7 @@ function scheduleNextScan() {
 async function scanLoop() {
   if (!store.state.scanning) return;
   try {
-    await executeScanCycle();
+    await executeScanCycle({ requireActive: true });
   } catch (err) {
     store.addError(err);
   } finally {
@@ -216,7 +254,7 @@ async function scanLoop() {
 }
 
 export async function detectInterfaces() {
-  const raw = await runCommand('iw', ['dev']);
+  const raw = await commandRunner('iw', ['dev']);
   return parseIwDevOutput(raw);
 }
 
@@ -232,11 +270,13 @@ export async function startScanning(iface) {
     resolvedIface = ifaces[0];
   }
 
+  scanGeneration += 1;
   store.update({ scanning: true, interface: resolvedIface });
   void scanLoop();
 }
 
 export function stopScanning() {
+  scanGeneration += 1;
   store.update({ scanning: false });
   clearTimeout(scanLoopTimer);
   scanLoopTimer = null;

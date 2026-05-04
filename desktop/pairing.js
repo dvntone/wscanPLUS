@@ -26,9 +26,20 @@ function logPairingEvent(level, message) {
   }
 }
 
+function asWebSocketUrl(value) {
+  if (typeof value !== 'string' || value.length === 0) return null;
+  return value.startsWith('ws://') || value.startsWith('wss://')
+    ? value
+    : `ws://${value}`;
+}
+
 function formatAddress(result) {
-  if (typeof result?.endpoint === 'string') return result.endpoint;
-  if (typeof result?.url === 'string') return result.url;
+  const endpoint = asWebSocketUrl(result?.endpoint ?? result?.url);
+  if (endpoint) return endpoint;
+
+  const addressString = asWebSocketUrl(result?.address);
+  if (addressString) return addressString;
+
   if (result?.address?.address && result?.address?.port) {
     return `ws://${result.address.address}:${result.address.port}`;
   }

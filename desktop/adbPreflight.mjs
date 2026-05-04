@@ -132,7 +132,7 @@ export function describeDeviceReadiness(device) {
   };
 }
 
-export const PRELIGHT_CLASSIFICATIONS = {
+export const PREFLIGHT_CLASSIFICATIONS = {
   adbMissing: {
     level: 'adb-missing',
     title: 'ADB unavailable',
@@ -179,28 +179,28 @@ export const PRELIGHT_CLASSIFICATIONS = {
 
 export function classifyPreflight(result) {
   if (result.ok === false) {
-    return result.classification ?? PRELIGHT_CLASSIFICATIONS.adbMissing;
+    return result.classification ?? PREFLIGHT_CLASSIFICATIONS.adbMissing;
   }
 
   const devices = Array.isArray(result.devices) ? result.devices : [];
 
   if (devices.length === 0) {
-    return PRELIGHT_CLASSIFICATIONS.noDevices;
+    return PREFLIGHT_CLASSIFICATIONS.noDevices;
   }
 
   if (devices.some((device) => device.state === 'unauthorized')) {
-    return PRELIGHT_CLASSIFICATIONS.unauthorized;
+    return PREFLIGHT_CLASSIFICATIONS.unauthorized;
   }
 
   if (devices.some((device) => device.state === 'offline')) {
-    return PRELIGHT_CLASSIFICATIONS.offline;
+    return PREFLIGHT_CLASSIFICATIONS.offline;
   }
 
   if (devices.some((device) => device.state === 'device')) {
-    return PRELIGHT_CLASSIFICATIONS.ready;
+    return PREFLIGHT_CLASSIFICATIONS.ready;
   }
 
-  return PRELIGHT_CLASSIFICATIONS.notReady;
+  return PREFLIGHT_CLASSIFICATIONS.notReady;
 }
 
 export function summarizePreflight(versionOutput, devicesOutput) {

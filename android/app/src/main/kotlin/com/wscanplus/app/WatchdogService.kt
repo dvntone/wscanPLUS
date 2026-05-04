@@ -115,6 +115,8 @@ class WatchdogService : Service() {
     private var latestLocationSample: LocationSample? = null
     private var currentSessionId: Long? = null
     private var lastKismetSendAtMillis: Long = 0L
+
+    @Volatile
     private var degradedMode = false
     private lateinit var database: WscanDatabase
     private lateinit var kismetGpsClient: KismetGpsClient
@@ -133,9 +135,15 @@ class WatchdogService : Service() {
     @Volatile
     var lastDesktopAckSeq: Int = -1
         private set
+
+    @Volatile
     private var helloServerSocket: ServerSocket? = null
+
+    @Volatile
     private var helloClientSocket: Socket? = null
     private var helloServerJob: Job? = null
+
+    @Volatile
     private var lastGeminiAnalysisAtMs: Long = 0L
     private val geminiAnalysisInFlight = AtomicBoolean(false)
     private val engine =
