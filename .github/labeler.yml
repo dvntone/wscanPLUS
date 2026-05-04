@@ -1,0 +1,50 @@
+# Labeler configuration for automatically applying labels to PRs based on changed paths
+# See: https://github.com/actions/labeler
+
+# Documentation changes
+documentation:
+  - changed-files:
+    - any-glob-to-any-file: ['docs/**/*', '*.md', '.github/**/*.md']
+
+# Android app changes
+android:
+  - changed-files:
+    - any-glob-to-any-file: ['android/**/*']
+
+# Desktop/Electron app changes
+desktop:
+  - changed-files:
+    - any-glob-to-any-file: ['desktop/**/*']
+
+# Dependency updates
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'package*.json'
+      - 'desktop/package*.json'
+      - 'android/build.gradle*'
+      - 'android/app/build.gradle*'
+      - 'android/gradle/**/*'
+
+# CI/CD and GitHub Actions
+ci:
+  - changed-files:
+    - any-glob-to-any-file: ['.github/workflows/**/*', '.github/actions/**/*']
+
+# Architecture and core structure
+architecture:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'AGENTS.md'
+      - 'docs/ARCHITECTURE.md'
+      - 'docs/SESSION_STATE.md'
+      - '**/core/**/*'
+
+# Security-related files
+security:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/codeql.yml'
+      - 'secrets.*.properties'
+      - '.env*'
+      - '**/security/**/*'
