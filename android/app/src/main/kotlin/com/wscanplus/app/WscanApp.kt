@@ -10,4 +10,3 @@ class WscanApp : Application() {
         ThemeController.apply(ThemeStore(this).read())
     }
 }
-

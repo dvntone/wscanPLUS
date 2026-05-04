@@ -69,4 +69,3 @@ class ThemeSettingsActivity : Activity() {
             tag = preference
         }
 }
-

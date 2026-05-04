@@ -5,4 +5,3 @@ enum class ThemePreference {
     LIGHT,
     DARK,
 }
-
