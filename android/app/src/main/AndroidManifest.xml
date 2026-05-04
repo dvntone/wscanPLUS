@@ -75,6 +75,7 @@
 
     <application
         android:allowBackup="false"
+        android:name=".WscanApp"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -108,6 +109,10 @@
 
         <activity
             android:name=".DiagnosticActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".theme.ThemeSettingsActivity"
             android:exported="false" />
 
         <!--
