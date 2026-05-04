@@ -273,7 +273,7 @@ class WatchdogService : Service() {
                             knownProfiles = buildKnownProfiles(),
                             baselineNetworkCount = computeBaselineNetworkCount(),
                             baselineStdDev = computeBaselineStdDev(),
-                            environmentType = EnvironmentType.PUBLIC,
+                            environmentType = EnvironmentType.UNKNOWN,
                         )
                     val rawSignals = engine.analyze(context)
                     val filtered = policyGate.filter(rawSignals)
@@ -604,7 +604,7 @@ class WatchdogService : Service() {
             ScanSessionEntity(
                 startedAt = now,
                 endedAt = null,
-                environmentType = EnvironmentType.PUBLIC,
+                environmentType = EnvironmentType.UNKNOWN,
                 deviceSerial = buildDeviceIdentifier(),
             ),
         )

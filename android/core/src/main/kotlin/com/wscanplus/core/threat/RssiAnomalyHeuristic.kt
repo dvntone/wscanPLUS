@@ -12,6 +12,7 @@ class RssiAnomalyHeuristic : Heuristic {
                 EnvironmentType.RESIDENTIAL -> -30
                 EnvironmentType.OFFICE -> -25
                 EnvironmentType.PUBLIC -> -20
+                EnvironmentType.UNKNOWN -> -25
             }
 
         if (input.rssiDbm <= threshold) return null
