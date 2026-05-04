@@ -11,7 +11,7 @@
 A prior review session audited desktop (**Node/Electron**) and Android (**Kotlin**) code and produced follow-up candidates. This handoff is a triage queue, not a mandate to batch everything in one change.
 
 Process these as **separate** tracked follow-ups:
-- one issue per fix candidate
+- 1 PR at a time; use the author-appropriate branch prefix: `claude/`, `copilot/`, or `dvntone/`
 - one bugfix/work unit per PR
 - keep PRs small and policy-compliant
 
