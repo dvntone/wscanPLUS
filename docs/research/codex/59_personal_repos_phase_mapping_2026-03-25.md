@@ -34,7 +34,7 @@
 |-------|--------|------------|----------|
 | 0 — Foundation | ✅ Complete | 100% | — |
 | 1 — Scanner + Tooling | ✅ Complete | 100% | — |
-| 2 — Local Threat Intelligence | Baseline complete, follow-on pending | ~85% | `knownProfiles`, baseline stats, falsePositiveBrakes |
+| 2 — Local Threat Intelligence | Baseline complete, follow-on pending | ~90% | `knownProfiles`, baseline stats, environment detection |
 | 3 — CTI Integration | Not started | 0% | CrowdSec client, consent framework, CTI cache |
 | 4 — AI + Reporting | Not started | 0% | firebase-ai scaffolded but not wired |
 | 5 — Desktop Sync | Stub only | ~2% | ServerSocket(9000) is a TODO comment |
@@ -43,8 +43,7 @@
 **Phase 2 gaps (grounded in code):**
 - `WatchdogService.kt:155` — `knownProfiles = emptyMap()` — BssidFingerprintHeuristic and RssiAnomalyHeuristic run with zero historical context
 - `WatchdogService.kt:156–157` — `baselineNetworkCount = null`, `baselineStdDev = null` — SsidFloodingHeuristic returns null on every scan (no baseline = no signal)
-- `WatchdogService.kt:158` — `environmentType = EnvironmentType.RESIDENTIAL` hardcoded — RSSI thresholds never adapt
-- `PolicyGate.kt` — `falsePositiveBrakes` flag declared but logic not implemented
+- `WatchdogService.kt` — `environmentType` now uses `EnvironmentType.UNKNOWN` (conservative -25 dBm default); runtime environment detection not yet implemented
 
 **Open issues:** 4 (includes P1 Android 15 bugs #122, #124, #125 on Revvl Tab 2)
 

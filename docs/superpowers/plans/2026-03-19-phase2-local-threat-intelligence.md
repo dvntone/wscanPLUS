@@ -676,7 +676,6 @@ package com.wscanplus.core.threat
 
 data class PolicyConfig(
     val minimumConfidence: Float = 0.3f,
-    val falsePositiveBrakes: Boolean = true
 )
 
 class PolicyGate(private val config: PolicyConfig = PolicyConfig()) {

@@ -225,13 +225,12 @@ class PolicyGate(private val config: PolicyConfig) {
 
 data class PolicyConfig(
     val minimumConfidence: Float = 0.3f,
-    val falsePositiveBrakes: Boolean = true
 )
 ```
 
 - Filters out signals below minimum confidence threshold
-- False-positive brakes: suppress escalation when known corp ASN + clean history + stable RSSI (all conditions must be true)
 - Passes through signals that exceed threshold for potential CTI/Gemini escalation (Phase 3/4)
+- Note: `falsePositiveBrakes` was removed — it was never implemented and had no effect on filtering
 
 ## WatchdogService Integration
 
