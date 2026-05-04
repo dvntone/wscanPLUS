@@ -10,7 +10,7 @@
 
 | Priority | Repo | Phase | Completion | Status |
 |----------|------|-------|------------|--------|
-| 1 | wscanplus | Phase 2→3 | Phase 2: ~85% / Phase 3+: 0% | Active |
+| 1 | wscanplus | Phase 2→3 | Phase 2: ~90% / Phase 3+: 0% | Active |
 | 2 | wscanplus_desktop | Phase 5 | ~5% | Active, CI broken |
 | 3 | wscanplus_webui | Phase 5 | ~2% | Active, blocked on desktop |
 | 4 | wifisentry | Superseded | N/A | Archived — 12 open issues |

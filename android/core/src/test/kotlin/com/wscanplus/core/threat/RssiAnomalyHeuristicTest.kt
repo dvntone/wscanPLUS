@@ -134,7 +134,7 @@ class RssiAnomalyHeuristicTest {
     }
 
     @Test
-    fun `UNKNOWN environment threshold at -26dBm returns null and -24dBm returns signal`() {
+    fun `UNKNOWN environment uses -25dBm threshold - below returns null, above returns signal`() {
         val inputBelow: ScanInput = scan(rssiDbm = -26)
         val ctxBelow: ScanContext = context(environmentType = EnvironmentType.UNKNOWN, input = inputBelow)
         assertNull(heuristic.evaluate(inputBelow, ctxBelow))
