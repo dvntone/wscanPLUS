@@ -51,17 +51,17 @@ Issues are ordered from simplest/safest to most nuanced.
 
 ---
 
-#### D-3 · Pairing address contract: verify object-vs-string expectations before changing IPC shape
+#### D-3 · (Closed) Pairing `address` object shape matches current renderer contract
 
 **File:** `desktop/companionServer.mjs` line 51; `desktop/main.js` lines 394, 407, 411
 
-`CompanionServer.address` getter returns `this.#httpServer?.address() ?? null`. For a bound TCP server, `http.Server.address()` returns `{ address, family, port }`, and current pairing UI code consumes object fields (`result.address.address` + `result.address.port`).
+`CompanionServer.address` getter returns `this.#httpServer?.address() ?? null`. For a bound TCP server, `http.Server.address()` returns `{ address, family, port }`, and current pairing UI code already consumes object fields (`result.address.address` + `result.address.port`).
 
 - `companion:pair` → `{ ok, token, address }` (line 394)
 - `companion:generateToken` → `{ token, address }` (line 407)
 - `companion:status` → `{ running, address, token }` (line 411)
 
-**Fix:** Do **not** blindly convert this to a single string. If you change payload shape, update all consumers together (notably `desktop/pairing.js`) or preserve backward compatibility by including both object fields and a formatted endpoint/url string.
+**Action:** No immediate fix required for current behavior. If payload shape is changed later, update all consumers together (notably `desktop/pairing.js`) or preserve backward compatibility by including both object fields and a formatted endpoint/url string.
 
 ---
 
