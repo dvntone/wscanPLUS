@@ -8,10 +8,15 @@
 
 ## Overview
 
-A prior review session audited all source files in both the **desktop** (Node/Electron) and **Android** (Kotlin) apps and identified 11 confirmed issues. No code has been changed yet. Your task is to fix all 11 items below.
+A prior review session audited desktop (**Node/Electron**) and Android (**Kotlin**) code and produced follow-up candidates. This handoff is a triage queue, not a mandate to batch everything in one change.
+
+Process these as **separate** tracked follow-ups:
+- one issue per fix candidate
+- one bugfix/work unit per PR
+- keep PRs small and policy-compliant
 
 **Policy reminders (from `AGENTS.md` / `docs/SESSION_STATE.md`):**
-- 1 PR at a time; branch prefix must be `claude/`
+- 1 PR at a time; branch prefix must be `claude/`, `copilot/`, or `dvntone/` (by author)
 - Tests-first; CI must be green before marking PR ready
 - No `exec()` with interpolated strings — use `spawn(cmd, [args])`
 - Squash-merge only; PRs are draft until CI is green
@@ -36,29 +41,27 @@ Issues are ordered from simplest/safest to most nuanced.
 
 ---
 
-#### D-2 · In-flight scan results arrive after `stopScanning()`
+#### D-2 · In-flight scan results may arrive after `stopScanning()`
 
 **File:** `desktop/scanner.mjs` lines 239–243
 
 `stopScanning()` clears the timer and sets `scanning: false` but does not abort `activeScanPromise`. A scan that was mid-flight when the user pressed stop still completes and calls `store.addAps()` / `store.addRiskEntries()`, pushing phantom updates to the renderer.
 
-**Fix:** When `stopScanning()` is called, record a monotonic "stop generation" counter (or a boolean flag checked in the `.finally()` of `activeScanPromise`) so that results from a pre-stop scan are discarded before they reach the store.
+**Fix:** Gate discarded results **before** `store.addAps()` / `store.addRiskEntries()` (or before equivalent post-processing after `executeScanCycle()` returns). A `.finally()`-only check is insufficient because store writes happen inside `runScanAndProcess()`.
 
 ---
 
-#### D-3 · `address` returned as raw `AddressInfo` object, not a string
+#### D-3 · Pairing address contract: verify object-vs-string expectations before changing IPC shape
 
 **File:** `desktop/companionServer.mjs` line 51; `desktop/main.js` lines 394, 407, 411
 
-`CompanionServer.address` getter returns `this.#httpServer?.address() ?? null`. For a bound TCP server, `http.Server.address()` returns `{ address, family, port }` — not a string. This object is forwarded verbatim in three IPC handlers:
+`CompanionServer.address` getter returns `this.#httpServer?.address() ?? null`. For a bound TCP server, `http.Server.address()` returns `{ address, family, port }`, and current pairing UI code consumes object fields (`result.address.address` + `result.address.port`).
 
 - `companion:pair` → `{ ok, token, address }` (line 394)
 - `companion:generateToken` → `{ token, address }` (line 407)
 - `companion:status` → `{ running, address, token }` (line 411)
 
-Any renderer code that treats `address` as a displayable string sees `[object Object]`.
-
-**Fix:** Format the address as a string (e.g., `${info.address}:${info.port}`) in the getter or at the IPC call sites — be consistent across all three.
+**Fix:** Do **not** blindly convert this to a single string. If you change payload shape, update all consumers together (notably `desktop/pairing.js`) or preserve backward compatibility by including both object fields and a formatted endpoint/url string.
 
 ---
 
@@ -98,13 +101,13 @@ Do not simply raise without a product decision — pick the correct option and i
 
 ---
 
-#### A-2 · `ScanMapActivity.loadHeatmap()` is dead code — never called
+#### A-2 · `ScanMapActivity.loadHeatmap()` is currently unreachable local-renderer code
 
 **File:** `android/app/src/main/kotlin/com/wscanplus/app/ScanMapActivity.kt` lines 58–79 (`onCreate`), line 119 (`loadHeatmap`)
 
-`onCreate()` sets a static "Google Maps required" status message and returns. The private `loadHeatmap()` method and the entire `renderHeatmap()` body it calls are unreachable from any lifecycle method.
+`onCreate()` sets a static "Google Maps required" status message. The private `loadHeatmap()`/`renderHeatmap()` local overlay path is not currently wired into lifecycle calls.
 
-**Fix:** Either wire `loadHeatmap()` into the correct lifecycle point (`onStart()` after the service bind, consistent with how the floor badge works), or if the feature is intentionally deferred, suppress the dead-code with a TODO comment and mark the method `@Suppress("unused")` so it is clear it is a stub. **Do not delete it** — the implementation is complete and should be preserved for when Google Maps is integrated.
+**Fix:** Treat this as cleanup under the current Google-Maps-only decision. Prefer documenting/suppressing the dormant local-renderer path (or removing it in a dedicated cleanup issue) rather than re-enabling a non-Google map flow by accident.
 
 ---
 
@@ -138,15 +141,15 @@ Both fields are written from the `Dispatchers.IO` coroutine and read/written fro
 
 ---
 
-#### A-6 · `ScanHistoryActivity` and `ThreatResultsActivity` bypass `WscanUi` shell — inconsistent UI + insets
+#### A-6 · `ScanHistoryActivity` and `ThreatResultsActivity` styling/insets: treat as targeted UX cleanup
 
 **Files:**
 - `android/app/src/main/kotlin/com/wscanplus/app/ScanHistoryActivity.kt` lines 28–44
 - `android/app/src/main/kotlin/com/wscanplus/app/ThreatResultsActivity.kt` lines 39–67
 
-Every other Activity in the app uses `WscanUi.shell()`, `WscanUi.header()`, `WscanUi.prepareWindow()`, and `WscanUi.applySystemInsets()`. These two activities use raw `ScrollView` / `LinearLayout` roots with no system-bar inset handling, producing a visual inconsistency and potential layout overlap on gesture-nav / cutout devices.
+Some activities use `WscanUi.shell()/header()`, while others already use alternate root/inset patterns. These two screens can still be improved for consistency/insets, but this is better framed as targeted UX hardening than as a universal-rule bug.
 
-**Fix:** Refactor both activities to use `WscanUi.shell()` as the root, `WscanUi.header()` for the title, `WscanUi.prepareWindow()`, and `WscanUi.applySystemInsets()` — matching the pattern in `DiagnosticActivity`. The inner card/body content can remain as is; only the outer wrapper and window setup needs to change.
+**Fix:** If prioritized, align these screens with the preferred shell/header/inset pattern in a focused UI cleanup PR and validate on gesture-nav/cutout devices.
 
 ---
 
@@ -169,12 +172,12 @@ android/core/src/main/kotlin/com/wscanplus/core/threat/WepOpenHeuristic.kt
 android/core/src/main/kotlin/com/wscanplus/core/threat/PolicyGate.kt
 ```
 
-## Verification Commands
+## Verification Commands for follow-up fix PRs
 
 ```sh
 # Desktop
 cd desktop && npm test && npm run lint
 
 # Android
-cd android && ./gradlew :core:test :app:ktlintCheck :core:ktlintCheck
+cd android && ./gradlew :core:test :app:ktlintCheck :core:ktlintCheck :app:assembleDebug :app:assembleRelease
 ```

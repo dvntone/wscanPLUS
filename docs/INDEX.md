@@ -43,5 +43,6 @@
 ## Safety / Process
 - AGENTS.md — AI agent guardrails (quick reference)
 - docs/AGENTS.md — full universal guardrails for all agents
+- docs/HANDOFF_CODE_REVIEW_FIXES.md — queued review follow-up candidates to split into separate issue/PR work units
 - KNOWN_ISSUES.md — incident history, repo configuration changes, known limitations; also records Phase 2 completion status as of 2026-03-20
 - .github/copilot-instructions.md — Copilot-specific behavior rules
