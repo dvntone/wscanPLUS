@@ -1,6 +1,6 @@
-# Dark Lotus Labs Brand Workspace
+# darklotusLABS Brand Workspace
 
-This folder contains public-safe planning material for the Dark Lotus Labs / wscan+ landing page and brand system.
+This folder contains public-safe planning material for the darklotusLABS / wscan+ landing page and brand system.
 
 It is intentionally limited to:
 
@@ -37,7 +37,7 @@ If a file needs to remain private, keep it in a private repository, private desi
 ## Product naming
 
 - Product/platform: **wscan+**
-- Organization/site: **Dark Lotus Labs**
+- Organization/site: **darklotusLABS**
 - Assistant/companion identity: **.nyx**
 - Web hub: `https://app.darklotuslabs.com`
 
