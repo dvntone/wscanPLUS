@@ -2,7 +2,7 @@
 
 ## Goal
 
-Redesign `darklotuslabs.com` around wscan+ as a product-first wireless intelligence platform.
+Redesign `darklotuslabs.com` around wscan+ as a product-first wireless intelligence platform under the **darklotusLABS** brand.
 
 The site should communicate:
 
@@ -13,7 +13,7 @@ The landing page should feel professional, credible, minimal, and operator-grade
 ## Core brand roles
 
 - **wscan+** — product/platform
-- **Dark Lotus Labs** — organization/site
+- **darklotusLABS** — organization/site
 - **.nyx** — companion assistant identity
 - **app.darklotuslabs.com** — web hub / remote evidence dashboard
 
