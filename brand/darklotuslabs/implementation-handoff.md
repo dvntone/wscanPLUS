@@ -1,8 +1,8 @@
-# Dark Lotus Labs Landing Page Implementation Handoff
+# darklotusLABS Landing Page Implementation Handoff
 
 ## Target
 
-Implement a public landing page redesign for `darklotuslabs.com` that presents wscan+ as an operator-grade wireless intelligence platform.
+Implement a public landing page redesign for `darklotuslabs.com` that presents wscan+ as an operator-grade wireless intelligence platform under the **darklotusLABS** brand.
 
 ## Public routes
 
