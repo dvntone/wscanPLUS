@@ -1,9 +1,9 @@
-# Dark Lotus Labs / wscan+ Asset Guidelines
+# darklotusLABS / wscan+ Asset Guidelines
 
 ## Brand roles
 
 - **wscan+** is the product/platform.
-- **Dark Lotus Labs** is the organization/site identity.
+- **darklotusLABS** is the organization/site identity.
 - **.nyx** is the robot companion/assistant identity.
 
 The landing page should be product-first. The mascot supports the story but should not replace the product identity.
