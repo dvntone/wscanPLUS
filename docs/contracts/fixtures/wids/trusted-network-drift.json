@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "detectorVersion": "phase6-wids-v1",
+  "case": "trusted_network_drift",
+  "observations": [
+    {
+      "id": "obs_tnd_001",
+      "schemaVersion": 1,
+      "source": "android_wifi",
+      "sourceDeviceId": "android_pixel_001",
+      "timestamp": 1777990100000,
+      "sessionId": "session_tnd_001",
+      "ssid": "TrustedNet",
+      "bssid": "de:ad:be:ef:00:01",
+      "frequencyMhz": 2462,
+      "channel": 11,
+      "rssiDbm": -42,
+      "capabilities": "[WPA2-PSK-CCMP][ESS]",
+      "oui": "Unknown",
+      "scanAgeMs": 720,
+      "cachedOrThrottled": "unknown",
+      "zoneLabel": "home-office"
+    }
+  ],
+  "alerts": [
+    {
+      "id": "alert_tnd_001",
+      "schemaVersion": 1,
+      "type": "trusted_network_drift",
+      "severity": "medium",
+      "confidence": 0.65,
+      "title": "Trusted network drift detected",
+      "explanation": "A known SSID was observed from a BSSID that is not present in the trusted baseline and on an unexpected channel.",
+      "evidence": [
+        {
+          "kind": "unknown_bssid",
+          "weight": 0.3,
+          "description": "TrustedNet is known, but BSSID de:ad:be:ef:00:01 is not in the trusted baseline.",
+          "observationIds": ["obs_tnd_001"]
+        },
+        {
+          "kind": "channel_change",
+          "weight": 0.15,
+          "description": "TrustedNet was observed on channel 11 instead of the expected channel set.",
+          "observationIds": ["obs_tnd_001"]
+        }
+      ],
+      "limitations": [
+        "Android companion mode provides environmental WiFi scan evidence, not monitor-mode packet capture."
+      ],
+      "recommendedAction": "Verify the BSSID against the trusted router inventory before connecting.",
+      "createdAt": 1777990101000,
+      "sourceDeviceIds": ["android_pixel_001"],
+      "detectorVersion": "phase6-wids-v1"
+    }
+  ]
+}
