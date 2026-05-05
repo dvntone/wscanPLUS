@@ -1,6 +1,9 @@
 ---
 name: kotlin-mcp-server-generator
 description: 'Generate a complete Kotlin MCP server project with proper structure, dependencies, and implementation using the official io.modelcontextprotocol:kotlin-sdk library.'
+license: MIT — see LICENSE.txt
+metadata:
+  source: 'https://github.com/github/awesome-copilot'
 ---
 
 # Kotlin MCP Server Project Generator
