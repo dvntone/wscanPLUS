@@ -23,6 +23,9 @@ class UsbNmeaServer(
     val clientCount: Int
         get() = clients.size
 
+    val boundPort: Int
+        get() = serverSocket?.localPort ?: -1
+
     private val clients = CopyOnWriteArrayList<Socket>()
     private var serverSocket: ServerSocket? = null
     private var acceptThread: Thread? = null

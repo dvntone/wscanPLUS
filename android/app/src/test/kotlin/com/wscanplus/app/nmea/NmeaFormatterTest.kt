@@ -47,7 +47,8 @@ class NmeaFormatterTest {
         val sentence = NmeaFormatter.toGga(sample)
 
         assertTrue(sentence.contains(",3746.494,N,12225.164,W,"))
-        assertTrue(sentence.contains(",5.2,16.4,M,,M,,"))
+        // HDOP field is blank (Android accuracy metres ≠ HDOP); altitude and units present.
+        assertTrue(sentence.contains(",,,16.4,M,,M,,"))
     }
 
     @Test

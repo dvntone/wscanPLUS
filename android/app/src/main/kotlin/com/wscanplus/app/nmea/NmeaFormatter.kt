@@ -7,25 +7,31 @@ import java.util.Locale
 import java.util.TimeZone
 import kotlin.math.abs
 
+// ThreadLocal wrappers make SimpleDateFormat safe for concurrent callers on any API level.
 private val UTC_TIME_FORMAT =
-    SimpleDateFormat("HHmmss.SSS", Locale.US).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
+    object : ThreadLocal<SimpleDateFormat>() {
+        override fun initialValue() =
+            SimpleDateFormat("HHmmss.SSS", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
     }
 
 private val UTC_DATE_FORMAT =
-    SimpleDateFormat("ddMMyy", Locale.US).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
+    object : ThreadLocal<SimpleDateFormat>() {
+        override fun initialValue() =
+            SimpleDateFormat("ddMMyy", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
     }
 
 object NmeaFormatter {
     fun toSentences(sample: LocationSample): List<String> = listOf(toGga(sample), toRmc(sample))
 
     fun toGga(sample: LocationSample): String {
-        val utcTime = UTC_TIME_FORMAT.format(Date(sample.capturedAt))
+        val utcTime = UTC_TIME_FORMAT.get()!!.format(Date(sample.capturedAt))
         val (lat, latHemisphere) = toNmeaCoordinate(sample.latitude, isLatitude = true)
         val (lon, lonHemisphere) = toNmeaCoordinate(sample.longitude, isLatitude = false)
         val altitude = sample.altitudeMeters?.let { formatDecimal(it, 1) } ?: ""
-        val hdop = sample.accuracyMeters?.takeIf { it > 0f }?.let { formatDecimal(it.toDouble(), 1) } ?: ""
         val body =
             listOf(
                 "GPGGA",
@@ -36,7 +42,10 @@ object NmeaFormatter {
                 lonHemisphere,
                 "1",
                 "",
-                hdop,
+                // Android exposes horizontal accuracy in metres, not HDOP (a dimensionless ratio).
+                // Writing metres into the HDOP field misleads consumers that interpret it as a
+                // quality indicator — leave it blank rather than emit a semantically wrong value.
+                "",
                 altitude,
                 "M",
                 "",
@@ -48,8 +57,8 @@ object NmeaFormatter {
     }
 
     fun toRmc(sample: LocationSample): String {
-        val utcTime = UTC_TIME_FORMAT.format(Date(sample.capturedAt))
-        val utcDate = UTC_DATE_FORMAT.format(Date(sample.capturedAt))
+        val utcTime = UTC_TIME_FORMAT.get()!!.format(Date(sample.capturedAt))
+        val utcDate = UTC_DATE_FORMAT.get()!!.format(Date(sample.capturedAt))
         val (lat, latHemisphere) = toNmeaCoordinate(sample.latitude, isLatitude = true)
         val (lon, lonHemisphere) = toNmeaCoordinate(sample.longitude, isLatitude = false)
         val speedKnots = sample.speedKph?.let { formatDecimal(it / 1.852, 1) } ?: ""

@@ -48,6 +48,8 @@ class BleNmeaGattServer(
     private var gattServer: BluetoothGattServer? = null
     private var advertiser: BluetoothLeAdvertiser? = null
     private var characteristic: BluetoothGattCharacteristic? = null
+    // Saved before we overwrite the adapter name so stop() can restore it.
+    private var previousDeviceName: String? = null
 
     @SuppressLint("MissingPermission")
     fun start() {
@@ -87,13 +89,15 @@ class BleNmeaGattServer(
             return
         }
 
-        val advertisedName = adapter.name
-        if (advertisedName != deviceName) {
+        val currentName = adapter.name
+        if (currentName != deviceName) {
+            previousDeviceName = currentName
             adapter.name = deviceName
         }
 
         if (!server.addService(service)) {
             server.close()
+            restoreDeviceName()
             lastError = "Unable to add BLE NMEA service"
             return
         }
@@ -101,27 +105,17 @@ class BleNmeaGattServer(
         gattServer = server
         characteristic = nmeaCharacteristic
         advertiser = adapter.bluetoothLeAdvertiser
-        isRunning = true
         lastError = null
+        // isRunning is set to true only in onStartSuccess once advertising is confirmed;
+        // if startAdvertising() fails synchronously (null advertiser) closeResources() resets state.
         startAdvertising()
         Log.i(TAG, "BLE NMEA GATT server started")
     }
 
     @SuppressLint("MissingPermission")
     fun stop() {
-        isAdvertising = false
-        isRunning = false
-        subscribers.clear()
-        mtuByAddress.clear()
         advertiser?.stopAdvertising(advertiseCallback)
-        advertiser = null
-        try {
-            gattServer?.close()
-        } catch (error: Exception) {
-            Log.w(TAG, "Failed to close BLE GATT server", error)
-        }
-        gattServer = null
-        characteristic = null
+        closeResources()
     }
 
     @SuppressLint("MissingPermission")
@@ -143,6 +137,7 @@ class BleNmeaGattServer(
         val bleAdvertiser = advertiser
         if (bleAdvertiser == null) {
             lastError = "BLE advertiser unavailable"
+            closeResources()
             return
         }
 
@@ -162,18 +157,49 @@ class BleNmeaGattServer(
         bleAdvertiser.startAdvertising(settings, data, advertiseCallback)
     }
 
+    // Tears down GATT resources and restores device name without calling stopAdvertising —
+    // used from advertising callbacks where stopAdvertising would be a re-entrant no-op or error.
+    private fun closeResources() {
+        isAdvertising = false
+        isRunning = false
+        subscribers.clear()
+        mtuByAddress.clear()
+        advertiser = null
+        restoreDeviceName()
+        try {
+            gattServer?.close()
+        } catch (error: Exception) {
+            Log.w(TAG, "Failed to close BLE GATT server", error)
+        }
+        gattServer = null
+        characteristic = null
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun restoreDeviceName() {
+        val name = previousDeviceName ?: return
+        previousDeviceName = null
+        try {
+            context.getSystemService(BluetoothManager::class.java)?.adapter?.name = name
+        } catch (error: Exception) {
+            Log.w(TAG, "Failed to restore Bluetooth device name", error)
+        }
+    }
+
     private val advertiseCallback =
         object : AdvertiseCallback() {
             override fun onStartSuccess(settingsInEffect: AdvertiseSettings?) {
                 isAdvertising = true
+                isRunning = true
                 lastError = null
                 Log.i(TAG, "BLE NMEA advertising started")
             }
 
             override fun onStartFailure(errorCode: Int) {
-                isAdvertising = false
                 lastError = "Advertise failure code=$errorCode"
                 Log.e(TAG, "BLE NMEA advertising failed: $errorCode")
+                // Advertising never started — tear down GATT without calling stopAdvertising.
+                closeResources()
             }
         }
 
@@ -267,10 +293,15 @@ class BleNmeaGattServer(
 
         fun hasBlePermissions(context: Context): Boolean {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-                return ContextCompat.checkSelfPermission(
-                    context,
+                // Both BLUETOOTH and BLUETOOTH_ADMIN are required pre-API 31:
+                // BLUETOOTH for connection and BLUETOOTH_ADMIN for scanning/advertising.
+                return listOf(
                     Manifest.permission.BLUETOOTH,
-                ) == PackageManager.PERMISSION_GRANTED
+                    Manifest.permission.BLUETOOTH_ADMIN,
+                ).all { permission ->
+                    ContextCompat.checkSelfPermission(context, permission) ==
+                        PackageManager.PERMISSION_GRANTED
+                }
             }
 
             return listOf(
