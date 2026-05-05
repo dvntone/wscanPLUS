@@ -190,6 +190,9 @@ class BleNmeaGattServer(
     private val advertiseCallback =
         object : AdvertiseCallback() {
             override fun onStartSuccess(settingsInEffect: AdvertiseSettings?) {
+                // Guard against a stale callback arriving after stop() or a rapid
+                // stop/start cycle has already torn down the GATT server.
+                if (gattServer == null) return
                 isAdvertising = true
                 isRunning = true
                 lastError = null

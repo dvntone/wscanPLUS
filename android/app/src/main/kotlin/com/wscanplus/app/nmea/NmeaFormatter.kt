@@ -31,6 +31,10 @@ object NmeaFormatter {
         val utcTime = UTC_TIME_FORMAT.get()!!.format(Date(sample.capturedAt))
         val (lat, latHemisphere) = toNmeaCoordinate(sample.latitude, isLatitude = true)
         val (lon, lonHemisphere) = toNmeaCoordinate(sample.longitude, isLatitude = false)
+        // Android's Location.getAltitude() is WGS84 ellipsoidal height, not MSL.
+        // NMEA GGA field 9 is nominally MSL; field 11 should carry the geoid separation.
+        // Android exposes neither MSL altitude nor EGM96 geoid height, so we emit the
+        // WGS84 value with a blank geoid-separation field — the best available approximation.
         val altitude = sample.altitudeMeters?.let { formatDecimal(it, 1) } ?: ""
         val body =
             listOf(

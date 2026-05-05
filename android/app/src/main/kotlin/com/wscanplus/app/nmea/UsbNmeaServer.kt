@@ -125,7 +125,12 @@ class UsbNmeaServer(
                 Log.e(TAG, "USB NMEA accept loop failed", error)
             }
         } finally {
-            isRunning = false
+            // Only reset the running flag when this thread still owns the server socket.
+            // A rapid stop()+start() may have already bound a new socket; clearing
+            // isRunning in that case would silently kill the new server's healthy state.
+            if (serverSocket === socket) {
+                isRunning = false
+            }
             try {
                 socket.close()
             } catch (_: Exception) {
