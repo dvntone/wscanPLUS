@@ -73,4 +73,12 @@ class NmeaFormatterTest {
     fun `checksum matches known sample`() {
         assertEquals("47", NmeaFormatter.checksum("GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,,"))
     }
+
+    @Test
+    fun `toNmeaCoordinate carries minute rollover at degree boundary`() {
+        // 47.9999999 raw minutes = 59.99999... → rounds to 60.000 without carry fix
+        val (coord, hemi) = NmeaFormatter.toNmeaCoordinate(47.9999999, isLatitude = true)
+        assertTrue("minutes field must not be 60.000, got: $coord", !coord.contains("60.000"))
+        assertEquals("N", hemi)
+    }
 }

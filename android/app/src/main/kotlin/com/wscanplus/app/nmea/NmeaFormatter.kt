@@ -86,8 +86,15 @@ object NmeaFormatter {
         isLatitude: Boolean,
     ): Pair<String, String> {
         val absValue = abs(coordinate)
-        val degrees = absValue.toInt()
-        val minutes = (absValue - degrees) * 60.0
+        var degrees = absValue.toInt()
+        // Round to output precision first so carry is detected before formatting;
+        // without this, values like 47.9999999 produce "xx60.000" which is rejected
+        // by NMEA parsers (valid range is 00.000–59.999).
+        var minutes = Math.round((absValue - degrees) * 60.0 * 1000.0).toDouble() / 1000.0
+        if (minutes >= 60.0) {
+            degrees += 1
+            minutes = 0.0
+        }
         val degreeWidth = if (isLatitude) 2 else 3
         val formatted =
             String.format(
