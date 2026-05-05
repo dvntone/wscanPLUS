@@ -30,6 +30,8 @@ object WscanUi {
     fun prepareWindow(activity: Activity) {
         WindowCompat.setDecorFitsSystemWindows(activity.window, false)
 
+        applyLegacySystemBarColors(activity)
+
         WindowInsetsControllerCompat(activity.window, activity.window.decorView).apply {
             isAppearanceLightStatusBars = false
             isAppearanceLightNavigationBars = false
@@ -37,6 +39,19 @@ object WscanUi {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             activity.window.isNavigationBarContrastEnforced = false
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun applyLegacySystemBarColors(activity: Activity) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            return
+        }
+
+        activity.window.statusBarColor = COLOR_NAVY
+        activity.window.navigationBarColor = COLOR_BG
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            activity.window.navigationBarDividerColor = COLOR_BG
         }
     }
 
