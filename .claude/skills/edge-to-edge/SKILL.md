@@ -54,7 +54,7 @@ metadata:
 
   <br />
 
-  1. **PREFERRED:** When available, use the automatic inset handling or padding modifiers in material components.
+  2. **PREFERRED:** When available, use the automatic inset handling or padding modifiers in material components.
 
      - Material 3 Components manages safe areas for its own components, including:
        - `TopAppBar`
@@ -73,7 +73,7 @@ metadata:
        1. **PREFERRED:** `TopAppBar(windowInsets = AppBarDefaults.topAppBarWindowInsets)`
        2. `TopAppBar(windowInsets = WindowInsets.systemBars.exclude(WindowInsets.navigationBars))`
        3. `TopAppBar(windowInsets = WindowInsets.systemBars.add(WindowInsets.captionBar))`
-  2. For components outside a Scaffold, use padding modifiers, such as `Modifier.safeDrawingPadding()` or `Modifier.windowInsetsPadding(WindowInsets.safeDrawing)`.
+  3. For components outside a Scaffold, use padding modifiers, such as `Modifier.safeDrawingPadding()` or `Modifier.windowInsetsPadding(WindowInsets.safeDrawing)`.
 
 
      ```kotlin
@@ -93,9 +93,9 @@ metadata:
 
      <br />
 
-  3. For deeply nested components with excessive padding, use `WindowInsetsRulers` (e.g. `Modifier.fitInside(WindowInsetsRulers.SafeDrawing.current)`). See the *IME* section for a code sample.
+  4. For deeply nested components with excessive padding, use `WindowInsetsRulers` (e.g. `Modifier.fitInside(WindowInsetsRulers.SafeDrawing.current)`). See the *IME* section for a code sample.
 
-  4. When you need an element (e.g. a custom header or decorative scrim) to
+  5. When you need an element (e.g. a custom header or decorative scrim) to
      equal the dimensions of a system bar, use inset size modifiers (e.g.
      `Modifier.windowInsetsTopHeight(WindowInsets.systemBars)`).
      See the *Lists* section for a code sample.
