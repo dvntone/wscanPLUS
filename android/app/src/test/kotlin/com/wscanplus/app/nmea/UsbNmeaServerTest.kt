@@ -113,7 +113,10 @@ class UsbNmeaServerTest {
         assertEquals(0, server.clientCount)
     }
 
-    private fun awaitCondition(timeoutMs: Long = 3_000, condition: () -> Boolean) {
+    private fun awaitCondition(
+        timeoutMs: Long = 3_000,
+        condition: () -> Boolean,
+    ) {
         val deadline = System.currentTimeMillis() + timeoutMs
         while (System.currentTimeMillis() < deadline) {
             if (condition()) return

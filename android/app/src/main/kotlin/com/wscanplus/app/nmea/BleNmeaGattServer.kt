@@ -48,6 +48,7 @@ class BleNmeaGattServer(
     private var gattServer: BluetoothGattServer? = null
     private var advertiser: BluetoothLeAdvertiser? = null
     private var characteristic: BluetoothGattCharacteristic? = null
+
     // Saved before we overwrite the adapter name so stop() can restore it.
     private var previousDeviceName: String? = null
 
