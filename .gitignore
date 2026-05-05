@@ -180,6 +180,7 @@ android/.idea/
 .claude/*
 !.claude/settings.json
 !.claude/hooks/
+!.claude/skills/
 
 # VS Code local settings (not project config)
 .vscode/
