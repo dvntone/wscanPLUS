@@ -52,7 +52,7 @@ An Android app that runs on your phone and detects WiFi-layer attacks in real ti
 - Consent framework (opt-in, GDPR/CCPA compliant)
 - CrowdSec CTI client (OkHttp, `/v2/smoke/{ip}`, quota guardrails, degraded-mode handler)
 - CTI Room cache (smoke TTL 48h, fire TTL 6h)
-- Google Maps threat heatmap + GPS-tagged scan history
+- Local offline threat heatmap + GPS-tagged scan history
 - SQLCipher AES-256 database encryption + 30-day retention purge
 
 **Phase 4 — AI layer + reporting (complete)**

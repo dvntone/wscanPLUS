@@ -2,7 +2,7 @@
 
 ## Executive summary
 
-The top risk themes are local trust-boundary confusion, integrity of device-to-desktop telemetry, and protection of GPS-tagged scan history. The highest-risk areas are the Android encrypted database lifecycle, the desktop companion ingest path, and the optional outbound enrichment paths (CrowdSec CTI, Gemini, Google Maps) because they sit at boundaries where local-only assumptions can quietly break. Evidence anchors: `android/app/src/main/kotlin/com/wscanplus/app/WatchdogService.kt`, `android/app/src/main/kotlin/com/wscanplus/app/ScanMapActivity.kt`, `desktop/companionServer.mjs`, `desktop/main.js`.
+The top risk themes are local trust-boundary confusion, integrity of device-to-desktop telemetry, and protection of GPS-tagged scan history. The highest-risk areas are the Android encrypted database lifecycle, the desktop companion ingest path, and the optional outbound enrichment paths (CrowdSec CTI, Gemini) because they sit at boundaries where local-only assumptions can quietly break. Evidence anchors: `android/app/src/main/kotlin/com/wscanplus/app/WatchdogService.kt`, `android/app/src/main/kotlin/com/wscanplus/app/ScanMapActivity.kt`, `desktop/companionServer.mjs`, `desktop/main.js`.
 
 ## Scope and assumptions
 
@@ -37,7 +37,7 @@ The top risk themes are local trust-boundary confusion, integrity of device-to-d
 - External providers:
   - CrowdSec CTI over HTTPS. Evidence: `android/app/src/main/kotlin/com/wscanplus/app/cti/CrowdSecCtiClient.kt`.
   - Firebase AI Gemini over SDK-managed network transport. Evidence: `android/app/src/main/kotlin/com/wscanplus/app/gemini/GeminiThreatAnalyzer.kt`.
-  - Google Maps SDK and maps-utils heatmap rendering. Evidence: `android/app/build.gradle.kts`, `android/app/src/main/kotlin/com/wscanplus/app/ScanMapActivity.kt`.
+  - Local offline heatmap rendering. Evidence: `android/app/src/main/kotlin/com/wscanplus/app/ScanMapActivity.kt`, `android/app/src/main/kotlin/com/wscanplus/app/LocalHeatmapView.kt`.
   - Kismet GPS upload path. Evidence: `android/app/src/main/kotlin/com/wscanplus/app/kismet/KismetGpsClient.kt`.
 
 ### Data flows and trust boundaries
@@ -54,9 +54,9 @@ The top risk themes are local trust-boundary confusion, integrity of device-to-d
   - Security guarantees: intended SQLCipher at-rest encryption via `SupportFactory`; no app-layer row authZ because single-user model.
   - Validation/normalization: threat signals derived from typed scanner results; DB schema and Room models constrain structure.
   - Evidence: `android/app/src/main/kotlin/com/wscanplus/app/WatchdogService.kt`, `android/core/src/main/kotlin/com/wscanplus/core/db/WscanDatabase.kt`.
-- Android app -> External CTI / AI / Kismet / Maps providers
-  - Data types: IP reputation queries, threat summaries/prompts, GPS data, API-backed map tiles.
-  - Channel/protocol: HTTPS via OkHttp / Firebase SDK / Google Maps SDK / Kismet HTTP config.
+- Android app -> External CTI / AI / Kismet providers
+  - Data types: IP reputation queries, threat summaries/prompts, GPS data.
+  - Channel/protocol: HTTPS via OkHttp / Firebase SDK / Kismet HTTP config.
   - Security guarantees: consent checks for CTI/Gemini/Kismet, TLS through SDK/client stacks, local secret injection via gradle/secrets files.
   - Validation/normalization: consent checks and placeholder-key guards exist; quota and response validation are partial.
   - Evidence: `android/app/src/main/kotlin/com/wscanplus/app/cti/CrowdSecCtiClient.kt`, `android/app/src/main/kotlin/com/wscanplus/app/gemini/GeminiThreatAnalyzer.kt`, `android/app/src/main/kotlin/com/wscanplus/app/kismet/KismetGpsClient.kt`, `android/app/build.gradle.kts`.
@@ -140,7 +140,7 @@ flowchart TD
 | Android permission/consent onboarding | Operator launches app and responds to dialogs | Operator -> Android UI | Governs scanner start and cloud-sharing posture | `android/app/src/main/kotlin/com/wscanplus/app/MainActivity.kt` / `showConsentDialog` |
 | Android foreground service start | `MainActivity` starts `WatchdogService` | UI -> Service | Central runtime orchestrator | `android/app/src/main/kotlin/com/wscanplus/app/MainActivity.kt` / `startWatchdog` |
 | Android DB open path | Activities/service call `WscanDatabase.getInstance` | App logic -> local DB | Mixed encrypted/non-encrypted call sites exist | `android/core/src/main/kotlin/com/wscanplus/core/db/WscanDatabase.kt` / `getInstance` |
-| Scan map screen | Operator opens map activity | UI -> DB / Google Maps | One DB caller bypasses SQLCipher factory | `android/app/src/main/kotlin/com/wscanplus/app/ScanMapActivity.kt` / `loadAndRender` |
+| Scan map screen | Operator opens map activity | UI -> encrypted DB / local heatmap view | DB passphrase bootstrap must remain consistent | `android/app/src/main/kotlin/com/wscanplus/app/ScanMapActivity.kt` / `renderHeatmap` |
 | JSON export | Operator taps export in results UI | UI -> DB -> filesystem/share sheet | Creates portable artifact containing sensitive data | `android/app/src/main/kotlin/com/wscanplus/app/ThreatResultsActivity.kt` / `exportJson`, `android/app/src/main/kotlin/com/wscanplus/app/export/ScanDataExporter.kt` |
 | CrowdSec CTI lookup | Internal runtime call from service logic | App -> external HTTPS | Consent-gated but quota semantics are partial | `android/app/src/main/kotlin/com/wscanplus/app/cti/CrowdSecCtiClient.kt` / `lookupSmoke`, `android/app/src/main/kotlin/com/wscanplus/app/cti/CtiCacheRepository.kt` |
 | Gemini narrative generation | Internal runtime call from service logic | App -> external SDK service | Consent-gated cloud prompt flow | `android/app/src/main/kotlin/com/wscanplus/app/gemini/GeminiThreatAnalyzer.kt` / `analyze` |

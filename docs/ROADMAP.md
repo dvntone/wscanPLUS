@@ -19,7 +19,7 @@ Scanner chain + Android scaffold delivered, along with quality tooling and final
 - [x] WatchdogService + scanner chain (USB > Standard; Root dev-opt-in stub)
 - [x] AndroidManifest permissions (full set for API 24-36)
 - [x] Firebase AI Logic scaffold (firebase-bom:34.10.0 + firebase-ai)
-- [x] Google Maps scaffold (play-services-maps:20.0.0)
+- [x] Local offline scan heatmap scaffold
 - [x] StandardScanner full implementation (API 24-29 + API 30+)
 - [x] Wire scanner results into WatchdogService
 - [x] ktlint 14.2.0 CI (`:core` + `:app`)
@@ -75,7 +75,7 @@ Phase 2 is complete. The following items are known gaps between the architecture
 - [x] CrowdSec CTI client (OkHttp, `/v2/smoke/{ip}`) (PR #174)
 - [x] Firebase setup (BOM 34.11.0) (PR #175)
 - [x] CTI cache + quota guardrails + degraded-mode handler (PRs #177, #180)
-- [x] Google Maps threat heatmap + GPS-tagged scan history (PR #178)
+- [x] Local offline threat heatmap + GPS-tagged scan history
 - [x] SQLCipher AES-256 DB encryption + 30-day retention purge (PR #181)
 
 PRs: #173–#182

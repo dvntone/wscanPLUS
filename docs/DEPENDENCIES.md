@@ -64,7 +64,6 @@
 | `com.google.gms:google-services` (plugin) | **4.4.4** | Bumped from 4.4.2. Required for Firebase AI. Add to root + app build.gradle.kts. |
 | `com.google.firebase:firebase-bom` (platform) | **34.10.0** | Latest stable as of 2026-03-16 (firebase.google.com/support/release-notes/android). No CVEs. |
 | `com.google.firebase:firebase-ai` | unversioned via BOM (standalone: `17.10.0`) | Firebase AI Logic SDK. NOT `firebase-vertexai` (superseded) or `generativeai` (deprecated). No CVEs. |
-| `com.google.android.gms:play-services-maps` | **20.0.0** | Bumped from 18.1.0. No CVEs. |
 | `com.google.android.libraries.mapsplatform.secrets-gradle-plugin` | **2.0.1** | Current stable. No CVEs. |
 | `org.jetbrains.kotlinx:kotlinx-coroutines-core` | **1.10.2** | Current stable. Add only when first coroutine code lands. No CVEs. |
 | `org.jetbrains.kotlinx:kotlinx-coroutines-android` | **1.10.2** | Current stable. Add alongside coroutines-core. No CVEs. |
