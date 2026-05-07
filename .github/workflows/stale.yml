@@ -18,10 +18,16 @@ jobs:
       pull-requests: write
 
     steps:
-    - uses: actions/stale@v5
+    - uses: actions/stale@f7176fd3007623b69d27091f9b9d4ab7995f0a06  # v5
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
-        stale-issue-message: 'Stale issue message'
-        stale-pr-message: 'Stale pull request message'
+        stale-issue-message: >
+          This issue has had no activity for 60 days and has been marked stale.
+          It will be closed in 7 days unless further activity occurs.
+          If this is still relevant, please leave a comment or remove the stale label.
+        stale-pr-message: >
+          This pull request has had no activity for 60 days and has been marked stale.
+          It will be closed in 7 days unless further activity occurs.
+          If this is still in progress, please leave a comment or remove the stale label.
         stale-issue-label: 'no-issue-activity'
         stale-pr-label: 'no-pr-activity'
