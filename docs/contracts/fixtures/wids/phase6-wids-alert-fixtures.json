@@ -1,0 +1,274 @@
+{
+  "schemaVersion": 1,
+  "detectorVersion": "phase6-wids-v1",
+  "description": "Representative WIDS contract fixtures for Issue #294. Documentation/fixtures only; no runtime behavior implied.",
+  "cases": [
+    {
+      "case": "suspected_evil_twin_android_only",
+      "observations": [
+        {
+          "id": "obs_evil_001",
+          "schemaVersion": 1,
+          "source": "android_wifi",
+          "sourceDeviceId": "android_pixel_001",
+          "timestamp": 1777990200000,
+          "sessionId": "session_evil_001",
+          "ssid": "TrustedNet",
+          "bssid": "de:ad:be:ef:00:02",
+          "frequencyMhz": 2437,
+          "channel": 6,
+          "rssiDbm": -35,
+          "capabilities": "[WPA-PSK-TKIP][ESS]",
+          "oui": "Unknown",
+          "scanAgeMs": 940,
+          "cachedOrThrottled": "unknown",
+          "zoneLabel": "home-office"
+        }
+      ],
+      "alerts": [
+        {
+          "id": "alert_evil_001",
+          "schemaVersion": 1,
+          "type": "suspected_evil_twin",
+          "severity": "high",
+          "confidence": 0.75,
+          "title": "Suspected Evil Twin",
+          "explanation": "Known SSID was observed from an unfamiliar BSSID with changed security capabilities and unexpectedly strong RSSI. Confidence is capped because the source is Android WiFi scan evidence only.",
+          "evidence": [
+            {
+              "kind": "unknown_bssid",
+              "weight": 0.3,
+              "description": "TrustedNet is known, but BSSID de:ad:be:ef:00:02 is not in the trusted baseline.",
+              "observationIds": ["obs_evil_001"]
+            },
+            {
+              "kind": "security_change",
+              "weight": 0.2,
+              "description": "Observed capabilities differ from trusted baseline capabilities.",
+              "observationIds": ["obs_evil_001"]
+            },
+            {
+              "kind": "rssi_anomaly",
+              "weight": 0.15,
+              "description": "RSSI is stronger than expected for this zone baseline.",
+              "observationIds": ["obs_evil_001"]
+            }
+          ],
+          "limitations": [
+            "Android companion mode provides environmental WiFi scan evidence, not monitor-mode packet capture."
+          ],
+          "recommendedAction": "Avoid connecting until the AP is verified against trusted router inventory or monitor-mode evidence is available.",
+          "createdAt": 1777990201000,
+          "sourceDeviceIds": ["android_pixel_001"],
+          "detectorVersion": "phase6-wids-v1"
+        }
+      ]
+    },
+    {
+      "case": "possible_deauth_android_only_capped",
+      "observations": [
+        {
+          "id": "obs_deauth_android_001",
+          "schemaVersion": 1,
+          "source": "android_wifi",
+          "sourceDeviceId": "android_pixel_001",
+          "timestamp": 1777990300000,
+          "sessionId": "session_deauth_001",
+          "ssid": "TrustedNet",
+          "bssid": "aa:bb:cc:dd:ee:ff",
+          "frequencyMhz": 2412,
+          "channel": 1,
+          "rssiDbm": -82,
+          "capabilities": "[WPA2-PSK-CCMP][ESS]",
+          "scanAgeMs": 1300,
+          "cachedOrThrottled": "unknown",
+          "zoneLabel": "home-office"
+        }
+      ],
+      "alerts": [
+        {
+          "id": "alert_deauth_android_001",
+          "schemaVersion": 1,
+          "type": "possible_deauth",
+          "severity": "medium",
+          "confidence": 0.45,
+          "title": "Possible deauth-like disruption",
+          "explanation": "Trusted AP visibility and RSSI changed abruptly during a user-marked disruption window. Confidence is capped because normal Android WiFi APIs do not expose raw management frames.",
+          "evidence": [
+            {
+              "kind": "rssi_anomaly",
+              "weight": 0.2,
+              "description": "Trusted AP RSSI moved outside expected zone baseline during a disruption window.",
+              "observationIds": ["obs_deauth_android_001"]
+            },
+            {
+              "kind": "scan_throttling_possible",
+              "weight": 0.05,
+              "description": "Scan cadence and freshness may be affected by Android platform throttling or cached results.",
+              "observationIds": ["obs_deauth_android_001"]
+            }
+          ],
+          "limitations": [
+            "Normal Android WiFi APIs do not expose raw management frames; this alert is based on indirect scan/connectivity behavior and needs monitor-mode confirmation."
+          ],
+          "recommendedAction": "Correlate with Linux monitor-mode capture before treating this as confirmed management-frame DoS.",
+          "createdAt": 1777990301000,
+          "sourceDeviceIds": ["android_pixel_001"],
+          "detectorVersion": "phase6-wids-v1"
+        }
+      ]
+    },
+    {
+      "case": "management_frame_dos_monitor_mode",
+      "observations": [
+        {
+          "id": "obs_mfdos_001",
+          "schemaVersion": 1,
+          "source": "linux_monitor",
+          "sourceDeviceId": "desktop_adapter_mon0",
+          "timestamp": 1777990400000,
+          "sessionId": "session_mfdos_001",
+          "ssid": "TrustedNet",
+          "bssid": "aa:bb:cc:dd:ee:ff",
+          "frequencyMhz": 2412,
+          "channel": 1,
+          "rssiDbm": -48,
+          "capabilities": "monitor_frame_event:deauth_burst",
+          "scanAgeMs": 0,
+          "cachedOrThrottled": "no",
+          "zoneLabel": "home-office"
+        }
+      ],
+      "alerts": [
+        {
+          "id": "alert_mfdos_001",
+          "schemaVersion": 1,
+          "type": "management_frame_dos",
+          "severity": "critical",
+          "confidence": 0.9,
+          "title": "Management-frame DoS detected",
+          "explanation": "Monitor-mode source observed a repeated deauthentication burst against the trusted AP/channel.",
+          "evidence": [
+            {
+              "kind": "monitor_frame_event",
+              "weight": 0.6,
+              "description": "Linux monitor-mode source observed a deauthentication burst on channel 1 targeting the trusted BSSID.",
+              "observationIds": ["obs_mfdos_001"]
+            }
+          ],
+          "limitations": [],
+          "recommendedAction": "Preserve the capture/session artifact and inspect source/target frame details.",
+          "createdAt": 1777990401000,
+          "sourceDeviceIds": ["desktop_adapter_mon0"],
+          "detectorVersion": "phase6-wids-v1"
+        }
+      ]
+    },
+    {
+      "case": "recurring_radio_signature",
+      "observations": [
+        {
+          "id": "obs_recurring_001",
+          "schemaVersion": 1,
+          "source": "android_ble",
+          "sourceDeviceId": "android_pixel_001",
+          "timestamp": 1777990500000,
+          "sessionId": "session_recurring_001",
+          "bleAddress": "randomized-ble-signature-01",
+          "bleName": null,
+          "bleRssiDbm": -51,
+          "motionState": "still",
+          "scanAgeMs": 600,
+          "cachedOrThrottled": "unknown",
+          "zoneLabel": "home-office"
+        }
+      ],
+      "alerts": [
+        {
+          "id": "alert_recurring_001",
+          "schemaVersion": 1,
+          "type": "recurring_radio_signature",
+          "severity": "medium",
+          "confidence": 0.62,
+          "title": "Recurring nearby radio signature",
+          "explanation": "A nearby BLE/WiFi radio signature recurred near multiple user-marked incident windows. This is correlation evidence only.",
+          "evidence": [
+            {
+              "kind": "recurrence",
+              "weight": 0.35,
+              "description": "The same radio signature was observed across multiple incident windows.",
+              "observationIds": ["obs_recurring_001"]
+            },
+            {
+              "kind": "ble_correlation",
+              "weight": 0.15,
+              "description": "BLE signal appeared near the marked event window with similar RSSI trend.",
+              "observationIds": ["obs_recurring_001"]
+            }
+          ],
+          "limitations": [
+            "This identifies recurring radio observations, not a person, owner, or intent."
+          ],
+          "recommendedAction": "Continue collecting labeled observations before drawing conclusions.",
+          "createdAt": 1777990501000,
+          "sourceDeviceIds": ["android_pixel_001"],
+          "detectorVersion": "phase6-wids-v1"
+        }
+      ]
+    },
+    {
+      "case": "baseline_deviation",
+      "observations": [
+        {
+          "id": "obs_baseline_001",
+          "schemaVersion": 1,
+          "source": "desktop_wifi",
+          "sourceDeviceId": "desktop_iw_wlan0",
+          "timestamp": 1777990600000,
+          "sessionId": "session_baseline_001",
+          "ssid": "TrustedNet",
+          "bssid": "aa:bb:cc:dd:ee:ff",
+          "frequencyMhz": 5180,
+          "channel": 36,
+          "rssiDbm": -88,
+          "capabilities": "[WPA2-PSK-CCMP][ESS]",
+          "scanAgeMs": 300,
+          "cachedOrThrottled": "no",
+          "zoneLabel": "home-office"
+        }
+      ],
+      "alerts": [
+        {
+          "id": "alert_baseline_001",
+          "schemaVersion": 1,
+          "type": "baseline_deviation",
+          "severity": "low",
+          "confidence": 0.48,
+          "title": "Baseline deviation observed",
+          "explanation": "Trusted AP signal profile deviated from the expected zone baseline without enough evidence to classify as a specific attack.",
+          "evidence": [
+            {
+              "kind": "rssi_anomaly",
+              "weight": 0.2,
+              "description": "RSSI is outside the expected median/range for the selected zone.",
+              "observationIds": ["obs_baseline_001"]
+            },
+            {
+              "kind": "channel_change",
+              "weight": 0.1,
+              "description": "Observed channel differs from the most common baseline channel for this AP.",
+              "observationIds": ["obs_baseline_001"]
+            }
+          ],
+          "limitations": [
+            "Baseline deviation is an anomaly signal and does not identify cause by itself."
+          ],
+          "recommendedAction": "Collect additional observations and compare against trusted router inventory.",
+          "createdAt": 1777990601000,
+          "sourceDeviceIds": ["desktop_iw_wlan0"],
+          "detectorVersion": "phase6-wids-v1"
+        }
+      ]
+    }
+  ]
+}
