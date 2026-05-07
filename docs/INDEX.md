@@ -8,6 +8,12 @@
 - docs/research/spatial-map-provider-neutral-plan.md — provider-neutral spatial renderer plan (MapLibre primary, local fallback)
 - [docs/SESSION_STATE.md#2026-03-20-handoff-snapshot](docs/SESSION_STATE.md#2026-03-20-handoff-snapshot) — fastest re-entry point for the next AI session
 
+## Design / UI
+- docs/design/wscan_theme_token_strategy.md — shared token strategy for desktop, Android, and future web surfaces
+- docs/third-party-attribution.md — attribution notes for design-system and theme-generation influences
+- design/tokens/README.md — design-token source purpose, naming rules, and guardrails
+- design/tokens/wscan.tokens.json — seed semantic token source for wscan+ UI surfaces
+
 ## Device Testing
 - docs/testing/README.md — testing layout, rules, and per-device organization
 - docs/testing/scan-reliability-matrix.md — required matrix for Wi-Fi/BLE/cell scan behavior across connectivity, FGS, lockscreen, battery, and OEM states
