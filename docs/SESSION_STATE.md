@@ -20,7 +20,7 @@ Audience: professional / advanced users (defensive detection & assessment)
 
 ## Key Decisions (locked)
 
-- Drop WiGLE service. Mapping via MapLibre (LibreMaps) + optional web map.
+- Drop WiGLE service. Current Android scan map uses local/offline `LocalHeatmapView` with GPS-tagged scan data. MapLibre is the planned free-only future migration path and must be implemented in its own dedicated map-provider issue/PR — see `docs/research/codex/60_free_map_migration_2026-04-25.md`.
 - Export formats: PCAP/PCAPNG (Wireshark-compatible) + JSON.
 - Kismet: OPTIONAL integration. Primary near-term use: Android as remote GPS source.
 - BetterCap: OPTIONAL integration. Reference: https://github.com/bettercap/caplets
