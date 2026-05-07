@@ -86,6 +86,6 @@ jobs:
           }
           EOF
 
-      - name: Warm up Gradle daemon
+      - name: Pre-download Gradle dependencies
         working-directory: android
-        run: ./gradlew --no-daemon help
+        run: ./gradlew --no-daemon dependencies --quiet
