@@ -12,6 +12,7 @@ import android.widget.TextView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import java.util.Locale
 
 object WscanUi {
@@ -28,6 +29,25 @@ object WscanUi {
 
     fun prepareWindow(activity: Activity) {
         WindowCompat.setDecorFitsSystemWindows(activity.window, false)
+
+        applyLegacySystemBarColors(activity)
+
+        WindowInsetsControllerCompat(activity.window, activity.window.decorView).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            activity.window.isNavigationBarContrastEnforced = false
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun applyLegacySystemBarColors(activity: Activity) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            return
+        }
+
         activity.window.statusBarColor = COLOR_NAVY
         activity.window.navigationBarColor = COLOR_BG
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
