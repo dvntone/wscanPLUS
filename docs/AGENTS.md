@@ -44,7 +44,7 @@ The rules in this file (e.g., "agent must close its own PR") were written assumi
 |------|----|--------|
 | Coding agent | Claude / Copilot | PRs, commits, config |
 | In-app threat analysis | Gemini / Vertex AI (Google AI Pro) | Android app only |
-| Maps & location | Google Maps API | Android app only |
+| Maps & location | MapLibre (LibreMaps) + OSM tiles | Android app only |
 
 Coding agents must never remove, replace, or modify the Gemini/Vertex integration in the Android app. It is intentional, already paid for via Google AI Pro, and required for Play Store distribution. File an issue if you believe something needs changing — do not act unilaterally.
 

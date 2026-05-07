@@ -33,7 +33,7 @@ base64 -b 0 release.keystore > keystore.b64
 
 ---
 
-## Google APIs (Android App)
+## Maps (Android App)
 
 | Secret Name | Purpose |
 |-------------|---------|

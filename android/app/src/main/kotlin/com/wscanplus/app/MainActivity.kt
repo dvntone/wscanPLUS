@@ -44,6 +44,7 @@ class MainActivity : Activity() {
 
         val toolsCard = WscanUi.card(rootLayout)
         WscanUi.sectionTitle(toolsCard, "Field tools")
+        WscanUi.actionButton(toolsCard, "Theme") { openThemeSettings() }
         WscanUi.actionButton(toolsCard, "Kismet Settings") { openKismetSettings() }
         WscanUi.actionButton(toolsCard, "View Scan Map") { openScanMap() }
         WscanUi.actionButton(toolsCard, "View Threat Results") { openThreatResults() }
@@ -181,6 +182,10 @@ class MainActivity : Activity() {
 
     private fun openKismetSettings() {
         startActivity(Intent(this, KismetSettingsActivity::class.java))
+    }
+
+    private fun openThemeSettings() {
+        startActivity(Intent(this, com.wscanplus.app.theme.ThemeSettingsActivity::class.java))
     }
 
     private fun openScanMap() {

@@ -25,7 +25,7 @@ Only these agents may write or modify code, docs, and config in this repo:
 |------|----|--------|
 | Coding agent | Claude / Copilot | PRs, commits, config |
 | In-app threat analysis | Gemini / Vertex AI (Google AI Pro) | Android app only |
-| Maps & location | Google Maps API | Android app only |
+| Maps & location | Current: `LocalHeatmapView` / local GPS heatmap; planned: MapLibre free-only migration (own dedicated PR) | Android app only |
 
 **Coding agents must never remove, replace, or modify the Gemini/Vertex integration in the Android app.** It is intentional and paid for. File an issue if you think something needs changing.
 
