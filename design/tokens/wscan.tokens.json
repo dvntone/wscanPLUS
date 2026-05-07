@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json.schemastore.org/design-tokens.json",
+  "meta": {
+    "name": "wscan+ tactical operator tokens",
+    "status": "source-of-truth seed",
+    "issue": "#301"
+  },
+  "color": {
+    "canvas": { "value": "#0B1220" },
+    "panel": { "value": "#121A2B" },
+    "panelElevated": { "value": "#1A2336" },
+    "panelHover": { "value": "#24324A" },
+    "border": { "value": "#2A3850" },
+    "borderStrong": { "value": "#42526B" },
+    "accentScan": { "value": "#2AC3FF" },
+    "accentFocus": { "value": "#7C5CFF" },
+    "threatLow": { "value": "#2FBF71" },
+    "threatMedium": { "value": "#F2B94B" },
+    "threatHigh": { "value": "#FF8A3D" },
+    "threatCritical": { "value": "#FF5A5F" },
+    "rssiWeak": { "value": "#FF8A3D" },
+    "rssiModerate": { "value": "#F2B94B" },
+    "rssiStrong": { "value": "#2FBF71" },
+    "textStrong": { "value": "#F2F5F9" },
+    "text": { "value": "#D6DCE7" },
+    "textMuted": { "value": "#A4AFBF" },
+    "textDisabled": { "value": "#6B7586" },
+    "console": { "value": "#05070B" }
+  },
+  "radius": {
+    "sm": { "value": "6px" },
+    "md": { "value": "10px" },
+    "lg": { "value": "14px" },
+    "xl": { "value": "18px" },
+    "pill": { "value": "999px" }
+  },
+  "space": {
+    "1": { "value": "4px" },
+    "2": { "value": "8px" },
+    "3": { "value": "12px" },
+    "4": { "value": "16px" },
+    "5": { "value": "20px" },
+    "6": { "value": "24px" },
+    "8": { "value": "32px" }
+  },
+  "motion": {
+    "fast": { "value": "120ms" },
+    "medium": { "value": "200ms" }
+  }
+}
