@@ -37,10 +37,7 @@ base64 -b 0 release.keystore > keystore.b64
 
 | Secret Name | Purpose |
 |-------------|---------|
-| `MAPS_PRIMARY_STYLE_URL` | Primary MapLibre (LibreMaps) style URL (or a local style asset reference) |
-| `MAPS_FALLBACK_STYLE_URL` | Fallback free style URL if primary is unavailable |
-
-**Status:** TBD (post-Google Maps swap).
+No Google Maps key is required for the Android scan heatmap. The map view uses local GPS-tagged scan data and does not call Google Maps Platform.
 
 **Firebase AI Logic (Gemini):** does NOT use a raw API key at Android runtime. Authentication is handled automatically via `google-services.json` + the `com.google.gms.google-services` plugin. The Firebase project (`gen-lang-client-0542386332`) must have `generativelanguage.googleapis.com` and `firebasevertexai.googleapis.com` enabled. No secret needs to be added to GitHub or `local.properties` for Gemini.
 
@@ -59,8 +56,6 @@ base64 -b 0 release.keystore > keystore.b64
 
 For local Android builds, add to `android/local.properties` (git-ignored):
 ```
-MAPS_PRIMARY_STYLE_URL=https://example.com/style.json
-MAPS_FALLBACK_STYLE_URL=https://example.com/style.json
 CROWDSEC_CTI_API_KEY=your_key_here
 ANDROID_KEY_ALIAS=your_alias
 ANDROID_KEY_PASSWORD=your_password

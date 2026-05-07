@@ -182,7 +182,7 @@ This section is the fast re-entry point for the next Claude/Copilot session.
   - `#122` — missing visible app-side adb logs on Revvl Android 15
   - `#124` — coarse-only launch succeeds but scan retrieval still fails
   - `#125` — backgrounded / keyguard-visible app loses effective `getScanResults()` access
-  - `#9` — Google Maps threat heatmap + scan history map
+  - `#9` — local offline threat heatmap + scan history map
 
 ### Verification status
 
@@ -251,7 +251,7 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 
 ### Recommended next work
 
-1. Issue `#9` — add Google Maps threat heatmap and GPS-tagged scan history map on top of the stored GPS fields implemented in PR `#148` (which closed issue `#10`)
+1. Issue `#9` — maintain the local offline threat heatmap and GPS-tagged scan history map on top of the stored GPS fields implemented in PR `#148` (which closed issue `#10`)
 2. Resolve the remaining Android runtime issues already tracked:
    - `#125` re-test secure-lockscreen / stronger background cases on Revvl Android 15, because non-secure HOME and screen-off did not reproduce the earlier failure on current `main`
    - `#124` align issue/docs state with current behavior: coarse-only is now blocked before service startup on current `main`
@@ -259,7 +259,7 @@ This section is the fast re-entry point for the next Claude/Copilot session.
 3. Carry the documented adb install / permission / state checks into the later desktop companion implementation
 4. Read [docs/research/codex/54_review_triage_2026-03-20.md](/docs/research/codex/54_review_triage_2026-03-20.md) before changing scanner behavior, Windows wrapper behavior, or cross-repo hardening assumptions
 5. Read [docs/research/codex/55_open_issue_priority_2026-03-20.md](/docs/research/codex/55_open_issue_priority_2026-03-20.md) for the current research-backed priority order and source links
-6. Read [docs/research/codex/56_map_provider_options_2026-03-20.md](/docs/research/codex/56_map_provider_options_2026-03-20.md) before proposing any replacement or fallback for the locked Google Maps integration
+6. Read [docs/research/codex/60_free_map_migration_2026-04-25.md](/docs/research/codex/60_free_map_migration_2026-04-25.md) before proposing any paid map provider or restoring a Google Maps integration
 7. Read [docs/research/codex/57_issue_10_kismet_web_gps_delivery_2026-03-20.md](/docs/research/codex/57_issue_10_kismet_web_gps_delivery_2026-03-20.md) before changing the GPS/Kismet path or comparing the current branch against the earlier plan
 
 ---
@@ -332,9 +332,9 @@ AGP 9.x ships with built-in Kotlin. No `org.jetbrains.kotlin.android` plugin nee
   implementation(platform("com.google.firebase:firebase-bom:34.10.0"))
   implementation("com.google.firebase:firebase-ai")
   ```
-- **Auth:** API key via `secrets-gradle-plugin:2.0.1` in `local.properties`. No WIF for Android runtime.
+- **Auth:** CrowdSec API key via `secrets-gradle-plugin:2.0.1` in `local.properties`. No WIF for Android runtime.
 - **WIF (gemini_findings.md):** Valid for CI/CD → GCP server-side only. Filed for Phase 4+.
-- Map rendering: MapLibre (LibreMaps) when enabled; local provider-neutral canvas fallback otherwise.
+- **Map UI:** local offline `LocalHeatmapView`; no Google Maps SDK or Maps API key required.
 
 ### WiFi scanning API (confirmed — 2026-03-16)
 

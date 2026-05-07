@@ -1,0 +1,132 @@
+package com.wscanplus.app.nmea
+
+import com.wscanplus.app.location.LocationSample
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+import kotlin.math.abs
+
+// ThreadLocal wrappers make SimpleDateFormat safe for concurrent callers on any API level.
+private val UTC_TIME_FORMAT =
+    object : ThreadLocal<SimpleDateFormat>() {
+        override fun initialValue() =
+            SimpleDateFormat("HHmmss.SSS", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
+    }
+
+private val UTC_DATE_FORMAT =
+    object : ThreadLocal<SimpleDateFormat>() {
+        override fun initialValue() =
+            SimpleDateFormat("ddMMyy", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
+    }
+
+object NmeaFormatter {
+    fun toSentences(sample: LocationSample): List<String> = listOf(toGga(sample), toRmc(sample))
+
+    fun toGga(sample: LocationSample): String {
+        val utcTime = UTC_TIME_FORMAT.get()!!.format(Date(sample.capturedAt))
+        val (lat, latHemisphere) = toNmeaCoordinate(sample.latitude, isLatitude = true)
+        val (lon, lonHemisphere) = toNmeaCoordinate(sample.longitude, isLatitude = false)
+        // Android's Location.getAltitude() is WGS84 ellipsoidal height, not MSL.
+        // NMEA GGA field 9 is nominally MSL; field 11 should carry the geoid separation.
+        // Android exposes neither MSL altitude nor EGM96 geoid height, so we emit the
+        // WGS84 value with a blank geoid-separation field — the best available approximation.
+        val altitude = sample.altitudeMeters?.let { formatDecimal(it, 1) } ?: ""
+        val body =
+            listOf(
+                "GPGGA",
+                utcTime,
+                lat,
+                latHemisphere,
+                lon,
+                lonHemisphere,
+                "1",
+                "",
+                // Android exposes horizontal accuracy in metres, not HDOP (a dimensionless ratio).
+                // Writing metres into the HDOP field misleads consumers that interpret it as a
+                // quality indicator — leave it blank rather than emit a semantically wrong value.
+                "",
+                altitude,
+                "M",
+                "",
+                "M",
+                "",
+                "",
+            ).joinToString(",")
+        return sentence(body)
+    }
+
+    fun toRmc(sample: LocationSample): String {
+        val utcTime = UTC_TIME_FORMAT.get()!!.format(Date(sample.capturedAt))
+        val utcDate = UTC_DATE_FORMAT.get()!!.format(Date(sample.capturedAt))
+        val (lat, latHemisphere) = toNmeaCoordinate(sample.latitude, isLatitude = true)
+        val (lon, lonHemisphere) = toNmeaCoordinate(sample.longitude, isLatitude = false)
+        val speedKnots = sample.speedKph?.let { formatDecimal(it / 1.852, 1) } ?: ""
+        val body =
+            listOf(
+                "GPRMC",
+                utcTime,
+                "A",
+                lat,
+                latHemisphere,
+                lon,
+                lonHemisphere,
+                speedKnots,
+                "",
+                utcDate,
+                "",
+                "",
+            ).joinToString(",")
+        return sentence(body)
+    }
+
+    internal fun sentence(body: String): String = "\$$body*${checksum(body)}\r\n"
+
+    internal fun checksum(body: String): String {
+        var value = 0
+        for (ch in body) {
+            value = value xor ch.code
+        }
+        return value.toString(16).uppercase(Locale.US).padStart(2, '0')
+    }
+
+    internal fun toNmeaCoordinate(
+        coordinate: Double,
+        isLatitude: Boolean,
+    ): Pair<String, String> {
+        val absValue = abs(coordinate)
+        var degrees = absValue.toInt()
+        // Round to output precision first so carry is detected before formatting;
+        // without this, values like 47.9999999 produce "xx60.000" which is rejected
+        // by NMEA parsers (valid range is 00.000–59.999).
+        var minutes = Math.round((absValue - degrees) * 60.0 * 1000.0).toDouble() / 1000.0
+        if (minutes >= 60.0) {
+            degrees += 1
+            minutes = 0.0
+        }
+        val degreeWidth = if (isLatitude) 2 else 3
+        val formatted =
+            String.format(
+                Locale.US,
+                "%0${degreeWidth}d%06.3f",
+                degrees,
+                minutes,
+            )
+        val hemisphere =
+            if (isLatitude) {
+                if (coordinate >= 0.0) "N" else "S"
+            } else {
+                if (coordinate >= 0.0) "E" else "W"
+            }
+        return formatted to hemisphere
+    }
+
+    private fun formatDecimal(
+        value: Double,
+        fractionDigits: Int,
+    ): String = String.format(Locale.US, "%.${fractionDigits}f", value)
+}
