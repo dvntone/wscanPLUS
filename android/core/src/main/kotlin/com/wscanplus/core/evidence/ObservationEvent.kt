@@ -6,19 +6,26 @@ package com.wscanplus.core.evidence
  * Observation events are facts only. They do not imply malicious activity,
  * attribution, or detector confidence by themselves.
  *
- * `observedAtMs` uses the Android Wi-Fi scan elapsed-realtime basis converted
- * to milliseconds, not wall-clock epoch milliseconds.
+ * `observedAtMs` preserves the timestamp supplied by the source adapter. Use
+ * `observedAtBasis` to determine whether that value is elapsed realtime or
+ * wall-clock epoch milliseconds.
  */
 data class ObservationEvent(
     val id: String,
     val source: ObservationSource,
     val observedAtMs: Long,
+    val observedAtBasis: TimeBasis,
     val wifi: WifiObservationEvidence,
     val schemaVersion: Int = 1,
 )
 
-enum class ObservationSource {
-    ANDROID_WIFI_SCAN,
+enum class ObservationSource(val contractValue: String) {
+    ANDROID_WIFI("android_wifi"),
+}
+
+enum class TimeBasis {
+    ELAPSED_REALTIME,
+    EPOCH,
 }
 
 data class WifiObservationEvidence(
