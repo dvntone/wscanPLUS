@@ -79,12 +79,18 @@ class TrustedNetworkDriftDetector {
             null
         }
 
-    private fun TrustedApProfile.capabilitiesReason(capabilities: String): TrustedNetworkDriftReason? =
-        if (expectedCapabilities.isNotEmpty() && capabilities !in expectedCapabilities) {
+    private fun TrustedApProfile.capabilitiesReason(capabilities: String): TrustedNetworkDriftReason? {
+        if (expectedCapabilities.isEmpty()) return null
+
+        val observedCapabilities = capabilities.normalizedCapabilityTokens()
+        val expectedCapabilitySets = expectedCapabilities.map { it.normalizedCapabilityTokens() }
+
+        return if (observedCapabilities !in expectedCapabilitySets) {
             TrustedNetworkDriftReason.CAPABILITIES_CHANGED
         } else {
             null
         }
+    }
 
     private fun TrustedApProfile.rssiReason(rssiDbm: Int): TrustedNetworkDriftReason? {
         val median = rssiMedianDbm ?: return null
@@ -103,3 +109,10 @@ class TrustedNetworkDriftDetector {
             else -> 0.45f
         }.coerceAtMost(ANDROID_ONLY_CONFIDENCE_CAP)
 }
+
+private fun String.normalizedCapabilityTokens(): Set<String> =
+    Regex("\\[([^\\]]+)]")
+        .findAll(this)
+        .map { it.groupValues[1].trim().uppercase() }
+        .filter { it.isNotEmpty() }
+        .toSet()
