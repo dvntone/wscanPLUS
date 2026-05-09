@@ -15,24 +15,23 @@ class DetectorGateTest {
         acoustic: AcousticStatus = AcousticStatus.UNTESTED,
         bluetoothLe: Boolean = false,
         nsd: Boolean = false,
-    ) =
-        DeviceCapabilityManifest(
-            deviceModel = "Test",
-            wifiScan = wifiScan,
-            wifiRtt = wifiRtt,
-            wifiAware = false,
-            uwb = uwb,
-            barometer = barometer,
-            nsd = nsd,
-            bluetoothLe = bluetoothLe,
-            proximity = false,
-            magnetometer = false,
-            accelerometer = false,
-            gyroscope = false,
-            wifiRttAvailableNow = wifiRttAvailableNow,
-            cameraIrCapable = cameraIr,
-            acousticSonarCapable = acoustic,
-        )
+    ) = DeviceCapabilityManifest(
+        deviceModel = "Test",
+        wifiScan = wifiScan,
+        wifiRtt = wifiRtt,
+        wifiAware = false,
+        uwb = uwb,
+        barometer = barometer,
+        nsd = nsd,
+        bluetoothLe = bluetoothLe,
+        proximity = false,
+        magnetometer = false,
+        accelerometer = false,
+        gyroscope = false,
+        wifiRttAvailableNow = wifiRttAvailableNow,
+        cameraIrCapable = cameraIr,
+        acousticSonarCapable = acoustic,
+    )
 
     @Test
     fun wifiScan_requires_wifiScan_true() {
