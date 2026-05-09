@@ -5,6 +5,9 @@ package com.wscanplus.core.evidence
  *
  * Observation events are facts only. They do not imply malicious activity,
  * attribution, or detector confidence by themselves.
+ *
+ * `observedAtMs` uses the Android Wi-Fi scan elapsed-realtime basis converted
+ * to milliseconds, not wall-clock epoch milliseconds.
  */
 data class ObservationEvent(
     val id: String,
