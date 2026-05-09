@@ -81,7 +81,11 @@ abstract class WscanDatabase : RoomDatabase() {
                         context.applicationContext,
                         WscanDatabase::class.java,
                         "wscan.db",
-                    ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    ).addMigrations(
+                        MIGRATION_1_2,
+                        MIGRATION_2_3,
+                        MIGRATION_3_4,
+                    )
             factory?.let { builder.openHelperFactory(it) }
             return builder.build()
         }
@@ -123,8 +127,18 @@ abstract class WscanDatabase : RoomDatabase() {
                         )
                         """.trimIndent(),
                     )
-                    db.execSQL("CREATE INDEX IF NOT EXISTS index_gemini_narratives_sessionId ON gemini_narratives (sessionId)")
-                    db.execSQL("CREATE INDEX IF NOT EXISTS index_gemini_narratives_generatedAt ON gemini_narratives (generatedAt)")
+                    db.execSQL(
+                        """
+                        CREATE INDEX IF NOT EXISTS index_gemini_narratives_sessionId
+                        ON gemini_narratives (sessionId)
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        """
+                        CREATE INDEX IF NOT EXISTS index_gemini_narratives_generatedAt
+                        ON gemini_narratives (generatedAt)
+                        """.trimIndent(),
+                    )
                 }
             }
     }

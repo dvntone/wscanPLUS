@@ -69,6 +69,9 @@ class DbPassphraseProvider(
 
         private fun bytesToHex(bytes: ByteArray): String = bytes.joinToString("") { "%02x".format(it) }
 
-        private fun hexToBytes(hex: String): ByteArray = ByteArray(hex.length / 2) { hex.substring(it * 2, it * 2 + 2).toInt(16).toByte() }
+        private fun hexToBytes(hex: String): ByteArray =
+            ByteArray(hex.length / 2) {
+                hex.substring(it * 2, it * 2 + 2).toInt(16).toByte()
+            }
     }
 }

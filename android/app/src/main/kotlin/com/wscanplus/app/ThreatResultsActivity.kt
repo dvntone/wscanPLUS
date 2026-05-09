@@ -38,7 +38,11 @@ class ThreatResultsActivity : Activity() {
         title = "Threat Results"
 
         val root = WscanUi.shell(this)
-        WscanUi.header(root, "Threat Results", "Recent scan sessions with persisted Gemini narratives and local threat context")
+        WscanUi.header(
+            root,
+            "Threat Results",
+            "Recent scan sessions with persisted Gemini narratives and local threat context",
+        )
         val scrollView = ScrollView(this).apply { isFillViewport = true }
         contentLayout =
             LinearLayout(this).apply {
@@ -165,7 +169,9 @@ class ThreatResultsActivity : Activity() {
             card.addView(bodyText(narrative.narrative))
             card.addView(
                 mutedText(
-                    "Generated ${formatTimestamp(narrative.generatedAt)}  •  ${narrative.signalCount} signals  •  ${narrative.modelName}",
+                    "Generated ${formatTimestamp(
+                        narrative.generatedAt,
+                    )}  •  ${narrative.signalCount} signals  •  ${narrative.modelName}",
                 ),
             )
         } else {
