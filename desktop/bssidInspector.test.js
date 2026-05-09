@@ -3,25 +3,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 // Minimal DOM stubs — must be set before the module executes.
-function makeElement() {
-  return {
-    style: {},
-    textContent: '',
-    className: '',
-    querySelectorAll: () => [],
-    querySelector: () => null,
-    addEventListener: () => {},
-    children: [],
-  };
-}
-
 global.document = {
   getElementById: () => null,
   querySelector: () => null,
   querySelectorAll: () => [],
 };
 global.MutationObserver = class {
-  constructor(_cb) {}
+  constructor() {}
   observe() {}
   disconnect() {}
 };

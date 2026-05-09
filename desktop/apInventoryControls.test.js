@@ -17,10 +17,10 @@ function makeElement(id = '') {
 global.document = {
   getElementById: () => makeElement(),
   querySelectorAll: () => [],
-  createElement: (tag) => makeElement(),
+  createElement: () => makeElement(),
 };
 global.MutationObserver = class {
-  constructor(_cb) {}
+  constructor() {}
   observe() {}
   disconnect() {}
 };
