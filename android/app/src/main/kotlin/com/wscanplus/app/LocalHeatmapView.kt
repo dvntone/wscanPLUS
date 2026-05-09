@@ -1,6 +1,7 @@
 package com.wscanplus.app
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -45,6 +46,11 @@ class LocalHeatmapView : View {
             style = Paint.Style.FILL
         }
 
+    private var cachedBitmap: Bitmap? = null
+    private var cacheDirty = true
+    private var cachedWidth = 0
+    private var cachedHeight = 0
+
     init {
         setWillNotDraw(false)
         isClickable = false
@@ -54,14 +60,28 @@ class LocalHeatmapView : View {
     fun setPoints(newPoints: List<Point>) {
         points.clear()
         points.addAll(newPoints)
+        markCacheDirty()
         updateVisibility()
         invalidate()
     }
 
     fun clearPoints() {
         points.clear()
+        releaseCache()
         updateVisibility()
         invalidate()
+    }
+
+    override fun onSizeChanged(
+        w: Int,
+        h: Int,
+        oldw: Int,
+        oldh: Int,
+    ) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        if (w != oldw || h != oldh) {
+            markCacheDirty()
+        }
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -70,21 +90,59 @@ class LocalHeatmapView : View {
             return
         }
 
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), framePaint)
-        drawGrid(canvas)
+        val bitmap = ensureCachedBitmap() ?: return
+        canvas.drawBitmap(bitmap, 0f, 0f, null)
+    }
+
+    override fun onDetachedFromWindow() {
+        releaseCache()
+        super.onDetachedFromWindow()
+    }
+
+    private fun ensureCachedBitmap(): Bitmap? {
+        if (
+            cachedBitmap == null ||
+            cachedWidth != width ||
+            cachedHeight != height
+        ) {
+            releaseCache()
+            cachedBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            cachedWidth = width
+            cachedHeight = height
+            cacheDirty = true
+        }
+
+        val bitmap = cachedBitmap ?: return null
+        if (cacheDirty) {
+            renderIntoCache(bitmap)
+            cacheDirty = false
+        }
+
+        return bitmap
+    }
+
+    private fun renderIntoCache(bitmap: Bitmap) {
+        bitmap.eraseColor(Color.TRANSPARENT)
+        val cacheCanvas = Canvas(bitmap)
+
+        cacheCanvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), framePaint)
+        drawGrid(cacheCanvas)
 
         val bounds = Bounds.from(points)
         val radius = max(36f, min(width, height) * 0.095f)
+
         points.forEach { point ->
             val x = bounds.projectX(point.longitude, width.toFloat())
             val y = bounds.projectY(point.latitude, height.toFloat())
             val normalized = point.weight.coerceIn(0.1, 1.0).toFloat()
             val alpha = (70 + normalized * 155).toInt().coerceIn(70, 225)
+            val pointRadius = radius * (0.8f + normalized)
+
             paint.shader =
                 RadialGradient(
                     x,
                     y,
-                    radius * (0.8f + normalized),
+                    pointRadius,
                     intArrayOf(
                         Color.argb(alpha, 255, 70, 70),
                         Color.argb(alpha / 2, 255, 193, 7),
@@ -93,9 +151,22 @@ class LocalHeatmapView : View {
                     floatArrayOf(0f, 0.42f, 1f),
                     Shader.TileMode.CLAMP,
                 )
-            canvas.drawCircle(x, y, radius * (0.8f + normalized), paint)
+
+            cacheCanvas.drawCircle(x, y, pointRadius, paint)
             paint.shader = null
         }
+    }
+
+    private fun markCacheDirty() {
+        cacheDirty = true
+    }
+
+    private fun releaseCache() {
+        cachedBitmap?.recycle()
+        cachedBitmap = null
+        cachedWidth = 0
+        cachedHeight = 0
+        cacheDirty = true
     }
 
     private fun updateVisibility() {
@@ -105,10 +176,12 @@ class LocalHeatmapView : View {
     private fun drawGrid(canvas: Canvas) {
         val columns = 4
         val rows = 6
+
         for (column in 1 until columns) {
             val x = width * column / columns.toFloat()
             canvas.drawLine(x, 0f, x, height.toFloat(), gridPaint)
         }
+
         for (row in 1 until rows) {
             val y = height * row / rows.toFloat()
             canvas.drawLine(0f, y, width.toFloat(), y, gridPaint)
@@ -145,6 +218,7 @@ class LocalHeatmapView : View {
                 val maxLng = points.maxOf { it.longitude }
                 val latPadding = max(abs(maxLat - minLat) * 0.12, MIN_COORDINATE_SPAN)
                 val lngPadding = max(abs(maxLng - minLng) * 0.12, MIN_COORDINATE_SPAN)
+
                 return Bounds(
                     minLat = minLat - latPadding,
                     maxLat = maxLat + latPadding,
