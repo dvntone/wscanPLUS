@@ -610,7 +610,8 @@ class WatchdogService : Service() {
         )
     }
 
-    private fun buildDeviceIdentifier(): String = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown-device"
+    private fun buildDeviceIdentifier(): String =
+        Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown-device"
 
     @Suppress("DEPRECATION")
     private fun buildHelloDeviceId(): String {

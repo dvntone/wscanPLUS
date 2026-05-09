@@ -100,9 +100,17 @@ class DiagnosticActivity : Activity() {
         val binder = boundBinder
         if (binder == null) {
             if (serviceBound) {
-                renderServicePlaceholder("CONNECTING", "Waiting for WatchdogService binder callback…", WscanUi.COLOR_WARN)
+                renderServicePlaceholder(
+                    "CONNECTING",
+                    "Waiting for WatchdogService binder callback…",
+                    WscanUi.COLOR_WARN,
+                )
             } else {
-                renderServicePlaceholder("NOT RUNNING", "Start scanning from the main screen, then return here.", WscanUi.COLOR_BAD)
+                renderServicePlaceholder(
+                    "NOT RUNNING",
+                    "Start scanning from the main screen, then return here.",
+                    WscanUi.COLOR_BAD,
+                )
             }
             return
         }
@@ -131,7 +139,12 @@ class DiagnosticActivity : Activity() {
                 "${caps.wifiRtt.toReadyLabel()} · now=${caps.wifiRttAvailableNow}",
                 WscanUi.statusColor(caps.wifiRtt),
             )
-            WscanUi.metricRow(capsCard, "Wi-Fi Aware", caps.wifiAware.toReadyLabel(), WscanUi.statusColor(caps.wifiAware))
+            WscanUi.metricRow(
+                capsCard,
+                "Wi-Fi Aware",
+                caps.wifiAware.toReadyLabel(),
+                WscanUi.statusColor(caps.wifiAware),
+            )
             WscanUi.metricRow(capsCard, "UWB", caps.uwb.toReadyLabel(), WscanUi.statusColor(caps.uwb))
             WscanUi.metricRow(capsCard, "Barometer", caps.barometer.toReadyLabel(), WscanUi.statusColor(caps.barometer))
             WscanUi.metricRow(capsCard, "BLE", caps.bluetoothLe.toReadyLabel(), WscanUi.statusColor(caps.bluetoothLe))
@@ -142,8 +155,18 @@ class DiagnosticActivity : Activity() {
                 if (hasCamera) "READY" else "UNAVAILABLE",
                 if (hasCamera) WscanUi.COLOR_OK else WscanUi.COLOR_BAD,
             )
-            WscanUi.metricRow(capsCard, "Depth camera (ToF)", caps.cameraIrCapable.toDisplayLabel(), caps.cameraIrCapable.statusColor())
-            WscanUi.metricRow(capsCard, "Acoustic", caps.acousticSonarCapable.toDisplayLabel(), caps.acousticSonarCapable.statusColor())
+            WscanUi.metricRow(
+                capsCard,
+                "Depth camera (ToF)",
+                caps.cameraIrCapable.toDisplayLabel(),
+                caps.cameraIrCapable.statusColor(),
+            )
+            WscanUi.metricRow(
+                capsCard,
+                "Acoustic",
+                caps.acousticSonarCapable.toDisplayLabel(),
+                caps.acousticSonarCapable.statusColor(),
+            )
         } else {
             WscanUi.body(capsCard, "Capability probe has not completed yet.", muted = true)
         }
@@ -221,7 +244,8 @@ class DiagnosticActivity : Activity() {
             AcousticStatus.DEVICE_VARIABLE -> "DEVICE VARIABLE"
         }
 
-    private fun formatMs(epochMs: Long): String = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(epochMs))
+    private fun formatMs(epochMs: Long): String =
+        SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(epochMs))
 
     companion object {
         @Suppress("unused")
