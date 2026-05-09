@@ -16,7 +16,7 @@ fun WifiScanResult.toObservationEvent(id: String? = null): ObservationEvent {
 
 fun ScanInput.toObservationEvent(
     id: String = wifiObservationId(bssid, timestamp),
-    observedAtBasis: TimeBasis = TimeBasis.EPOCH,
+    observedAtBasis: TimeBasis = TimeBasis.ELAPSED_REALTIME,
 ): ObservationEvent =
     ObservationEvent(
         id = id,
