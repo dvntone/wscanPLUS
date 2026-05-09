@@ -5,8 +5,11 @@ import com.wscanplus.core.scanner.toScanInput
 import com.wscanplus.core.threat.ScanInput
 import com.wscanplus.core.threat.ThreatSignal
 
-fun WifiScanResult.toObservationEvent(id: String = wifiObservationId(bssid, timestamp / 1000)): ObservationEvent =
-    toScanInput().toObservationEvent(id = id)
+fun WifiScanResult.toObservationEvent(id: String? = null): ObservationEvent {
+    val scanInput = toScanInput()
+    val observationId = id ?: wifiObservationId(scanInput.bssid, scanInput.timestamp)
+    return scanInput.toObservationEvent(id = observationId)
+}
 
 fun ScanInput.toObservationEvent(id: String = wifiObservationId(bssid, timestamp)): ObservationEvent =
     ObservationEvent(
