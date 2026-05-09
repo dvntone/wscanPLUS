@@ -1,4 +1,4 @@
-/* global document, MutationObserver */
+/* global document, MutationObserver, queueMicrotask */
 
 const RISK_RANK = new Map([
   ['HIGH', 3],
@@ -13,6 +13,7 @@ const state = {
   direction: 'desc',
   applying: false,
   suppressObserver: false,
+  pendingUpdate: false,
 };
 
 function cellText(row, index) {
@@ -113,9 +114,13 @@ function updateSummary(visibleRows, totalRows) {
 }
 
 function releaseObserverSuppression() {
-  setTimeout(() => {
+  queueMicrotask(() => {
     state.suppressObserver = false;
-  }, 0);
+    if (state.pendingUpdate) {
+      state.pendingUpdate = false;
+      applyControls();
+    }
+  });
 }
 
 function applyControls() {
@@ -233,7 +238,13 @@ function observeInventory() {
   if (!body) return;
 
   const observer = new MutationObserver(() => {
-    if (state.suppressObserver || state.applying) return;
+    // Mid-apply mutations are self-caused; applyControls() will re-run via pendingUpdate if needed.
+    if (state.applying) return;
+    // Between apply completion and microtask release: record for replay instead of dropping.
+    if (state.suppressObserver) {
+      state.pendingUpdate = true;
+      return;
+    }
     applyControls();
   });
   observer.observe(body, { childList: true, subtree: false });
