@@ -1,4 +1,9 @@
-/* global document, MutationObserver */
+/* global document, MutationObserver, setTimeout */
+
+const inspectorState = {
+  rendering: false,
+  suppressObserver: false,
+};
 
 function text(id) {
   return document.getElementById(id)?.textContent?.trim() ?? '--';
@@ -119,10 +124,26 @@ function renderAssessment() {
   );
 }
 
+function releaseObserverSuppression() {
+  setTimeout(() => {
+    inspectorState.suppressObserver = false;
+  }, 0);
+}
+
 function renderInspectorSplit() {
-  mountInspectorSections();
-  renderObservedFacts();
-  renderAssessment();
+  if (inspectorState.rendering) return;
+
+  inspectorState.rendering = true;
+  inspectorState.suppressObserver = true;
+
+  try {
+    mountInspectorSections();
+    renderObservedFacts();
+    renderAssessment();
+  } finally {
+    inspectorState.rendering = false;
+    releaseObserverSuppression();
+  }
 }
 
 function observeInspector() {
@@ -130,6 +151,7 @@ function observeInspector() {
   if (!inspector) return;
 
   const observer = new MutationObserver(() => {
+    if (inspectorState.suppressObserver || inspectorState.rendering) return;
     renderInspectorSplit();
   });
 
