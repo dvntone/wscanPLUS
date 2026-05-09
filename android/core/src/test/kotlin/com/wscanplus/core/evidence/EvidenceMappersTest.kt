@@ -43,7 +43,7 @@ class EvidenceMappersTest {
     }
 
     @Test
-    fun `WifiScanResult default ID uses same millisecond timestamp as observation`() {
+    fun `WifiScanResult default ID uses contract source and observation timestamp`() {
         val result =
             WifiScanResult(
                 ssid = "LabNet",
@@ -61,7 +61,7 @@ class EvidenceMappersTest {
 
         assertEquals(123_456L, event.observedAtMs)
         assertEquals(TimeBasis.ELAPSED_REALTIME, event.observedAtBasis)
-        assertEquals("android-wifi:aa:bb:cc:dd:ee:ff:123456", event.id)
+        assertEquals("android_wifi:aa:bb:cc:dd:ee:ff:123456", event.id)
     }
 
     @Test
@@ -78,7 +78,11 @@ class EvidenceMappersTest {
                 timestamp = 321L,
             )
 
-        val event = input.toObservationEvent(id = "obs-hidden")
+        val event =
+            input.toObservationEvent(
+                id = "obs-hidden",
+                observedAtBasis = TimeBasis.EPOCH,
+            )
 
         assertEquals("", event.wifi.ssid)
         assertTrue(event.wifi.hiddenSsid)
@@ -98,7 +102,10 @@ class EvidenceMappersTest {
                 frequencyMhz = 2412,
                 channelWidth = 0,
                 timestamp = 1_000L,
-            ).toObservationEvent(id = "obs-1")
+            ).toObservationEvent(
+                id = "obs-1",
+                observedAtBasis = TimeBasis.ELAPSED_REALTIME,
+            )
 
         val signal =
             ThreatSignal(
@@ -120,6 +127,33 @@ class EvidenceMappersTest {
         assertEquals(listOf("Observed RSSI anomaly"), evidence.reasons)
         assertEquals("AA:BB:CC:DD:EE:FF", evidence.bssid)
         assertEquals(2_000L, evidence.detectedAtMs)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `ThreatSignal evidence requires matching observation bssid`() {
+        val observation =
+            ScanInput(
+                bssid = "11:22:33:44:55:66",
+                ssid = "OtherNet",
+                isHidden = false,
+                capabilities = "[WPA2-PSK-CCMP][ESS]",
+                rssiDbm = -50,
+                frequencyMhz = 2412,
+                channelWidth = 0,
+                timestamp = 1_000L,
+            ).toObservationEvent(
+                id = "obs-other",
+                observedAtBasis = TimeBasis.ELAPSED_REALTIME,
+            )
+
+        ThreatSignal(
+            confidence = 0.45f,
+            source = ThreatSource.LOCAL_HEURISTIC,
+            reasons = listOf("Observed RSSI anomaly"),
+            heuristicType = HeuristicType.RSSI_ANOMALY,
+            bssid = "AA:BB:CC:DD:EE:FF",
+            detectedAt = 2_000L,
+        ).toDetectionEvidenceEvent(observation = observation, id = "bad-link")
     }
 
     @Test(expected = IllegalArgumentException::class)
