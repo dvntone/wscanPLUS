@@ -5,7 +5,7 @@ import com.wscanplus.core.scanner.toScanInput
 import com.wscanplus.core.threat.ScanInput
 import com.wscanplus.core.threat.ThreatSignal
 
-fun WifiScanResult.toObservationEvent(id: String = wifiObservationId(bssid, timestamp)): ObservationEvent =
+fun WifiScanResult.toObservationEvent(id: String = wifiObservationId(bssid, timestamp / 1000)): ObservationEvent =
     toScanInput().toObservationEvent(id = id)
 
 fun ScanInput.toObservationEvent(id: String = wifiObservationId(bssid, timestamp)): ObservationEvent =
