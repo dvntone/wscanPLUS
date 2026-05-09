@@ -8,6 +8,9 @@ import com.wscanplus.core.threat.ThreatSource
  *
  * This model preserves existing detector confidence and reasons. It does not
  * upgrade confidence or imply attribution beyond the source signal.
+ *
+ * `detectedAtMs` is wall-clock epoch milliseconds from `ThreatSignal.detectedAt`.
+ * It does not necessarily share the same time basis as the linked observation.
  */
 data class DetectionEvidenceEvent(
     val id: String,
@@ -22,7 +25,7 @@ data class DetectionEvidenceEvent(
 ) {
     init {
         require(confidence in 0.0f..0.95f) {
-            "Confidence must be 0.0-0.95, was $confidence"
+            "Confidence must be 0.0–0.95, was $confidence"
         }
         require(reasons.size <= 3) {
             "Maximum 3 reasons, was ${reasons.size}"
