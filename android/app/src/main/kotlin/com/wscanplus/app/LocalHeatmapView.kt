@@ -106,7 +106,12 @@ class LocalHeatmapView : View {
             cachedHeight != height
         ) {
             releaseCache()
-            cachedBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            cachedBitmap =
+                try {
+                    Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                } catch (_: OutOfMemoryError) {
+                    return null
+                }
             cachedWidth = width
             cachedHeight = height
             cacheDirty = true
