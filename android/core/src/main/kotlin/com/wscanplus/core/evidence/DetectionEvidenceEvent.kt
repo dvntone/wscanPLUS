@@ -21,12 +21,14 @@ data class DetectionEvidenceEvent(
     val reasons: List<String>,
     val bssid: String,
     val detectedAtMs: Long,
+    val provenance: EvidenceProvenance?,
     val schemaVersion: Int = 1,
 ) {
     init {
         require(confidence in 0.0f..0.95f) {
             "Confidence must be 0.0–0.95, was $confidence"
         }
+
         require(reasons.size <= 3) {
             "Maximum 3 reasons, was ${reasons.size}"
         }
