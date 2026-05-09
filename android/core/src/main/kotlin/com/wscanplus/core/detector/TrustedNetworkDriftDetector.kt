@@ -27,6 +27,13 @@ data class TrustedNetworkDriftResult(
     }
 }
 
+private enum class TrustedNetworkDriftReason(val description: String) {
+    UNTRUSTED_BSSID("Known SSID observed with untrusted BSSID"),
+    UNEXPECTED_FREQUENCY("Trusted BSSID observed on unexpected frequency"),
+    CAPABILITIES_CHANGED("Trusted BSSID capabilities changed from baseline"),
+    RSSI_OUTSIDE_TOLERANCE("Trusted BSSID RSSI outside baseline tolerance"),
+}
+
 class TrustedNetworkDriftDetector {
     fun evaluate(
         observation: ObservationEvent,
@@ -39,17 +46,17 @@ class TrustedNetworkDriftDetector {
         val matchingBssidProfile =
             sameSsidProfiles.firstOrNull { it.bssid.equals(wifi.bssid, ignoreCase = true) }
 
-        val reasons = mutableListOf<String>()
+        val driftReasons = mutableListOf<TrustedNetworkDriftReason>()
 
         if (matchingBssidProfile == null) {
-            reasons += "Known SSID observed with untrusted BSSID"
+            driftReasons += TrustedNetworkDriftReason.UNTRUSTED_BSSID
         } else {
-            reasons += matchingBssidProfile.frequencyReason(wifi.frequencyMhz)
-            reasons += matchingBssidProfile.capabilitiesReason(wifi.capabilities)
-            reasons += matchingBssidProfile.rssiReason(wifi.rssiDbm)
+            matchingBssidProfile.frequencyReason(wifi.frequencyMhz)?.let { driftReasons += it }
+            matchingBssidProfile.capabilitiesReason(wifi.capabilities)?.let { driftReasons += it }
+            matchingBssidProfile.rssiReason(wifi.rssiDbm)?.let { driftReasons += it }
         }
 
-        val filteredReasons = reasons.filterNotNull().take(3)
+        val filteredReasons = driftReasons.take(3)
         if (filteredReasons.isEmpty()) return null
 
         return TrustedNetworkDriftResult(
@@ -57,7 +64,7 @@ class TrustedNetworkDriftDetector {
             ssid = wifi.ssid,
             bssid = wifi.bssid,
             confidence = confidenceFor(filteredReasons),
-            reasons = filteredReasons,
+            reasons = filteredReasons.map { it.description },
             limitations = listOf(
                 "Android Wi-Fi observations are scan snapshots, not monitor-mode packet captures.",
                 "This detector reports baseline drift only; it does not confirm an evil twin or identify a responsible person or device owner.",
@@ -65,33 +72,33 @@ class TrustedNetworkDriftDetector {
         )
     }
 
-    private fun TrustedApProfile.frequencyReason(frequencyMhz: Int): String? =
+    private fun TrustedApProfile.frequencyReason(frequencyMhz: Int): TrustedNetworkDriftReason? =
         if (expectedFrequenciesMhz.isNotEmpty() && frequencyMhz !in expectedFrequenciesMhz) {
-            "Trusted BSSID observed on unexpected frequency"
+            TrustedNetworkDriftReason.UNEXPECTED_FREQUENCY
         } else {
             null
         }
 
-    private fun TrustedApProfile.capabilitiesReason(capabilities: String): String? =
+    private fun TrustedApProfile.capabilitiesReason(capabilities: String): TrustedNetworkDriftReason? =
         if (expectedCapabilities.isNotEmpty() && capabilities !in expectedCapabilities) {
-            "Trusted BSSID capabilities changed from baseline"
+            TrustedNetworkDriftReason.CAPABILITIES_CHANGED
         } else {
             null
         }
 
-    private fun TrustedApProfile.rssiReason(rssiDbm: Int): String? {
+    private fun TrustedApProfile.rssiReason(rssiDbm: Int): TrustedNetworkDriftReason? {
         val median = rssiMedianDbm ?: return null
         val tolerance = rssiToleranceDb ?: return null
         return if (kotlin.math.abs(rssiDbm - median) > tolerance) {
-            "Trusted BSSID RSSI outside baseline tolerance"
+            TrustedNetworkDriftReason.RSSI_OUTSIDE_TOLERANCE
         } else {
             null
         }
     }
 
-    private fun confidenceFor(reasons: List<String>): Float =
+    private fun confidenceFor(reasons: List<TrustedNetworkDriftReason>): Float =
         when {
-            reasons.any { it.contains("untrusted BSSID") } -> 0.65f
+            TrustedNetworkDriftReason.UNTRUSTED_BSSID in reasons -> 0.65f
             reasons.size >= 2 -> 0.60f
             else -> 0.45f
         }.coerceAtMost(ANDROID_ONLY_CONFIDENCE_CAP)
