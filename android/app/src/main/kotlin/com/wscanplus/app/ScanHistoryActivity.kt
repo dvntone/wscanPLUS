@@ -26,7 +26,11 @@ class ScanHistoryActivity : Activity() {
         title = "Scan History"
 
         val root = WscanUi.shell(this)
-        WscanUi.header(root, "Scan History", "Recent scanner sessions, AP observations, threat counts, and narrative availability")
+        WscanUi.header(
+            root,
+            "Scan History",
+            "Recent scanner sessions, AP observations, threat counts, and narrative availability",
+        )
         val scrollView = ScrollView(this).apply { isFillViewport = true }
         contentLayout =
             LinearLayout(this).apply {
