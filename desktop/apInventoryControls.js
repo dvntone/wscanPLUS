@@ -1,4 +1,4 @@
-/* global document, MutationObserver, setTimeout */
+/* global document, MutationObserver */
 
 const RISK_RANK = new Map([
   ['HIGH', 3],
