@@ -15,8 +15,8 @@ fun WifiScanResult.toObservationEvent(id: String? = null): ObservationEvent {
 }
 
 fun ScanInput.toObservationEvent(
+    observedAtBasis: TimeBasis,
     id: String = wifiObservationId(bssid, timestamp),
-    observedAtBasis: TimeBasis = TimeBasis.ELAPSED_REALTIME,
 ): ObservationEvent =
     ObservationEvent(
         id = id,
@@ -38,8 +38,11 @@ fun ScanInput.toObservationEvent(
 fun ThreatSignal.toDetectionEvidenceEvent(
     observation: ObservationEvent,
     id: String = detectionEvidenceId(bssid, detectedAt, heuristicType?.name),
-): DetectionEvidenceEvent =
-    DetectionEvidenceEvent(
+): DetectionEvidenceEvent {
+    require(observation.wifi.bssid.equals(bssid, ignoreCase = true)) {
+        "Observation BSSID must match threat signal BSSID"
+    }
+    return DetectionEvidenceEvent(
         id = id,
         observationId = observation.id,
         source = source,
@@ -49,11 +52,12 @@ fun ThreatSignal.toDetectionEvidenceEvent(
         bssid = bssid,
         detectedAtMs = detectedAt,
     )
+}
 
 private fun wifiObservationId(
     bssid: String,
     observedAtMs: Long,
-): String = "android-wifi:${bssid.lowercase()}:$observedAtMs"
+): String = "${ObservationSource.ANDROID_WIFI.contractValue}:${bssid.lowercase()}:$observedAtMs"
 
 private fun detectionEvidenceId(
     bssid: String,
