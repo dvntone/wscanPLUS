@@ -22,6 +22,9 @@ data class TrustedApProfile(
     val rssiToleranceDb: Int? = null,
 ) {
     init {
+        require((rssiMedianDbm == null) == (rssiToleranceDb == null)) {
+            "RSSI median and tolerance must both be set or both be null"
+        }
         require(rssiToleranceDb == null || rssiToleranceDb >= 0) {
             "RSSI tolerance must be non-negative"
         }
