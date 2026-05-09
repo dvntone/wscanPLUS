@@ -49,14 +49,18 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- ================================================================
-         BLE NMEA tethering: GATT server + advertising for desktop receivers
+         BLE readiness and NMEA tethering support
          ================================================================ -->
 
     <!-- Legacy Bluetooth (API ≤30) -->
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
 
-    <!-- Runtime permissions required API 31+ for GATT server and advertising -->
+    <!-- Runtime permissions required API 31+ for BLE readiness, GATT server, and advertising -->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="31" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" tools:targetApi="31" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" tools:targetApi="31" />
 
