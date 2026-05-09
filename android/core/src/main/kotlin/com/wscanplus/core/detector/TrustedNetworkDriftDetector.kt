@@ -60,7 +60,7 @@ class TrustedNetworkDriftDetector {
             reasons = filteredReasons,
             limitations = listOf(
                 "Android Wi-Fi observations are scan snapshots, not monitor-mode packet captures.",
-                "This detector reports baseline drift only; it does not confirm an evil twin or identify an attacker.",
+                "This detector reports baseline drift only; it does not confirm an evil twin or identify a responsible person or device owner.",
             ),
         )
     }
