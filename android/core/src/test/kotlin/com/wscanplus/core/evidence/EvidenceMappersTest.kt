@@ -29,8 +29,10 @@ class EvidenceMappersTest {
         val event = result.toObservationEvent(id = "obs-1")
 
         assertEquals("obs-1", event.id)
-        assertEquals(ObservationSource.ANDROID_WIFI_SCAN, event.source)
+        assertEquals(ObservationSource.ANDROID_WIFI, event.source)
+        assertEquals("android_wifi", event.source.contractValue)
         assertEquals(123_456L, event.observedAtMs)
+        assertEquals(TimeBasis.ELAPSED_REALTIME, event.observedAtBasis)
         assertEquals("LabNet", event.wifi.ssid)
         assertEquals("AA:BB:CC:DD:EE:FF", event.wifi.bssid)
         assertFalse(event.wifi.hiddenSsid)
@@ -58,6 +60,7 @@ class EvidenceMappersTest {
         val event = result.toObservationEvent()
 
         assertEquals(123_456L, event.observedAtMs)
+        assertEquals(TimeBasis.ELAPSED_REALTIME, event.observedAtBasis)
         assertEquals("android-wifi:aa:bb:cc:dd:ee:ff:123456", event.id)
     }
 
@@ -79,7 +82,8 @@ class EvidenceMappersTest {
 
         assertEquals("", event.wifi.ssid)
         assertTrue(event.wifi.hiddenSsid)
-        assertEquals(ObservationSource.ANDROID_WIFI_SCAN, event.source)
+        assertEquals(ObservationSource.ANDROID_WIFI, event.source)
+        assertEquals(TimeBasis.EPOCH, event.observedAtBasis)
     }
 
     @Test
@@ -127,6 +131,20 @@ class EvidenceMappersTest {
             heuristicType = HeuristicType.EVIL_TWIN,
             confidence = 0.96f,
             reasons = listOf("too high"),
+            bssid = "AA:BB:CC:DD:EE:FF",
+            detectedAtMs = 1L,
+        )
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `DetectionEvidenceEvent enforces reason count cap`() {
+        DetectionEvidenceEvent(
+            id = "bad-reasons",
+            observationId = "obs",
+            source = ThreatSource.LOCAL_HEURISTIC,
+            heuristicType = HeuristicType.EVIL_TWIN,
+            confidence = 0.45f,
+            reasons = listOf("one", "two", "three", "four"),
             bssid = "AA:BB:CC:DD:EE:FF",
             detectedAtMs = 1L,
         )
