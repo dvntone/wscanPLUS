@@ -19,7 +19,9 @@ data class ObservationEvent(
     val schemaVersion: Int = 1,
 )
 
-enum class ObservationSource(val contractValue: String) {
+enum class ObservationSource(
+    val contractValue: String,
+) {
     ANDROID_WIFI("android_wifi"),
 }
 
