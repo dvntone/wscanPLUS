@@ -8,14 +8,21 @@ import com.wscanplus.core.threat.ThreatSignal
 fun WifiScanResult.toObservationEvent(id: String? = null): ObservationEvent {
     val scanInput = toScanInput()
     val observationId = id ?: wifiObservationId(scanInput.bssid, scanInput.timestamp)
-    return scanInput.toObservationEvent(id = observationId)
+    return scanInput.toObservationEvent(
+        id = observationId,
+        observedAtBasis = TimeBasis.ELAPSED_REALTIME,
+    )
 }
 
-fun ScanInput.toObservationEvent(id: String = wifiObservationId(bssid, timestamp)): ObservationEvent =
+fun ScanInput.toObservationEvent(
+    id: String = wifiObservationId(bssid, timestamp),
+    observedAtBasis: TimeBasis = TimeBasis.EPOCH,
+): ObservationEvent =
     ObservationEvent(
         id = id,
-        source = ObservationSource.ANDROID_WIFI_SCAN,
+        source = ObservationSource.ANDROID_WIFI,
         observedAtMs = timestamp,
+        observedAtBasis = observedAtBasis,
         wifi =
             WifiObservationEvidence(
                 ssid = ssid,
