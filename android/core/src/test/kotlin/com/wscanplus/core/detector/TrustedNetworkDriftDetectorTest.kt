@@ -63,6 +63,17 @@ class TrustedNetworkDriftDetectorTest {
     }
 
     @Test
+    fun `does not flag equivalent capability strings with reordered tokens`() {
+        val result =
+            detector.evaluate(
+                observation(capabilities = "[ess][wpa2-psk-ccmp]"),
+                baseline(),
+            )
+
+        assertNull(result)
+    }
+
+    @Test
     fun `detects trusted BSSID RSSI outside baseline tolerance`() {
         val result =
             detector.evaluate(
@@ -122,6 +133,18 @@ class TrustedNetworkDriftDetectorTest {
         val text = (result!!.reasons + result.limitations).joinToString(" ").lowercase()
         assertTrue("should not claim confirmed evil twin", "confirmed evil twin" !in text)
         assertTrue("should not claim attacker identity", "attacker" !in text)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `requires RSSI median and tolerance to be configured together`() {
+        TrustedApProfile(
+            ssid = "HomeNet",
+            bssid = "AA:BB:CC:DD:EE:FF",
+            expectedFrequenciesMhz = setOf(2412),
+            expectedCapabilities = setOf("[WPA2-PSK-CCMP][ESS]"),
+            rssiMedianDbm = -45,
+            rssiToleranceDb = null,
+        )
     }
 
     private fun assertAndroidOnlyLimitations(result: TrustedNetworkDriftResult) {
