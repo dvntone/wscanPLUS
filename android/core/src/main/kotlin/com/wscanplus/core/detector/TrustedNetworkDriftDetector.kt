@@ -27,7 +27,9 @@ data class TrustedNetworkDriftResult(
     }
 }
 
-private enum class TrustedNetworkDriftReason(val description: String) {
+private enum class TrustedNetworkDriftReason(
+    val description: String,
+) {
     UNTRUSTED_BSSID("Known SSID observed with untrusted BSSID"),
     UNEXPECTED_FREQUENCY("Trusted BSSID observed on unexpected frequency"),
     CAPABILITIES_CHANGED("Trusted BSSID capabilities changed from baseline"),
@@ -65,10 +67,11 @@ class TrustedNetworkDriftDetector {
             bssid = wifi.bssid,
             confidence = confidenceFor(filteredReasons),
             reasons = filteredReasons.map { it.description },
-            limitations = listOf(
-                "Android Wi-Fi observations are scan snapshots, not monitor-mode packet captures.",
-                "This detector reports baseline drift only; it does not confirm an evil twin or identify a responsible person or device owner.",
-            ),
+            limitations =
+                listOf(
+                    "Android Wi-Fi observations are scan snapshots, not monitor-mode packet captures.",
+                    "This detector reports baseline drift only; it does not confirm an evil twin or identify a responsible person or device owner.",
+                ),
         )
     }
 
