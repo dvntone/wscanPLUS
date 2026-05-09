@@ -41,6 +41,27 @@ class EvidenceMappersTest {
     }
 
     @Test
+    fun `WifiScanResult default ID uses same millisecond timestamp as observation`() {
+        val result =
+            WifiScanResult(
+                ssid = "LabNet",
+                bssid = "AA:BB:CC:DD:EE:FF",
+                signalLevel = -42,
+                frequencyMhz = 2412,
+                capabilities = "[WPA2-PSK-CCMP][ESS]",
+                timestamp = 123_456_000L,
+                channelWidth = 0,
+                centerFreq0 = 0,
+                centerFreq1 = 0,
+            )
+
+        val event = result.toObservationEvent()
+
+        assertEquals(123_456L, event.observedAtMs)
+        assertEquals("android-wifi:aa:bb:cc:dd:ee:ff:123456", event.id)
+    }
+
+    @Test
     fun `hidden SSID remains an observed fact only`() {
         val input =
             ScanInput(
