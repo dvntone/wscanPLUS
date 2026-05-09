@@ -42,6 +42,7 @@ fun ThreatSignal.toDetectionEvidenceEvent(
     require(observation.wifi.bssid.equals(bssid, ignoreCase = true)) {
         "Observation BSSID must match threat signal BSSID"
     }
+
     return DetectionEvidenceEvent(
         id = id,
         observationId = observation.id,
@@ -51,6 +52,7 @@ fun ThreatSignal.toDetectionEvidenceEvent(
         reasons = reasons,
         bssid = bssid,
         detectedAtMs = detectedAt,
+        provenance = null,
     )
 }
 

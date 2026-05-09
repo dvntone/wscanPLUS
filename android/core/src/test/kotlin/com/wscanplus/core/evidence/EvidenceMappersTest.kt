@@ -167,6 +167,7 @@ class EvidenceMappersTest {
             reasons = listOf("too high"),
             bssid = "AA:BB:CC:DD:EE:FF",
             detectedAtMs = 1L,
+            provenance = null,
         )
     }
 
@@ -181,6 +182,7 @@ class EvidenceMappersTest {
             reasons = listOf("one", "two", "three", "four"),
             bssid = "AA:BB:CC:DD:EE:FF",
             detectedAtMs = 1L,
+            provenance = null,
         )
     }
 }
