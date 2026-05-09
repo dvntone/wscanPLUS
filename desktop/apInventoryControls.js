@@ -7,7 +7,7 @@ const RISK_RANK = new Map([
   ['INFO', 0],
 ]);
 
-const state = {
+export const state = {
   filter: 'all',
   sort: 'risk',
   direction: 'desc',
@@ -113,7 +113,7 @@ function updateSummary(visibleRows, totalRows) {
   summary.textContent = `${visibleRows}/${totalRows} visible`;
 }
 
-function releaseObserverSuppression() {
+export function releaseObserverSuppression() {
   queueMicrotask(() => {
     state.suppressObserver = false;
     if (state.pendingUpdate) {

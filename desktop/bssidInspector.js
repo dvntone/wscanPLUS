@@ -1,6 +1,6 @@
 /* global document, MutationObserver, queueMicrotask */
 
-const inspectorState = {
+export const inspectorState = {
   rendering: false,
   suppressObserver: false,
   pendingRender: false,
@@ -125,7 +125,7 @@ function renderAssessment() {
   );
 }
 
-function releaseObserverSuppression() {
+export function releaseObserverSuppression() {
   queueMicrotask(() => {
     inspectorState.suppressObserver = false;
     if (inspectorState.pendingRender) {
