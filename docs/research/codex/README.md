@@ -57,6 +57,7 @@ This folder contains Codex-generated, **verified** findings, ADB test results, a
 - `51_app_code_review_suggestions.md` ? App code review suggestions (verified).
 - `52_app_logging_checklist.md` ? Minimal app logging checklist for verification.
 - `53_app_code_review_verified.md` ? Verified improvements based on observed behavior.
+- `61_pixel_avf_rtl_tcp_sdr_handoff_2026-05-09.md` ? Pixel 10 Pro XL AVF Debian SDR handoff: Android rtl_tcp broker, GQRX baseline, raw IQ capture findings, and operating rules.
 
 ## Raw Logs / Artifacts
 - `wscan_toggle_logcat.txt` ? Host-side logcat capture during Wi?Fi toggle.
