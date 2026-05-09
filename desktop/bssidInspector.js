@@ -1,4 +1,4 @@
-/* global document, MutationObserver, setTimeout */
+/* global document, MutationObserver */
 
 const inspectorState = {
   rendering: false,
