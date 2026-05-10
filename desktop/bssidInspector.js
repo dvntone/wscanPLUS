@@ -1,4 +1,10 @@
-/* global document, MutationObserver */
+/* global document, MutationObserver, queueMicrotask */
+
+export const inspectorState = {
+  rendering: false,
+  suppressObserver: false,
+  pendingRender: false,
+};
 
 function text(id) {
   return document.getElementById(id)?.textContent?.trim() ?? '--';
@@ -119,10 +125,30 @@ function renderAssessment() {
   );
 }
 
+export function releaseObserverSuppression() {
+  queueMicrotask(() => {
+    inspectorState.suppressObserver = false;
+    if (inspectorState.pendingRender) {
+      inspectorState.pendingRender = false;
+      renderInspectorSplit();
+    }
+  });
+}
+
 function renderInspectorSplit() {
-  mountInspectorSections();
-  renderObservedFacts();
-  renderAssessment();
+  if (inspectorState.rendering) return;
+
+  inspectorState.rendering = true;
+  inspectorState.suppressObserver = true;
+
+  try {
+    mountInspectorSections();
+    renderObservedFacts();
+    renderAssessment();
+  } finally {
+    inspectorState.rendering = false;
+    releaseObserverSuppression();
+  }
 }
 
 function observeInspector() {
@@ -130,6 +156,13 @@ function observeInspector() {
   if (!inspector) return;
 
   const observer = new MutationObserver(() => {
+    // Mid-render mutations are self-caused; renderInspectorSplit() will re-run via pendingRender if needed.
+    if (inspectorState.rendering) return;
+    // Between render completion and microtask release: record for replay instead of dropping.
+    if (inspectorState.suppressObserver) {
+      inspectorState.pendingRender = true;
+      return;
+    }
     renderInspectorSplit();
   });
 

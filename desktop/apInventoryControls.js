@@ -1,4 +1,4 @@
-/* global document, MutationObserver */
+/* global document, MutationObserver, queueMicrotask */
 
 const RISK_RANK = new Map([
   ['HIGH', 3],
@@ -7,11 +7,13 @@ const RISK_RANK = new Map([
   ['INFO', 0],
 ]);
 
-const state = {
+export const state = {
   filter: 'all',
   sort: 'risk',
   direction: 'desc',
   applying: false,
+  suppressObserver: false,
+  pendingUpdate: false,
 };
 
 function cellText(row, index) {
@@ -20,12 +22,12 @@ function cellText(row, index) {
 
 function rssiValue(row) {
   const value = Number.parseInt(cellText(row, 2), 10);
-  return Number.isFinite(value) ? value : -999;
+  return Number.isFinite(value) ? value : null;
 }
 
 function channelValue(row) {
   const value = Number.parseInt(cellText(row, 3), 10);
-  return Number.isFinite(value) ? value : 999;
+  return Number.isFinite(value) ? value : null;
 }
 
 function riskValue(row) {
@@ -36,7 +38,7 @@ function ageValue(row) {
   const text = cellText(row, 6).toLowerCase();
   if (text === 'now') return 0;
   const match = text.match(/^(\d+)(s|m|h)$/);
-  if (!match) return Number.MAX_SAFE_INTEGER;
+  if (!match) return null;
   const count = Number.parseInt(match[1], 10);
   const unit = match[2];
   if (unit === 's') return count;
@@ -48,32 +50,37 @@ function compareText(a, b, index) {
   return cellText(a, index).localeCompare(cellText(b, index), undefined, { sensitivity: 'base' });
 }
 
+function compareNullableNumbers(a, b, reader) {
+  const aValue = reader(a);
+  const bValue = reader(b);
+  if (aValue === null && bValue === null) return 0;
+  if (aValue === null) return 1;
+  if (bValue === null) return -1;
+  return state.direction === 'asc' ? aValue - bValue : bValue - aValue;
+}
+
 function compareRows(a, b) {
-  let result = 0;
-
   switch (state.sort) {
-    case 'ssid':
-      result = compareText(a, b, 0);
-      break;
-    case 'bssid':
-      result = compareText(a, b, 1);
-      break;
+    case 'ssid': {
+      const result = compareText(a, b, 0);
+      return state.direction === 'asc' ? result : -result;
+    }
+    case 'bssid': {
+      const result = compareText(a, b, 1);
+      return state.direction === 'asc' ? result : -result;
+    }
     case 'rssi':
-      result = rssiValue(a) - rssiValue(b);
-      break;
+      return compareNullableNumbers(a, b, rssiValue);
     case 'channel':
-      result = channelValue(a) - channelValue(b);
-      break;
+      return compareNullableNumbers(a, b, channelValue);
     case 'lastSeen':
-      result = ageValue(a) - ageValue(b);
-      break;
+      return compareNullableNumbers(a, b, ageValue);
     case 'risk':
-    default:
-      result = riskValue(a) - riskValue(b);
-      break;
+    default: {
+      const result = riskValue(a) - riskValue(b);
+      return state.direction === 'asc' ? result : -result;
+    }
   }
-
-  return state.direction === 'asc' ? result : -result;
 }
 
 function rowMatchesFilter(row) {
@@ -106,30 +113,51 @@ function updateSummary(visibleRows, totalRows) {
   summary.textContent = `${visibleRows}/${totalRows} visible`;
 }
 
+export function releaseObserverSuppression() {
+  queueMicrotask(() => {
+    state.suppressObserver = false;
+    if (state.pendingUpdate) {
+      state.pendingUpdate = false;
+      applyControls();
+    }
+  });
+}
+
 function applyControls() {
   if (state.applying) return;
   const body = document.getElementById('ap-table-body');
   if (!body) return;
 
   state.applying = true;
-  const rows = getRows().sort(compareRows);
-  let visibleRows = 0;
+  state.suppressObserver = true;
 
-  for (const row of rows) {
-    if (row.hidden) {
-      row.style.display = '';
+  try {
+    const rows = getRows().sort(compareRows);
+    let visibleRows = 0;
+
+    for (const row of rows) {
+      if (row.hidden) {
+        row.style.display = '';
+        body.appendChild(row);
+        continue;
+      }
+
+      const visible = rowMatchesFilter(row);
+      row.style.display = visible ? '' : 'none';
+      if (visible) visibleRows += 1;
       body.appendChild(row);
-      continue;
     }
 
-    const visible = rowMatchesFilter(row);
-    row.style.display = visible ? '' : 'none';
-    if (visible) visibleRows += 1;
-    body.appendChild(row);
+    updateSummary(visibleRows, rows.filter((row) => !row.hidden).length);
+  } finally {
+    state.applying = false;
+    releaseObserverSuppression();
   }
+}
 
-  updateSummary(visibleRows, rows.filter((row) => !row.hidden).length);
-  state.applying = false;
+function updateDirectionState(direction) {
+  direction.textContent = state.direction.toUpperCase();
+  direction.setAttribute('aria-pressed', String(state.direction === 'desc'));
 }
 
 function mountControls() {
@@ -177,8 +205,8 @@ function mountControls() {
   direction.id = 'ap-sort-direction';
   direction.className = 'secondary-action ap-sort-direction';
   direction.type = 'button';
-  direction.textContent = 'DESC';
   direction.setAttribute('aria-label', 'Toggle sort direction');
+  updateDirectionState(direction);
 
   const summary = document.createElement('span');
   summary.id = 'ap-control-summary';
@@ -197,7 +225,7 @@ function mountControls() {
 
   direction.addEventListener('click', () => {
     state.direction = state.direction === 'asc' ? 'desc' : 'asc';
-    direction.textContent = state.direction.toUpperCase();
+    updateDirectionState(direction);
     applyControls();
   });
 
@@ -210,6 +238,13 @@ function observeInventory() {
   if (!body) return;
 
   const observer = new MutationObserver(() => {
+    // Mid-apply mutations are self-caused; applyControls() will re-run via pendingUpdate if needed.
+    if (state.applying) return;
+    // Between apply completion and microtask release: record for replay instead of dropping.
+    if (state.suppressObserver) {
+      state.pendingUpdate = true;
+      return;
+    }
     applyControls();
   });
   observer.observe(body, { childList: true, subtree: false });
