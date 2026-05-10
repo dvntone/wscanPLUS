@@ -67,7 +67,7 @@ class LocalHeatmapView : View {
 
     fun clearPoints() {
         points.clear()
-        releaseCache()
+        markCacheDirty()
         updateVisibility()
         invalidate()
     }
@@ -100,18 +100,15 @@ class LocalHeatmapView : View {
     }
 
     private fun ensureCachedBitmap(): Bitmap? {
-        if (
-            cachedBitmap == null ||
-            cachedWidth != width ||
-            cachedHeight != height
-        ) {
-            releaseCache()
-            cachedBitmap =
+        if (cachedBitmap == null || cachedWidth != width || cachedHeight != height) {
+            val next =
                 try {
                     Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
                 } catch (_: OutOfMemoryError) {
                     return null
                 }
+            cachedBitmap?.recycle()
+            cachedBitmap = next
             cachedWidth = width
             cachedHeight = height
             cacheDirty = true
