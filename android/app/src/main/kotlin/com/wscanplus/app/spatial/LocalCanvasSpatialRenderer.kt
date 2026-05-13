@@ -27,14 +27,11 @@ class LocalCanvasSpatialRenderer(
         }
 
         heatmapView.setPoints(points)
-        if (heatmapView.visibility != android.view.View.VISIBLE) {
-            // setPoints() hides the view when it receives an empty list; this is a
-            // defensive guard for unexpected states where points were provided but
-            // the view is still not visible.
+        if (!heatmapView.isAttachedToWindow) {
             status(
-                "Map tiles unavailable",
-                "Heatmap view did not become visible after loading ${points.size} observations. " +
-                    "Check that the local canvas view is attached to the layout.",
+                "Canvas not displayed",
+                "Heatmap view is not attached to the window after loading ${points.size} observations. " +
+                    "The view may not be part of the active layout.",
             )
             return
         }
