@@ -157,10 +157,17 @@ class DiagnosticActivity : Activity() {
             )
             WscanUi.metricRow(
                 capsCard,
-                "Depth camera (ToF)",
+                "Camera depth/IR API",
                 caps.cameraIrCapable.toDisplayLabel(),
                 caps.cameraIrCapable.statusColor(),
             )
+            if (caps.cameraIrCapable == CameraIrStatus.NOT_CAPABLE) {
+                WscanUi.body(
+                    capsCard,
+                    "No Camera2 DEPTH_OUTPUT capability exposed — the Android Camera2 API did not find depth output support on this device.",
+                    muted = true,
+                )
+            }
             WscanUi.metricRow(
                 capsCard,
                 "Acoustic",
