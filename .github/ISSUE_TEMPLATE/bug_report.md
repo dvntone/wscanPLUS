@@ -18,9 +18,10 @@ labels: bug
 
 ## Environment
 
-- Platform: [Android / Desktop / Both]
+- Platform: <!-- Android / Desktop / Both -->
 - OS:
 - App version / commit:
+- Device (redact serial — use format `VENDOR-****-XXXX`):
 
 ## Logs / output
 
