@@ -169,7 +169,7 @@ jobs:
   branch-name:
     name: Branch name lint
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     timeout-minutes: 5
     steps:
       - name: Check agent prefix
@@ -187,7 +187,7 @@ jobs:
   pr-issue-ref:
     name: PR issue reference check
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     timeout-minutes: 5
     steps:
       - name: Check for closing keyword
@@ -208,7 +208,7 @@ jobs:
   pr-wip-check:
     name: WIP title guard
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     timeout-minutes: 5
     steps:
       - name: Check for WIP in title
@@ -224,7 +224,7 @@ jobs:
   pr-size:
     name: PR size check (max 200 LOC, tests excluded)
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     timeout-minutes: 5
     steps:
       - name: Count changed lines via API
@@ -246,15 +246,15 @@ jobs:
   pr-simultaneous:
     name: Simultaneous PR check (max 2 open)
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && contains(fromJSON('["opened","reopened","ready_for_review"]'), github.event.action)
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]' && contains(fromJSON('["opened","reopened","ready_for_review"]'), github.event.action)
     timeout-minutes: 5
     steps:
       - name: Check open PR count
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          OPEN=$(gh api "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=10" \
-            --jq 'length')
+          OPEN=$(gh api "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" \
+            --jq '[.[] | select(.user.login != "dependabot[bot]")] | length')
           echo "Open PRs: $OPEN"
           if [ "$OPEN" -gt 2 ]; then
             echo "ERROR: $OPEN PRs are open simultaneously. Maximum is 2."
