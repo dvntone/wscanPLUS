@@ -70,7 +70,7 @@ Only these agents may write or modify code, docs, and config in this repo:
 
 Every change must be traceable. This means:
 
-- Branch names must start with the agent prefix: `claude/`, `copilot/`, or `dvntone/`
+- Branch names must start with an approved agent prefix: `claude/`, `copilot/`, `gpt/`, `codex/`, or `dvntone/`. This is enforced by CI — PRs with non-compliant branch names will fail.
 - Commit messages must be descriptive (what changed and why — not just "update file")
 - Every PR description must state: which agent made it, what was changed and why, and which rules guided the decisions
 - No force-pushes. No amending commits after they are merged.

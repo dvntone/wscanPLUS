@@ -58,7 +58,7 @@ This project is built by AI agents under human oversight (review and direction o
 
 Every change must be fully traceable back to the agent that made it:
 
-- Branch names must include the agent prefix (for example, `claude/...`, `copilot/...`, or `dvntone/...`)
+- Branch names must start with an approved agent prefix: `claude/`, `copilot/`, `gpt/`, `codex/`, or `dvntone/`. This is enforced by CI — PRs with non-compliant branch names will fail.
 - Commit messages must describe what changed and why — not just "update file" or "fix"
 - Every PR description must include:
   - Which agent made it

@@ -1,5 +1,27 @@
 # Known Issues
 
+## 2026-05-13: PR process audit findings — branch naming and guardrail violations
+
+A review of the last 40 PRs (PRs ~#283–#328) identified the following systemic issues:
+
+### Branch naming violations (9 PRs)
+Branches used non-approved prefixes (`android/`, `ci/`, `docs/`, `feat/`, bare names, `dvntone-` with dash). Both `AGENTS.md` and `docs/AGENTS.md` also had an incomplete prefix list — `gpt/` and `codex/` were missing despite being in active use. **Fixed in PR #330**: CI now enforces the prefix rule as a hard gate; both AGENTS files updated.
+
+### Missing issue references (22/40 PRs — 55%)
+The "every PR must reference exactly one GitHub Issue" rule is not being followed. No automated gate exists for this. Remains a human/agent discipline requirement. Agents must open the issue first, then the PR.
+
+### Simultaneous open PR clusters (8 clusters)
+The "1 open PR at a time" rule was violated in 8 distinct clusters. Worst case: 8 PRs opened within 21 minutes on 2026-05-09 evening (PRs #315–#322). No automated enforcement is possible for this rule — it requires session discipline.
+
+### Other anomalies
+- PR #283 had `[WIP]` in title, was never a draft, and was merged — double violation of the draft PR workflow rule.
+- PR #286 branch name (`claude/figma-code-connect-uzVc9`) had no relation to its content (SessionStart hook).
+- PR #314 title embedded a raw CI run ID.
+
+**Status:** Branch naming CI gate added (PR #330). Other items carry forward as discipline requirements with no automated fix.
+
+---
+
 ## Phase 2: Local Threat Intelligence — COMPLETE (2026-03-20)
 
 All 9 tasks merged (PRs #96–#117). 7 WiFi threat heuristics, HeuristicEngine, PolicyGate, Room database (5 entities, 5 DAOs), OUI vendor lookup, and app-side logging are live.
