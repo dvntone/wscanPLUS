@@ -61,7 +61,7 @@ The current monorepo shape relevant to Phase 6 is:
 android/app/      Android app and WatchdogService integration
 android/core/     Android scanner, threat, and DB core modules
 desktop/          Electron/Node desktop hub
-Web UI/dashboard (planned)  — not yet under monorepo; see docs/SESSION_STATE.md for current repo structure
+Web UI/dashboard (planned)  — no dedicated web/ directory yet; canonical path will be under monorepo; see docs/SESSION_STATE.md
 ```
 
 ## Android findings
