@@ -2,6 +2,7 @@ package com.wscanplus.app
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
@@ -116,23 +117,21 @@ class ThreatResultsActivity : Activity() {
         val card =
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(dp(16), dp(16), dp(16), dp(16))
+                setPadding(dp(16), dp(14), dp(16), dp(14))
                 background =
-                    GradientDrawable().apply {
-                        shape = GradientDrawable.RECTANGLE
-                        cornerRadius = dp(16).toFloat()
-                        setColor(WscanUi.COLOR_CARD)
-                        setStroke(dp(1), WscanUi.COLOR_CARD_ALT)
-                    }
+                    WscanUi.rounded(
+                        WscanUi.COLOR_CARD,
+                        dp(16),
+                        strokeColor = Color.rgb(38, 57, 87),
+                    )
+                val lp =
+                    LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                    )
+                lp.bottomMargin = dp(12)
+                layoutParams = lp
             }
-
-        val layoutParams =
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            )
-        layoutParams.bottomMargin = dp(12)
-        card.layoutParams = layoutParams
 
         val sessionWindow =
             buildString {
@@ -144,12 +143,20 @@ class ThreatResultsActivity : Activity() {
                 }
             }
 
-        card.addView(sectionTitle("Session #${summary.session.id}"))
-        card.addView(bodyText(sessionWindow))
         card.addView(
-            bodyText(
-                "${summary.results.size} scan results  •  ${summary.signals.size} stored threat signals  •  ${summary.session.environmentType.name.lowercase()}",
-            ),
+            TextView(this).apply {
+                text = "Session #${summary.session.id}"
+                textSize = 18f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(WscanUi.COLOR_TEXT)
+                setPadding(0, 0, 0, dp(4))
+            },
+        )
+        WscanUi.body(card, sessionWindow, muted = true)
+        WscanUi.body(
+            card,
+            "${summary.results.size} scan results  •  ${summary.signals.size} stored threat signals  •  ${summary.session.environmentType.name.lowercase()}",
+            muted = true,
         )
 
         val ssids =
@@ -166,14 +173,11 @@ class ThreatResultsActivity : Activity() {
         card.addView(labelText("Gemini Narrative"))
         val narrative = summary.narrative
         if (narrative != null) {
-            card.addView(bodyText(narrative.narrative))
-            card.addView(
-                mutedText(
-                    "Generated ${formatTimestamp(
-                        narrative.generatedAt,
-                    )}  •  ${narrative.signalCount} signals  •  ${narrative.modelName}",
-                ),
-            )
+            WscanUi.body(card, narrative.narrative)
+            val narrativeMeta =
+                "Generated ${formatTimestamp(narrative.generatedAt)}" +
+                    "  •  ${narrative.signalCount} signals  •  ${narrative.modelName}"
+            WscanUi.body(card, narrativeMeta, muted = true)
         } else {
             val emptyText =
                 if (summary.signals.isEmpty()) {
@@ -181,7 +185,7 @@ class ThreatResultsActivity : Activity() {
                 } else {
                     "Threat signals exist for this session, but no persisted Gemini narrative is available yet."
                 }
-            card.addView(bodyText(emptyText))
+            WscanUi.body(card, emptyText, muted = true)
         }
 
         if (summary.signals.isNotEmpty()) {
@@ -192,49 +196,53 @@ class ThreatResultsActivity : Activity() {
                 .forEach { signal ->
                     val type = signal.heuristicType?.name?.replace('_', ' ') ?: signal.source.name
                     val reasons = signal.reasons.joinToString("; ")
-                    card.addView(
-                        bodyText(
-                            "${"%.0f".format(signal.confidence * 100)}% $type: $reasons",
-                        ),
-                    )
+                    val pct = signal.confidence * 100
+                    val severityColor =
+                        when {
+                            pct >= 70 -> WscanUi.COLOR_BAD
+                            pct >= 40 -> WscanUi.COLOR_WARN
+                            else -> WscanUi.COLOR_MUTED
+                        }
+                    card.addView(signalRow("${"%.0f".format(pct)}% $type", reasons, severityColor))
                 }
         }
 
         return card
     }
 
-    private fun sectionTitle(text: String): TextView =
-        TextView(this).apply {
-            this.text = text
-            textSize = 18f
-            setTextColor(WscanUi.COLOR_TEXT)
-            setTypeface(typeface, Typeface.BOLD)
-        }
-
     private fun labelText(text: String): TextView =
         TextView(this).apply {
             this.text = text
             textSize = 13f
             setTextColor(WscanUi.COLOR_ACCENT)
-            setTypeface(typeface, Typeface.BOLD)
+            typeface = Typeface.DEFAULT_BOLD
             setPadding(0, dp(12), 0, dp(6))
         }
 
-    private fun bodyText(text: String): TextView =
-        TextView(this).apply {
-            this.text = text
-            textSize = 14f
-            setTextColor(WscanUi.COLOR_TEXT)
-            setLineSpacing(0f, 1.15f)
+    private fun signalRow(
+        heading: String,
+        detail: String,
+        headingColor: Int,
+    ): LinearLayout =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             setPadding(0, 0, 0, dp(6))
-        }
-
-    private fun mutedText(text: String): TextView =
-        TextView(this).apply {
-            this.text = text
-            textSize = 12f
-            setTextColor(WscanUi.COLOR_MUTED)
-            setPadding(0, 0, 0, dp(4))
+            addView(
+                TextView(this@ThreatResultsActivity).apply {
+                    text = heading
+                    textSize = 13f
+                    typeface = Typeface.DEFAULT_BOLD
+                    setTextColor(headingColor)
+                },
+            )
+            addView(
+                TextView(this@ThreatResultsActivity).apply {
+                    text = detail
+                    textSize = 12f
+                    setTextColor(WscanUi.COLOR_MUTED)
+                    setLineSpacing(0f, 1.12f)
+                },
+            )
         }
 
     private fun chipRow(labels: List<String>): HorizontalScrollView {
@@ -281,7 +289,7 @@ class ThreatResultsActivity : Activity() {
         if (isDestroyed) return
         runOnUiThread {
             Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-            contentLayout.addView(bodyText(message))
+            WscanUi.body(contentLayout, message, muted = true)
         }
     }
 
