@@ -161,6 +161,24 @@ jobs:
           name: wscanplus-debug-apk-ci-mock
           path: android/app/build/outputs/apk/debug/app-debug.apk
 
+  branch-name:
+    name: Branch name lint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 5
+    steps:
+      - name: Check agent prefix
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          if echo "$BRANCH" | grep -qE '^(claude|copilot|gpt|codex|dvntone)/'; then
+            echo "Branch name OK: $BRANCH"
+          else
+            echo "ERROR: Branch '$BRANCH' does not start with an approved agent prefix."
+            echo "Allowed prefixes: claude/, copilot/, gpt/, codex/, dvntone/"
+            exit 1
+          fi
+
   secret-scan:
     name: Secret Scan (blocking)
     runs-on: ubuntu-latest
