@@ -27,9 +27,18 @@ class LocalCanvasSpatialRenderer(
         }
 
         heatmapView.setPoints(points)
+        if (!heatmapView.isAttachedToWindow) {
+            status(
+                "Canvas not displayed",
+                "Heatmap view is not attached to the window after loading ${points.size} observations. " +
+                    "The view may not be part of the active layout.",
+            )
+            return
+        }
         status(
-            "Local canvas",
-            "${points.size} observations rendered without map tiles.",
+            "Local canvas — no tiles needed",
+            "${points.size} observations rendered. This view uses an offline canvas; " +
+                "no map tiles or network connection are required.",
         )
     }
 
