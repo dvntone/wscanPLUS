@@ -30,7 +30,7 @@ Only these agents may write or modify code, docs, and config in this repo:
 **Coding agents must never remove, replace, or modify the Gemini/Vertex integration in the Android app.** It is intentional and paid for. File an issue if you think something needs changing.
 
 ## PR / Issue Policy
-- MAX 1 open PR at a time (total, across all agents).
+- MAX 2 open PRs at a time (total, across all agents) — enforced by CI on PR open.
 - Every PR must reference exactly one GitHub Issue.
 - If CI is red: fix CI before any new PR or feature work.
 - **Merge strategy: Squash and merge only.** Merge commits and rebase are disabled.
