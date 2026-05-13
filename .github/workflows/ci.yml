@@ -168,8 +168,9 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Check agent prefix
+        env:
+          BRANCH: ${{ github.head_ref }}
         run: |
-          BRANCH="${{ github.head_ref }}"
           if echo "$BRANCH" | grep -qE '^(claude|copilot|gpt|codex|dvntone)/'; then
             echo "Branch name OK: $BRANCH"
           else
