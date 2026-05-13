@@ -215,7 +215,7 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          if echo "$PR_TITLE" | grep -qiE '^\[?WIP\]?[: ]'; then
+          if echo "$PR_TITLE" | grep -qiE '^(\[WIP\]|WIP[: ])'; then
             echo "ERROR: PR title starts with WIP. Mark as draft or rename before review."
             exit 1
           fi
@@ -246,7 +246,7 @@ jobs:
   pr-simultaneous:
     name: Simultaneous PR check (max 2 open)
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+    if: github.event_name == 'pull_request' && contains(fromJSON('["opened","reopened","ready_for_review"]'), github.event.action)
     timeout-minutes: 5
     steps:
       - name: Check open PR count
