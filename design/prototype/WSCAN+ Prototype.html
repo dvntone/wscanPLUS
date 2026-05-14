@@ -844,7 +844,7 @@ function SessionHeader({ live, setLive, variant }) {
     <div style={{ padding: '10px 16px 12px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => setLive(v => !v)} style={{
+          <button onClick={() => setLive(v => !v)} aria-label={live ? 'Pause live updates' : 'Resume live updates'} style={{
             width: 30, height: 30, borderRadius: '50%',
             border: '1px solid var(--ws-border-2)',
             background: live ? 'var(--ws-accent-scan)' : 'var(--ws-panel-2)',
@@ -1572,7 +1572,7 @@ function AnomalyDetail({ anomaly, onClose, tier }) {
         <div className="ws-scroll" style={{ padding: '0 16px 22px', overflowY: 'auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <AnomalyPill level={anomaly.level}>{anomaly.level}</AnomalyPill>
-            <button onClick={onClose} className="ws-btn-icon"><I.Close /></button>
+            <button onClick={onClose} className="ws-btn-icon" aria-label="Close anomaly details"><I.Close /></button>
           </div>
           <div className="ws-display ws-h" style={{
             fontSize: 20, fontWeight: 500, lineHeight: 1.25, marginTop: 8,
@@ -2153,7 +2153,7 @@ function TweakToggle({ label, value, onChange }) {
     <div className="twk-row twk-row-h">
       <div className="twk-lbl"><span>{label}</span></div>
       <button type="button" className="twk-toggle" data-on={value ? '1' : '0'}
-              role="switch" aria-checked={!!value}
+              role="switch" aria-checked={!!value} aria-label={label}
               onClick={() => onChange(!value)}><i /></button>
     </div>
   );
