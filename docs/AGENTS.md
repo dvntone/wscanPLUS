@@ -69,7 +69,7 @@ Every change must be fully traceable back to the agent that made it:
 
 ## Section 1: Single Work Unit at a Time
 
-- Only one open feature or bugfix PR at any time across all agents
+- No more than 2 open PRs at any time across all agents — enforced by CI on PR open
 - Every PR must reference exactly one GitHub Issue
 - Never open a new PR while CI is failing — fix the broken build first
 

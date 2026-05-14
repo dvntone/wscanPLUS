@@ -10,6 +10,10 @@ labels: enhancement
 
 ## Proposed solution
 
+## Acceptance criteria
+
+- [ ] <!-- Observable, testable outcome -->
+
 ## Platform
 
 - [ ] Android companion app
