@@ -5,7 +5,7 @@
 A review of the last 40 PRs (PRs ~#283–#328) identified the following systemic issues:
 
 ### Branch naming violations (9 PRs)
-Branches used non-approved prefixes (`android/`, `ci/`, `docs/`, `feat/`, bare names, `dvntone-` with dash). Both `AGENTS.md` and `docs/AGENTS.md` also had an incomplete prefix list — `gpt/` and `codex/` were missing despite being in active use. **Fixed in PR #330**: CI now enforces the prefix rule as a hard gate; both AGENTS files updated.
+Branches used non-approved prefixes (`android/`, `ci/`, `docs/`, `feat/`, bare names, `dvntone-` with dash). Both `AGENTS.md` and `docs/AGENTS.md` also had an incomplete prefix list — `gpt/` and `codex/` were missing despite being in active use. **Fixed in [PR #330](https://github.com/dvntone/wscanplus/pull/330)**: CI now enforces the prefix rule as a hard gate; both AGENTS files updated.
 
 ### Missing issue references (22/40 PRs — 55%)
 The "every PR must reference exactly one GitHub Issue" rule is not being followed. No automated gate exists for this. Remains a human/agent discipline requirement. Agents must open the issue first, then the PR.

@@ -575,7 +575,7 @@ function Spark({ data, height = 28, color = 'var(--ws-accent-scan)', fill = true
 
 // ── RSSI bars (signal strength glyph) ────────────────────────────
 function RssiBars({ rssi }) {
-  // -30→-50 strong, -50→-70 moderate, ≤-70 weak.
+  // >-55 strong (4), >-65 good (3), >-75 fair (2), ≤-75 weak (1).
   const lvl = rssi > -55 ? 4 : rssi > -65 ? 3 : rssi > -75 ? 2 : 1;
   const c = lvl >= 3 ? 'var(--ws-rssi-strong)' : lvl === 2 ? 'var(--ws-rssi-moderate)' : 'var(--ws-rssi-weak)';
   return (
