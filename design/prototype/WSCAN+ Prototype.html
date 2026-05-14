@@ -1158,7 +1158,7 @@ function SessionSpatial({ live, setLive, onOpenAnomaly }) {
     <div className="ws-screen ws-scroll">
       <SessionHeader live={live} setLive={setLive} variant="spatial" />
 
-      <div className="ws-card wf-grid-bg ws-grid-bg" style={{
+      <div className="ws-card ws-grid-bg" style={{
         margin: '0 16px 12px', padding: 18,
         position: 'relative', overflow: 'hidden',
         background: 'var(--ws-panel)',
@@ -1272,8 +1272,8 @@ function HistHeader({ subtitle }) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 4 }}>
-          <button className="ws-btn-icon"><I.Search /></button>
-          <button className="ws-btn-icon"><I.Filter /></button>
+          <button className="ws-btn-icon" aria-label="Search"><I.Search /></button>
+          <button className="ws-btn-icon" aria-label="Filter"><I.Filter /></button>
         </div>
       </div>
     </div>
@@ -2051,6 +2051,7 @@ function TweaksPanel({ title = 'Tweaks', noDeckControls = false, children }) {
 
   React.useEffect(() => {
     const onMsg = (e) => {
+      if (e.source !== window.parent) return;
       const t = e?.data?.type;
       if (t === '__activate_edit_mode') setOpen(true);
       else if (t === '__deactivate_edit_mode') setOpen(false);
