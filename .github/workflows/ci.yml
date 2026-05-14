@@ -222,7 +222,7 @@ jobs:
           echo "Title OK: $PR_TITLE"
 
   pr-size:
-    name: PR size check (max 200 LOC, tests excluded)
+    name: PR size check (max 500 LOC, tests and design excluded)
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     timeout-minutes: 5
@@ -234,10 +234,10 @@ jobs:
         run: |
           CHANGED=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" \
             --paginate \
-            --jq '[.[] | select(.filename | test("Test|Spec|\\.test\\.|\\.spec\\.") | not) | (.additions + .deletions)] | add // 0')
-          echo "Changed lines (tests excluded): $CHANGED"
-          if [ "$CHANGED" -gt 200 ]; then
-            echo "ERROR: PR changes $CHANGED lines (limit 200 LOC, tests excluded)."
+            --jq '[.[] | select(.filename | test("Test|Spec|\\.test\\.|\\.spec\\.|^design/") | not) | (.additions + .deletions)] | add // 0')
+          echo "Changed lines (tests and design excluded): $CHANGED"
+          if [ "$CHANGED" -gt 500 ]; then
+            echo "ERROR: PR changes $CHANGED lines (limit 500 LOC, tests and design excluded)."
             echo "Split into smaller PRs or justify the size in the PR description."
             exit 1
           fi

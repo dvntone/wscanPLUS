@@ -1,0 +1,2466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>wscan+ · Android Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+
+  /* ── Phone frame ─────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; }
+  html, body, #root { height: 100%; width: 100%; overflow: hidden; background: #07090c; }
+  body { display: flex; align-items: center; justify-content: center; }
+  .phone-wrap { width: 412px; height: 892px; border-radius: 38px; overflow: hidden;
+    border: 8px solid rgba(80,90,110,0.5);
+    box-shadow: 0 40px 100px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06);
+    position: relative; flex-shrink: 0; }
+  @media (max-height: 940px) {
+    .phone-wrap { transform: scale(0.78); transform-origin: center center; }
+  }
+  @media (max-height: 760px) {
+    .phone-wrap { transform: scale(0.62); transform-origin: center center; }
+  }
+
+/* tokens.css — wscan+ tactical operator tokens (from design/tokens/wscan.tokens.json) */
+
+:root {
+  /* Type */
+  --ws-f-display: "Space Grotesk", "Inter Tight", system-ui, sans-serif;
+  --ws-f-body: "Inter", "IBM Plex Sans", system-ui, sans-serif;
+  --ws-f-mono: "JetBrains Mono", "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Spacing — from tokens */
+  --ws-s-1: 4px;  --ws-s-2: 8px;  --ws-s-3: 12px;
+  --ws-s-4: 16px; --ws-s-5: 20px; --ws-s-6: 24px; --ws-s-8: 32px;
+
+  /* Radii */
+  --ws-r-sm: 6px; --ws-r-md: 10px; --ws-r-lg: 14px; --ws-r-xl: 18px; --ws-r-pill: 999px;
+
+  /* Motion */
+  --ws-m-fast: 120ms; --ws-m-med: 200ms;
+
+  /* Threat scale (anomaly confidence) */
+  --ws-threat-low:      #2FBF71;
+  --ws-threat-medium:   #F2B94B;
+  --ws-threat-high:     #FF8A3D;
+  --ws-threat-critical: #FF5A5F;
+
+  /* RSSI */
+  --ws-rssi-strong:   #2FBF71;
+  --ws-rssi-moderate: #F2B94B;
+  --ws-rssi-weak:     #FF8A3D;
+
+  /* Accents */
+  --ws-accent-scan:  #2AC3FF;
+  --ws-accent-focus: #7C5CFF;
+}
+
+/* Dark — operator default */
+[data-theme="dark"] {
+  --ws-canvas:    #0B1220;
+  --ws-panel:     #121A2B;
+  --ws-panel-2:   #1A2336;
+  --ws-panel-3:   #24324A;
+  --ws-border:    #2A3850;
+  --ws-border-2:  #42526B;
+  --ws-console:   #05070B;
+  --ws-text:      #D6DCE7;
+  --ws-text-2:    #A4AFBF;
+  --ws-text-3:    #6B7586;
+  --ws-text-h:    #F2F5F9;
+  --ws-grid:      rgba(42, 195, 255, 0.06);
+  --ws-shadow:    0 12px 32px rgba(0,0,0,0.45);
+}
+
+/* Light — operator daylight mode */
+[data-theme="light"] {
+  --ws-canvas:    #F2F5F9;
+  --ws-panel:     #FFFFFF;
+  --ws-panel-2:   #ECEFF4;
+  --ws-panel-3:   #DDE3EB;
+  --ws-border:    rgba(11, 18, 32, 0.10);
+  --ws-border-2:  rgba(11, 18, 32, 0.22);
+  --ws-console:   #0E1422;
+  --ws-text:      #1A2336;
+  --ws-text-2:    #4B5668;
+  --ws-text-3:    #7A8395;
+  --ws-text-h:    #0B1220;
+  --ws-grid:      rgba(11, 18, 32, 0.05);
+  --ws-shadow:    0 12px 32px rgba(11, 18, 32, 0.10);
+
+  --ws-threat-low:      #1AA361;
+  --ws-threat-medium:   #C58E1A;
+  --ws-threat-high:     #D86E1A;
+  --ws-threat-critical: #D63A40;
+}
+
+/* App base */
+.ws-app {
+  background: var(--ws-canvas);
+  color: var(--ws-text);
+  font-family: var(--ws-f-body);
+  font-size: 13px; line-height: 1.45;
+  height: 100%; display: flex; flex-direction: column;
+  position: relative; overflow: hidden;
+}
+
+/* Utilities */
+.ws-mono { font-family: var(--ws-f-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.005em; }
+.ws-display { font-family: var(--ws-f-display); letter-spacing: -0.015em; }
+.ws-meta { font-family: var(--ws-f-mono); font-size: 10px; letter-spacing: 0.1em;
+           text-transform: uppercase; color: var(--ws-text-2); font-weight: 500; }
+.ws-num  { font-family: var(--ws-f-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.ws-h    { color: var(--ws-text-h); }
+
+.ws-card {
+  background: var(--ws-panel);
+  border: 1px solid var(--ws-border);
+  border-radius: var(--ws-r-md);
+}
+.ws-card-2 {
+  background: var(--ws-panel-2);
+  border: 1px solid var(--ws-border);
+  border-radius: var(--ws-r-md);
+}
+
+/* Chips */
+.ws-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: var(--ws-r-pill);
+  background: var(--ws-panel-2);
+  border: 1px solid var(--ws-border);
+  font-family: var(--ws-f-mono);
+  font-size: 10px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--ws-text-2); font-weight: 500;
+}
+.ws-chip-on {
+  background: var(--ws-accent-scan);
+  border-color: transparent;
+  color: var(--ws-canvas);
+}
+
+/* Threat pill — colored by --threat var */
+.ws-threat-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 9px 3px 8px;
+  border-radius: var(--ws-r-pill);
+  font-family: var(--ws-f-mono);
+  font-size: 10px; letter-spacing: 0.06em;
+  text-transform: uppercase; font-weight: 600;
+  color: var(--threat);
+  background: color-mix(in oklab, var(--threat) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--threat) 35%, transparent);
+}
+.ws-threat-pill::before {
+  content: ""; width: 6px; height: 6px;
+  background: var(--threat); border-radius: 50%;
+  box-shadow: 0 0 8px var(--threat);
+}
+
+/* Status bar */
+.ws-statusbar {
+  height: 36px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 18px;
+  color: var(--ws-text);
+  font-size: 13px;
+  flex-shrink: 0; position: relative; z-index: 5;
+}
+.ws-statusbar-pill {
+  position: absolute; left: 50%; top: 8px; transform: translateX(-50%);
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #1a1a1a;
+}
+
+/* Bottom gesture bar */
+.ws-handle { height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ws-handle > div { width: 108px; height: 4px; background: var(--ws-text); opacity: 0.42; border-radius: 2px; }
+
+/* Scroll */
+.ws-scroll { overflow-y: auto; overflow-x: hidden; scrollbar-width: thin;
+             scrollbar-color: var(--ws-border-2) transparent; }
+.ws-scroll::-webkit-scrollbar { width: 4px; }
+.ws-scroll::-webkit-scrollbar-thumb { background: var(--ws-border-2); border-radius: 2px; }
+
+/* Buttons */
+.ws-btn {
+  appearance: none; font: inherit; cursor: pointer;
+  border: 1px solid var(--ws-border-2);
+  background: var(--ws-panel-2);
+  color: var(--ws-text);
+  border-radius: var(--ws-r-md);
+  padding: 8px 14px;
+  transition: background var(--ws-m-fast);
+}
+.ws-btn:hover { background: var(--ws-panel-3); }
+.ws-btn-primary {
+  background: var(--ws-accent-scan);
+  color: #00131c;
+  border-color: transparent;
+  font-weight: 600;
+}
+.ws-btn-primary:hover { filter: brightness(1.08); }
+.ws-btn-icon {
+  width: 36px; height: 36px; border: 0; cursor: pointer;
+  border-radius: 50%; background: transparent;
+  color: var(--ws-text-2);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ws-btn-icon:hover { background: var(--ws-panel-2); color: var(--ws-text); }
+
+/* Background grid */
+.ws-grid-bg {
+  background-image:
+    linear-gradient(to right, var(--ws-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--ws-grid) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Animations */
+@keyframes ws-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.ws-pulse { animation: ws-pulse 2.4s ease-in-out infinite; }
+
+@keyframes ws-sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+@keyframes ws-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.ws-screen { animation: ws-in 0.28s cubic-bezier(0.2, 0.7, 0.2, 1); height: 100%; display: flex; flex-direction: column; }
+
+@keyframes ws-blink { 50% { opacity: 0; } }
+
+/* Annotation overlay */
+.ws-annot {
+  position: absolute; pointer-events: none;
+  border: 1px dashed var(--ws-accent-focus);
+  background: color-mix(in oklab, var(--ws-accent-focus) 8%, transparent);
+  border-radius: 4px;
+}
+.ws-annot-label {
+  position: absolute; pointer-events: none;
+  font-family: var(--ws-f-mono);
+  font-size: 9px;
+  background: var(--ws-accent-focus); color: #fff;
+  padding: 3px 6px; border-radius: 3px;
+  letter-spacing: 0.04em; line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// data.jsx — wscan+ session simulation.
+// Faithful to the real evidence model: WiFi APs, BLE beacons, captive
+// portal results, recurrence, anomalies, capability state, observations.
+// Vocabulary follows docs/PRODUCT_SPEC.md.
+
+// ── Anomaly confidence (calm; NOT actor attribution) ─────────────
+// 4 levels mapped to brand token names. Used for chips, indicators.
+const ANOMALY_LEVELS = [
+  { id: 'low',      label: 'low',      short: 'LOW',  color: 'var(--ws-threat-low)' },
+  { id: 'medium',   label: 'medium',   short: 'MED',  color: 'var(--ws-threat-medium)' },
+  { id: 'high',     label: 'high',     short: 'HIGH', color: 'var(--ws-threat-high)' },
+  { id: 'critical', label: 'critical', short: 'CRIT', color: 'var(--ws-threat-critical)' },
+];
+
+// ── Session ──────────────────────────────────────────────────────
+const SESSION = {
+  id: 'sess-7c41a',
+  name: 'Apt 4-W · Tuesday evening sweep',
+  started: '19:42',
+  duration: '00:18:42',
+  location: 'home · indoor',
+  capability: 'WORKS_ADB_ENHANCED',
+  device: 'pixel 8 · android 15 · adb-assisted',
+};
+
+// ── Wi-Fi access points observed (enriched with vendor, timing, channel width) ──
+const WIFI = [
+  { bssid: '4C:5E:0C:91:8A:42', ssid: 'PRIVATE-HOME-5G',  ch: 36, band: '5GHz',  sec: 'WPA3', rssi: -42, drift: 'stable',
+    vendor: 'Cisco Meraki', chWidth: '80MHz', beacon: 100, firstSeen: '19:42:01', lastSeen: '19:59:48',
+    sessions: 12, note: 'known-baseline · 12 prior sightings', anomaly: null },
+  { bssid: '78:8A:20:11:E8:0A', ssid: 'PRIVATE-HOME-2G',  ch:  6, band: '2.4GHz', sec: 'WPA2', rssi: -54, drift: 'stable',
+    vendor: 'Cisco Meraki', chWidth: '20MHz', beacon: 100, firstSeen: '19:42:01', lastSeen: '19:59:48',
+    sessions: 12, note: 'known-baseline', anomaly: null },
+  { bssid: 'AE:4F:91:CC:31:F0', ssid: 'xfinitywifi',      ch: 11, band: '2.4GHz', sec: 'open', rssi: -68, drift: 'new',
+    vendor: 'Comcast (Xfinity)', chWidth: '20MHz', beacon: 100, firstSeen: '19:44:18', lastSeen: '19:59:48',
+    sessions: 0, note: 'open SSID · captive portal differs from baseline', anomaly: 'high' },
+  { bssid: 'AE:4F:91:CC:31:F1', ssid: 'xfinitywifi',      ch: 36, band: '5GHz',  sec: 'open', rssi: -71, drift: 'new',
+    vendor: 'Comcast (Xfinity)', chWidth: '40MHz', beacon: 100, firstSeen: '19:44:18', lastSeen: '19:59:48',
+    sessions: 0, anomaly: 'high' },
+  { bssid: '02:8C:5D:7F:11:01', ssid: 'Setup-7A11',       ch:  1, band: '2.4GHz', sec: 'open', rssi: -77, drift: 'new',
+    vendor: 'unknown (locally-administered)', chWidth: '20MHz', beacon: 200, firstSeen: '19:44:32', lastSeen: '19:48:30',
+    sessions: 0, note: 'short-lived · 4 minute window', anomaly: 'medium' },
+  { bssid: '88:AC:C1:0E:5B:22', ssid: 'NETGEAR55',        ch:  6, band: '2.4GHz', sec: 'WPA2', rssi: -83, drift: 'stable',
+    vendor: 'Netgear', chWidth: '20MHz', beacon: 100, firstSeen: '19:42:08', lastSeen: '19:59:48',
+    sessions: 9, anomaly: null },
+  { bssid: '00:1B:11:9A:03:CC', ssid: 'TP-LINK_C3',       ch: 11, band: '2.4GHz', sec: 'WPA2', rssi: -85, drift: 'stable',
+    vendor: 'TP-Link', chWidth: '20MHz', beacon: 100, firstSeen: '19:42:12', lastSeen: '19:59:48',
+    sessions: 8, anomaly: null },
+  { bssid: '50:C7:BF:01:22:81', ssid: '<hidden>',         ch:149, band: '5GHz',  sec: 'WPA2', rssi: -76, drift: 'stable',
+    vendor: 'unknown', chWidth: '80MHz', beacon: 100, firstSeen: '19:42:06', lastSeen: '19:59:48',
+    sessions: 6, anomaly: null },
+];
+
+// ── WiFi stats (derived) ─────────────────────────────────────────
+const WIFI_STATS = {
+  totalAPs: WIFI.length,
+  newAPs: WIFI.filter(w => w.drift === 'new').length,
+  openAPs: WIFI.filter(w => w.sec === 'open').length,
+  hiddenAPs: WIFI.filter(w => w.ssid === '<hidden>').length,
+  secBreakdown: { WPA3: 1, WPA2: 4, open: 3 },
+  bandBreakdown: { '2.4GHz': 5, '5GHz': 3 },
+  channelLoad: [
+    { ch: 1, band: '2.4', count: 1, anomalous: 1 },
+    { ch: 6, band: '2.4', count: 2, anomalous: 0 },
+    { ch: 11, band: '2.4', count: 2, anomalous: 1 },
+    { ch: 36, band: '5', count: 2, anomalous: 1 },
+    { ch: 149, band: '5', count: 1, anomalous: 0 },
+  ],
+  rssiHistogram: [
+    { range: '-30 to -40', count: 0 },
+    { range: '-40 to -50', count: 1 },
+    { range: '-50 to -60', count: 1 },
+    { range: '-60 to -70', count: 1 },
+    { range: '-70 to -80', count: 3 },
+    { range: '-80 to -90', count: 2 },
+  ],
+  avgRssi: -70,
+  maxRssi: -42,
+  minRssi: -85,
+  scanCount: 22,
+  scanRate: '1 / 51s avg',
+};
+
+// ── BLE sightings (enriched) ──────────────────────────────────────
+const BLE = [
+  { addr: 'fa:91:0c:71:18:8d', name: 'Mi Band 8',          rssi: -52, recur: 'recurring · 5 sessions', anomaly: null,
+    type: 'public', advInterval: '1285ms', pduType: 'ADV_IND', manufacturer: 'Xiaomi', advCount: 84, firstSeen: '19:42:04', lastSeen: '19:59:44' },
+  { addr: 'random·rotating',   name: '—',                   rssi: -60, recur: 'recurring · unstable id', anomaly: 'medium',
+    type: 'random-resolvable', advInterval: '220ms', pduType: 'ADV_NONCONN_IND', manufacturer: 'unknown', advCount: 512, firstSeen: '19:43:01', lastSeen: '19:59:48',
+    note: 'advertisement burst pattern · short interval' },
+  { addr: 'b4:0e:11:8a:8c:21', name: 'Tile_8a8c',           rssi: -73, recur: 'first-seen', anomaly: 'low',
+    type: 'public', advInterval: '760ms', pduType: 'ADV_IND', manufacturer: 'Tile Inc', advCount: 45, firstSeen: '19:44:11', lastSeen: '19:59:48' },
+  { addr: '60:8a:10:e1:11:00', name: 'AirTag (manuf. id)',  rssi: -81, recur: 'first-seen', anomaly: 'low',
+    type: 'random-non-resolvable', advInterval: '2000ms', pduType: 'ADV_NONCONN_IND', manufacturer: 'Apple Inc', advCount: 18, firstSeen: '19:46:22', lastSeen: '19:59:48' },
+  { addr: '00:00:00:00:00:00', name: 'public · no name',    rssi: -88, recur: 'first-seen', anomaly: null,
+    type: 'public', advInterval: '1000ms', pduType: 'ADV_SCAN_IND', manufacturer: 'unknown', advCount: 12, firstSeen: '19:48:55', lastSeen: '19:59:48' },
+];
+
+// ── BLE stats (derived) ──────────────────────────────────────────
+const BLE_STATS = {
+  totalDevices: BLE.length,
+  totalAdvPackets: BLE.reduce((s, b) => s + b.advCount, 0),
+  anomalous: BLE.filter(b => b.anomaly).length,
+  recurring: BLE.filter(b => b.recur.startsWith('recurring')).length,
+  typeBreakdown: { 'public': 3, 'random-resolvable': 1, 'random-non-resolvable': 1 },
+  avgAdvRate: '134 /min',
+  fastestInterval: '220ms',
+  pduBreakdown: { ADV_IND: 2, ADV_NONCONN_IND: 2, ADV_SCAN_IND: 1 },
+};
+
+// ── Portal fingerprint (for the suspicious xfinitywifi) ──────────
+const PORTAL_FP = {
+  ssid: 'xfinitywifi',
+  bssid: 'AE:4F:91:CC:31:F0',
+  baselineCert: { issuer: 'DigiCert SHA2 Ext', serial: '0A:8B:…', expires: '2025-11-14' },
+  observedCert: { issuer: 'unknown CA', serial: '7F:3C:…', expires: '2026-02-01' },
+  baselineRedirects: ['hotspot.xfinity.com → login.xfinity.com'],
+  observedRedirects: ['hotspot.xfinity.com → x-auth.suspicious-host.net → login.xfinity.com'],
+  baselineFormAction: 'https://login.xfinity.com/auth',
+  observedFormAction: 'https://x-auth.suspicious-host.net/collect',
+  structuralMatch: '62%',
+  verdict: 'suspicious · investigation recommended',
+};
+
+// ── Anomalies (the actual evidence objects) ──────────────────────
+const ANOMALIES = [
+  {
+    id: 'a-019',
+    title: 'Suspicious captive portal',
+    level: 'high',
+    t: '19:47:11',
+    summary: 'Captive portal for xfinitywifi does not match known-good baseline (TLS cert + redirect chain + form structure).',
+    reasons: [
+      'TLS certificate issuer differs from baseline (DigiCert → unknown)',
+      'redirect chain has 1 extra hop through unfamiliar host',
+      'form action URL does not match baseline form host',
+    ],
+    signals: ['wifi', 'portal'],
+    recurrence: 'first-seen at this location',
+    investigation: 'Investigation recommended. Avoid auto-connect until confirmed.',
+  },
+  {
+    id: 'a-018',
+    title: 'BLE advertisement burst — rotating identifier',
+    level: 'medium',
+    t: '19:45:08',
+    summary: 'Rotating BLE advertisement pattern with sub-second cadence. Recurring across last 5 sessions in this location.',
+    reasons: [
+      'advertisement interval ≤ 220ms · sustained 2+ minutes',
+      'random-resolvable address rotation rate above baseline',
+      'similar pattern observed in 4 prior sessions at this location',
+    ],
+    signals: ['ble'],
+    recurrence: 'recurring · 5 sessions · same approximate location',
+    investigation: 'Investigation recommended. Pattern alone does not confirm a device class.',
+  },
+  {
+    id: 'a-017',
+    title: 'New AP cluster on busy channel',
+    level: 'medium',
+    t: '19:44:32',
+    summary: 'Two short-lived BSSIDs broadcasting open networks within 90s window on channels 1 and 11.',
+    reasons: [
+      'BSSIDs not in baseline · open security',
+      'co-occurrent appearance pattern',
+      'high RSSI variance suggests mobility',
+    ],
+    signals: ['wifi'],
+    recurrence: 'first-seen',
+    investigation: 'Watch · re-correlate if pattern repeats.',
+  },
+  {
+    id: 'a-016',
+    title: 'Baseline RSSI drift · PRIVATE-HOME-5G',
+    level: 'low',
+    t: '19:43:50',
+    summary: 'Trusted AP RSSI 8 dB below 7-day median for this hour. Likely environmental.',
+    reasons: [ 'rssi median Δ = −8dB · within urban damping band' ],
+    signals: ['wifi'],
+    recurrence: 'occasional · environmental',
+    investigation: 'No action recommended.',
+  },
+];
+
+// ── Session history (past sessions) ──────────────────────────────
+const SESSIONS = [
+  { id: 's-041', t: 'Tue 19:42', loc: 'Apt 4-W · indoor',  dur: '18m', obs: 38, an: 4, top: 'high' },
+  { id: 's-040', t: 'Mon 21:11', loc: 'Apt 4-W · indoor',  dur: '12m', obs: 22, an: 2, top: 'medium' },
+  { id: 's-039', t: 'Mon 08:02', loc: 'Café 8th · public', dur: '24m', obs: 51, an: 1, top: 'low' },
+  { id: 's-038', t: 'Sun 22:48', loc: 'Apt 4-W · indoor',  dur: '09m', obs: 14, an: 0, top: null },
+  { id: 's-037', t: 'Sat 14:11', loc: 'Transit · mobile',  dur: '32m', obs: 88, an: 3, top: 'medium' },
+  { id: 's-036', t: 'Fri 19:30', loc: 'Apt 4-W · indoor',  dur: '20m', obs: 30, an: 2, top: 'medium' },
+];
+
+// ── Capability state (real spec values) ───────────────────────────
+const CAPABILITY = [
+  { id: 'wifi-scan',     name: 'Wi-Fi scan',          state: 'WORKS_NATIVE',         note: 'standard scan throttle applies' },
+  { id: 'wifi-monitor',  name: 'Wi-Fi monitor mode',  state: 'WORKS_ADB',            note: 'requires ADB-assisted mode' },
+  { id: 'ble-passive',   name: 'BLE passive scan',    state: 'WORKS_NATIVE',         note: 'foreground only' },
+  { id: 'ble-bg',        name: 'BLE background scan', state: 'WORKS_ADB_ENHANCED',   note: 'longer windows with ADB' },
+  { id: 'portal',        name: 'Captive portal probe', state: 'WORKS_NATIVE',        note: 'TLS + redirect + form fp' },
+  { id: 'gps-fine',      name: 'Fine location',       state: 'WORKS_DEGRADED',       note: 'background access denied · coarse only' },
+  { id: 'baro',          name: 'Barometer',           state: 'WORKS_NATIVE',         note: 'floor estimate enabled' },
+  { id: 'imu',           name: 'IMU motion',          state: 'WORKS_NATIVE',         note: 'spatial correlation enabled' },
+  { id: 'pcap',          name: 'PCAP export',         state: 'FAILS',                note: 'not available without root' },
+];
+
+// ── Spatial / heatmap cells (synthesized) ────────────────────────
+// 10×14 grid, each cell {x, y, rssi, anomaly}.
+const HEATMAP = (() => {
+  const cells = [];
+  for (let y = 0; y < 10; y++) for (let x = 0; x < 14; x++) {
+    const dx = x - 7, dy = y - 5;
+    const d = Math.sqrt(dx*dx + dy*dy);
+    const rssi = -42 - d * 4.6 + ((x*7+y*3)%5);
+    const anomaly = (x === 11 && y >= 2 && y <= 4) ? 'high'
+                  : (x === 3 && y === 7) ? 'medium' : null;
+    cells.push({ x, y, rssi, anomaly });
+  }
+  return cells;
+})();
+
+// ── Live-feed tick (drives the dashboard sparklines / chips) ─────
+function useLiveTick(running = true, periodMs = 1000) {
+  const [t, setT] = React.useState(0);
+  React.useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => setT(p => p + 1), periodMs);
+    return () => clearInterval(id);
+  }, [running, periodMs]);
+  return t;
+}
+
+// Smoothed time-series synthesizer.
+function fakeSeries(seed, n = 60, base = -60, amp = 6) {
+  const out = [];
+  let v = base;
+  for (let i = 0; i < n; i++) {
+    const s = Math.sin((seed * 0.31 + i * 0.21)) * amp * 0.5;
+    const r = ((Math.sin(seed * 13 + i * 7) + 1) / 2 - 0.5) * 2;
+    v = v * 0.85 + (base + s + r) * 0.15;
+    out.push(v);
+  }
+  return out;
+}
+
+Object.assign(window, {
+  ANOMALY_LEVELS, SESSION, WIFI, WIFI_STATS, BLE, BLE_STATS, PORTAL_FP,
+  ANOMALIES, SESSIONS, CAPABILITY, HEATMAP,
+  useLiveTick, fakeSeries,
+});
+
+</script>
+
+<script type="text/babel">
+// prims.jsx — Shared primitives: icons, sparkline, signal bars,
+// anomaly chip, .nyx avatar, status-bar / nav-bar Android chrome.
+
+// ── Icons ─────────────────────────────────────────────────────────
+const I = {
+  Back:   () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 4l-6 6 6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  Menu:   () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>,
+  More:   () => <svg width="20" height="20" viewBox="0 0 20 20"><circle cx="4" cy="10" r="1.5" fill="currentColor"/><circle cx="10" cy="10" r="1.5" fill="currentColor"/><circle cx="16" cy="10" r="1.5" fill="currentColor"/></svg>,
+  Filter: () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M5 10h10M8 15h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>,
+  Search: () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5" stroke="currentColor" strokeWidth="1.6"/><path d="M12.5 12.5L17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>,
+  Wifi:   () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M2.5 7.5a11 11 0 0 1 15 0M4.5 10.5a7.5 7.5 0 0 1 11 0M6.5 13.5a4 4 0 0 1 7 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/><circle cx="10" cy="16.4" r="1.1" fill="currentColor"/></svg>,
+  Ble:    () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 5l8 5-4 3v5l8-5-4-3 4-3-8-5v5l4 3" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" strokeLinecap="round"/></svg>,
+  Map:    () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M2 4l5-2 6 2 5-2v14l-5 2-6-2-5 2zM7 2v14M13 4v14" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" strokeLinecap="round"/></svg>,
+  History:() => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.6"/><path d="M10 6v4l3 2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>,
+  Diag:   () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M2 10h4l2-5 4 10 2-5h4" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round"/></svg>,
+  Alert:  () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 3l8 14H2zM10 8v4M10 14.5v.5" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round"/></svg>,
+  Nyx:    () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 1 0 12 0 6 6 0 0 0-9.5-4.85A4 4 0 0 1 13 13a6 6 0 0 1-9-3z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>,
+  Pause:  () => <svg width="13" height="13" viewBox="0 0 14 14"><rect x="3" y="2" width="3" height="10" fill="currentColor"/><rect x="8" y="2" width="3" height="10" fill="currentColor"/></svg>,
+  Play:   () => <svg width="13" height="13" viewBox="0 0 14 14"><path d="M3 2l10 5-10 5z" fill="currentColor"/></svg>,
+  Close:  () => <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>,
+  Chevron:() => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  Plus:   () => <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 5v12M5 11h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>,
+  Export: () => <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 11V2M5 6l4-4 4 4M3 12v3a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+};
+
+// ── Anomaly pill ─────────────────────────────────────────────────
+function AnomalyPill({ level, children }) {
+  const a = ANOMALY_LEVELS.find(x => x.id === level);
+  if (!a) return null;
+  return (
+    <span className="ws-threat-pill" style={{ '--threat': a.color }}>
+      {children || a.label}
+    </span>
+  );
+}
+
+// ── Sparkline ────────────────────────────────────────────────────
+function Spark({ data, height = 28, color = 'var(--ws-accent-scan)', fill = true, lastDot = true }) {
+  if (!data?.length) return null;
+  let min = Infinity, max = -Infinity;
+  for (const v of data) { if (v < min) min = v; if (v > max) max = v; }
+  if (max - min < 1e-9) max = min + 1;
+  const n = data.length, w = 100;
+  const dx = w / (n - 1 || 1);
+  const y = v => height - 2 - ((v - min) / (max - min)) * (height - 4);
+  let d = `M 0 ${y(data[0]).toFixed(2)}`;
+  for (let i = 1; i < n; i++) d += ` L ${(i*dx).toFixed(2)} ${y(data[i]).toFixed(2)}`;
+  const area = `${d} L ${w} ${height} L 0 ${height} Z`;
+  return (
+    <svg viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="none"
+         style={{ width: '100%', height, display: 'block', overflow: 'visible', color }}>
+      {fill && <path d={area} fill="currentColor" opacity="0.10" />}
+      <path d={d} fill="none" stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+      {lastDot && (
+        <circle cx={((n-1)*dx).toFixed(2)} cy={y(data[n-1]).toFixed(2)} r="1.8"
+                fill="currentColor" vectorEffect="non-scaling-stroke" />
+      )}
+    </svg>
+  );
+}
+
+// ── RSSI bars (signal strength glyph) ────────────────────────────
+function RssiBars({ rssi }) {
+  // >-55 strong (4), >-65 good (3), >-75 fair (2), ≤-75 weak (1).
+  const lvl = rssi > -55 ? 4 : rssi > -65 ? 3 : rssi > -75 ? 2 : 1;
+  const c = lvl >= 3 ? 'var(--ws-rssi-strong)' : lvl === 2 ? 'var(--ws-rssi-moderate)' : 'var(--ws-rssi-weak)';
+  return (
+    <div style={{ display: 'inline-flex', alignItems: 'flex-end', gap: 1.5, height: 13 }}>
+      {[1,2,3,4].map(i => (
+        <div key={i} style={{
+          width: 3, height: i * 3 + 2,
+          background: i <= lvl ? c : 'var(--ws-border)',
+          borderRadius: 0.5,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+// ── .nyx avatar (small monogram lotus mark) ──────────────────────
+function NyxAvatar({ size = 28 }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: size,
+      background: 'radial-gradient(circle at 30% 28%, #34d8ff, #7c5cff 60%, #1a0e3b)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.18), 0 2px 12px rgba(124,92,255,0.35)',
+      flexShrink: 0, color: '#fff',
+    }}>
+      <svg width={size * 0.5} height={size * 0.5} viewBox="0 0 20 20" fill="none">
+        <path d="M4 10a6 6 0 1 0 12 0 6 6 0 0 0-9.5-4.85A4 4 0 0 1 13 13a6 6 0 0 1-9-3z"
+              stroke="#fff" strokeWidth="1.5" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
+// ── Android status bar (M3 chrome, theme-aware) ─────────────────
+function StatusBar({ time = '19:42', show = true }) {
+  if (!show) return null;
+  return (
+    <div className="ws-statusbar">
+      <span className="ws-mono" style={{ fontSize: 13 }}>{time}</span>
+      <div className="ws-statusbar-pill" />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 13.3L.67 5.97a10.37 10.37 0 0114.66 0L8 13.3z" fill="currentColor"/></svg>
+        <svg width="14" height="14" viewBox="0 0 16 16"><path d="M14.67 14.67V1.33L1.33 14.67h13.34z" fill="currentColor"/></svg>
+        <svg width="14" height="14" viewBox="0 0 16 16">
+          <rect x="3.75" y="2" width="8.5" height="13" rx="1.5" fill="currentColor"/>
+          <rect x="5.5" y="0.9" width="5" height="2" rx="0.5" fill="currentColor"/>
+        </svg>
+      </div>
+    </div>
+  );
+}
+function NavHandle({ show = true }) {
+  if (!show) return null;
+  return <div className="ws-handle"><div /></div>;
+}
+
+// ── Tier badge (presentation tier for current screen) ───────────
+function PresentationBadge({ tier }) {
+  const t = { newbie: ['Plain', 'var(--ws-threat-low)'],
+              advanced: ['Advanced', 'var(--ws-accent-scan)'],
+              pro: ['Pro', 'var(--ws-accent-focus)'],
+              spatial: ['Spatial', 'var(--ws-threat-medium)'] }[tier];
+  if (!t) return null;
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      fontFamily: 'var(--ws-f-mono)', fontSize: 9.5,
+      letterSpacing: '0.1em', textTransform: 'uppercase',
+      padding: '2px 7px', borderRadius: 999,
+      color: t[1], fontWeight: 600,
+      background: 'color-mix(in oklab, ' + t[1] + ' 14%, transparent)',
+      border: '1px solid color-mix(in oklab, ' + t[1] + ' 35%, transparent)',
+    }}>{t[0]}</span>
+  );
+}
+
+Object.assign(window, { I, AnomalyPill, Spark, RssiBars, NyxAvatar, StatusBar, NavHandle, PresentationBadge });
+
+</script>
+
+<script type="text/babel">
+// nav.jsx — 4 navigation variants.
+
+const DESTS = [
+  { id: 'session', label: 'Session',  short: 'Now',  Icon: () => <I.Wifi /> },
+  { id: 'history', label: 'History',  short: 'Hist', Icon: () => <I.History /> },
+  { id: 'map',     label: 'Map',      short: 'Map',  Icon: () => <I.Map /> },
+  { id: 'diag',    label: 'Diag',     short: 'Diag', Icon: () => <I.Diag /> },
+];
+
+// A: Bottom nav (M3)
+function NavBottom({ screen, setScreen }) {
+  return (
+    <div style={{
+      display: 'flex', height: 72, flexShrink: 0,
+      background: 'var(--ws-panel)', borderTop: '1px solid var(--ws-border)',
+    }}>
+      {DESTS.map(d => {
+        const a = screen === d.id;
+        return (
+          <button key={d.id} onClick={() => setScreen(d.id)} style={{
+            flex: 1, border: 0, background: 'transparent', cursor: 'pointer',
+            color: a ? 'var(--ws-text-h)' : 'var(--ws-text-2)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', gap: 4, padding: '8px 0',
+          }}>
+            <div style={{
+              padding: '4px 18px', borderRadius: 14,
+              background: a ? 'color-mix(in oklab, var(--ws-accent-scan) 20%, transparent)' : 'transparent',
+              transition: 'background var(--ws-m-fast)',
+            }}>
+              <d.Icon />
+            </div>
+            <span style={{ fontSize: 11, fontWeight: a ? 600 : 400, letterSpacing: 0.2 }}>{d.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// B: Top tabs
+function NavTop({ screen, setScreen }) {
+  return (
+    <div style={{
+      display: 'flex', padding: '0 14px 8px', flexShrink: 0,
+      background: 'var(--ws-canvas)', gap: 6,
+    }}>
+      {DESTS.map(d => {
+        const a = screen === d.id;
+        return (
+          <button key={d.id} onClick={() => setScreen(d.id)} style={{
+            flex: 1, padding: '8px 0',
+            fontFamily: 'var(--ws-f-mono)', fontSize: 11,
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+            border: 'none',
+            borderBottom: a ? '1.5px solid var(--ws-accent-scan)' : '1.5px solid var(--ws-border)',
+            background: 'transparent',
+            color: a ? 'var(--ws-text-h)' : 'var(--ws-text-2)',
+            cursor: 'pointer', fontWeight: a ? 600 : 500,
+          }}>
+            {d.short}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// C: Side rail (compact)
+function NavRail({ screen, setScreen }) {
+  return (
+    <div style={{
+      position: 'absolute', left: 0, top: 36, bottom: 22,
+      width: 60, paddingTop: 14, zIndex: 3,
+      background: 'var(--ws-panel)',
+      borderRight: '1px solid var(--ws-border)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+    }}>
+      {DESTS.map(d => {
+        const a = screen === d.id;
+        return (
+          <button key={d.id} onClick={() => setScreen(d.id)} title={d.label} style={{
+            width: 44, height: 44, border: 0, cursor: 'pointer', borderRadius: 12,
+            background: a ? 'color-mix(in oklab, var(--ws-accent-scan) 20%, transparent)' : 'transparent',
+            color: a ? 'var(--ws-text-h)' : 'var(--ws-text-2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexDirection: 'column', gap: 2,
+          }}>
+            <d.Icon />
+            <span style={{ fontSize: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{d.short}</span>
+          </button>
+        );
+      })}
+      <div style={{ flex: 1 }} />
+      <div className="ws-mono" style={{
+        writingMode: 'vertical-rl', transform: 'rotate(180deg)',
+        fontSize: 9, color: 'var(--ws-text-3)', letterSpacing: '0.2em',
+        marginBottom: 14,
+      }}>wscan+ · .nyx</div>
+    </div>
+  );
+}
+
+// D: Command sheet (FAB pill, bottom-center)
+function NavCmd({ screen, setScreen }) {
+  const [open, setOpen] = React.useState(false);
+  const cur = DESTS.find(d => d.id === screen);
+  return (
+    <>
+      <button onClick={() => setOpen(true)} style={{
+        position: 'absolute', left: '50%', bottom: 32,
+        transform: 'translateX(-50%)',
+        padding: '10px 16px 10px 12px',
+        background: 'var(--ws-panel)', color: 'var(--ws-text-h)',
+        border: '1px solid var(--ws-border-2)', borderRadius: 999, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', gap: 10,
+        fontFamily: 'var(--ws-f-mono)', fontSize: 11,
+        letterSpacing: '0.08em', textTransform: 'uppercase',
+        boxShadow: 'var(--ws-shadow)', zIndex: 4,
+      }}>
+        <span style={{ width: 7, height: 7, borderRadius: 999,
+          background: 'var(--ws-accent-scan)',
+          boxShadow: '0 0 10px var(--ws-accent-scan)' }} />
+        {cur?.label}
+        <span style={{ opacity: 0.5 }}>switch</span>
+      </button>
+      {open && (
+        <div onClick={() => setOpen(false)} style={{
+          position: 'absolute', inset: 0, zIndex: 9,
+          background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end',
+          animation: 'ws-in 0.18s',
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            width: '100%', background: 'var(--ws-panel)',
+            borderRadius: '20px 20px 0 0', padding: '14px 0 24px',
+            animation: 'ws-in 0.24s',
+          }}>
+            <div style={{
+              width: 36, height: 4, borderRadius: 2,
+              background: 'var(--ws-border-2)', margin: '0 auto 16px',
+            }} />
+            <div className="ws-meta" style={{ padding: '0 22px 8px' }}>destinations</div>
+            {DESTS.map(d => {
+              const a = screen === d.id;
+              return (
+                <button key={d.id}
+                  onClick={() => { setScreen(d.id); setOpen(false); }}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '12px 22px', border: 0, background: 'transparent',
+                    color: a ? 'var(--ws-text-h)' : 'var(--ws-text)',
+                    cursor: 'pointer', textAlign: 'left',
+                  }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 8,
+                    background: a ? 'color-mix(in oklab, var(--ws-accent-scan) 22%, transparent)' : 'var(--ws-panel-2)',
+                    color: a ? 'var(--ws-accent-scan)' : 'var(--ws-text-2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}><d.Icon /></div>
+                  <div style={{ flex: 1, fontSize: 15, fontWeight: a ? 600 : 400 }}>{d.label}</div>
+                  {a && <div className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)' }}>active</div>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+Object.assign(window, { DESTS, NavBottom, NavTop, NavRail, NavCmd });
+
+</script>
+
+<script type="text/babel">
+// screen-session.jsx — "Now" / Session summary. 4 variants:
+//  newbie    — calm, plain-language status card
+//  advanced  — evidence categories with reasons
+//  pro       — full fidelity tactical dashboard
+//  spatial   — radar / proximity emphasis
+
+function SessionHeader({ live, setLive, variant }) {
+  return (
+    <div style={{ padding: '10px 16px 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={() => setLive(v => !v)} aria-label={live ? 'Pause live updates' : 'Resume live updates'} style={{
+            width: 30, height: 30, borderRadius: '50%',
+            border: '1px solid var(--ws-border-2)',
+            background: live ? 'var(--ws-accent-scan)' : 'var(--ws-panel-2)',
+            color: live ? '#001a26' : 'var(--ws-text-2)',
+            cursor: 'pointer', display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            boxShadow: live ? '0 0 14px color-mix(in oklab, var(--ws-accent-scan) 50%, transparent)' : 'none',
+          }}>
+            {live ? <I.Pause /> : <I.Play />}
+          </button>
+          <div>
+            <div className="ws-display ws-h" style={{ fontSize: 17, fontWeight: 500, lineHeight: 1.15 }}>
+              {SESSION.name}
+            </div>
+            <div className="ws-mono" style={{ fontSize: 10.5, color: 'var(--ws-text-2)' }}>
+              {SESSION.id} · {live ? `live · ${SESSION.duration}` : 'paused'} · {SESSION.location}
+            </div>
+          </div>
+        </div>
+        <PresentationBadge tier={variant} />
+      </div>
+    </div>
+  );
+}
+
+// Compact KPI tile
+function Kpi({ label, value, sub, color }) {
+  return (
+    <div className="ws-card" style={{ flex: 1, padding: '10px 12px' }}>
+      <div className="ws-meta">{label}</div>
+      <div className="ws-num ws-h" style={{
+        fontSize: 24, fontWeight: 500, lineHeight: 1.1, marginTop: 4,
+        color: color || 'var(--ws-text-h)',
+      }}>{value}</div>
+      {sub && <div className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)', marginTop: 2 }}>{sub}</div>}
+    </div>
+  );
+}
+
+// ── Newbie ────────────────────────────────────────────────────────
+function SessionNewbie({ live, setLive, onOpenAnomaly }) {
+  const top = ANOMALIES[0];
+  return (
+    <div className="ws-screen ws-scroll">
+      <SessionHeader live={live} setLive={setLive} variant="newbie" />
+
+      <div style={{ padding: '0 16px 14px' }}>
+        <div className="ws-card" data-an="status-card" style={{
+          padding: 18, display: 'flex', flexDirection: 'column', gap: 12,
+          borderLeft: '3px solid var(--ws-threat-high)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <NyxAvatar size={36} />
+            <div>
+              <div className="ws-meta">.nyx · current status</div>
+              <div className="ws-display ws-h" style={{ fontSize: 20, fontWeight: 500, lineHeight: 1.25, marginTop: 2 }}>
+                Suspicious activity observed.
+              </div>
+            </div>
+          </div>
+          <div style={{ fontSize: 13.5, color: 'var(--ws-text)', lineHeight: 1.5 }}>
+            I noticed an unfamiliar open WiFi network nearby and a recurring
+            BLE pattern that has shown up in your last few sessions.
+            Investigation recommended. This isn't a confirmed threat.
+          </div>
+          <button onClick={() => onOpenAnomaly(top)} className="ws-btn ws-btn-primary" style={{ alignSelf: 'flex-start' }}>
+            What does that mean?
+          </button>
+        </div>
+      </div>
+
+      <div style={{ padding: '0 16px 14px', display: 'flex', gap: 8 }}>
+        <Kpi label="anomalies" value="4" sub="last 18m" />
+        <Kpi label="recurring" value="1" sub="5 sessions" />
+        <Kpi label="rec." value="watch" color="var(--ws-threat-medium)" />
+      </div>
+
+      <div style={{ padding: '0 16px' }}>
+        <div className="ws-meta" style={{ marginBottom: 8 }}>what i&apos;m watching</div>
+        <div className="ws-card">
+          {ANOMALIES.slice(0, 3).map((a, i) => (
+            <button key={a.id} onClick={() => onOpenAnomaly(a)} style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+              padding: '13px 14px', background: 'transparent', border: 0,
+              borderBottom: i < 2 ? '1px solid var(--ws-border)' : 'none',
+              cursor: 'pointer', color: 'inherit', textAlign: 'left',
+            }}>
+              <AnomalyPill level={a.level} />
+              <span style={{ flex: 1, fontSize: 13, color: 'var(--ws-text)' }}>
+                {a.title}
+              </span>
+              <span style={{ color: 'var(--ws-text-3)' }}><I.Chevron /></span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Advanced ──────────────────────────────────────────────────────
+function SessionAdvanced({ live, setLive, onOpenAnomaly }) {
+  const liveScores = React.useMemo(() => {
+    return {
+      wifi: fakeSeries(1, 60, -55, 8),
+      ble:  fakeSeries(2, 60, -68, 10),
+    };
+  }, []);
+  return (
+    <div className="ws-screen ws-scroll">
+      <SessionHeader live={live} setLive={setLive} variant="advanced" />
+
+      <div style={{ padding: '0 16px 12px', display: 'flex', gap: 8 }}>
+        <Kpi label="aps observed"  value={WIFI.length} sub={`${WIFI.filter(w=>w.drift==='new').length} new`} />
+        <Kpi label="ble unique"    value={BLE.length}  sub={`${BLE.filter(b=>b.anomaly).length} anomalous`} />
+        <Kpi label="anomalies"     value={ANOMALIES.length} sub="this session" color="var(--ws-threat-medium)" />
+      </div>
+
+      <div className="ws-card" data-an="evidence" style={{ margin: '0 16px 12px', overflow: 'hidden' }}>
+        <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--ws-border)',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="ws-meta">evidence</span>
+          <span className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)' }}>
+            5 evidence objects · explainable
+          </span>
+        </div>
+        {ANOMALIES.map((a, i) => (
+          <button key={a.id} onClick={() => onOpenAnomaly(a)} style={{
+            width: '100%', display: 'block', textAlign: 'left',
+            padding: '12px 14px', background: 'transparent', border: 0,
+            borderBottom: i < ANOMALIES.length - 1 ? '1px solid var(--ws-border)' : 'none',
+            cursor: 'pointer', color: 'inherit',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <AnomalyPill level={a.level} />
+              <span className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)' }}>{a.t}</span>
+              <span style={{ flex: 1 }} />
+              {a.signals.map(s => (
+                <span key={s} className="ws-mono" style={{
+                  fontSize: 9, padding: '1px 6px', background: 'var(--ws-panel-2)',
+                  color: 'var(--ws-text-2)', borderRadius: 3, letterSpacing: '0.06em',
+                }}>{s.toUpperCase()}</span>
+              ))}
+            </div>
+            <div style={{ fontSize: 13.5, color: 'var(--ws-text-h)', lineHeight: 1.35 }}>{a.title}</div>
+            <div className="ws-mono" style={{ fontSize: 10.5, color: 'var(--ws-text-2)', marginTop: 4 }}>
+              {a.recurrence}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      <div style={{ padding: '0 16px 14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div className="ws-card" style={{ padding: '10px 12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span className="ws-meta">wifi rssi · top ap</span>
+            <span className="ws-num" style={{ fontSize: 11, color: 'var(--ws-text-2)' }}>−42 dBm</span>
+          </div>
+          <div style={{ marginTop: 8, color: 'var(--ws-accent-scan)' }}>
+            <Spark data={liveScores.wifi} height={32} />
+          </div>
+        </div>
+        <div className="ws-card" style={{ padding: '10px 12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span className="ws-meta">ble adv/s</span>
+            <span className="ws-num" style={{ fontSize: 11, color: 'var(--ws-text-2)' }}>34 /s</span>
+          </div>
+          <div style={{ marginTop: 8, color: 'var(--ws-accent-focus)' }}>
+            <Spark data={liveScores.ble} height={32} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Professional (tactical / terminal) ────────────────────────────
+function SessionPro({ live, setLive, onOpenAnomaly }) {
+  return (
+    <div className="ws-screen ws-scroll">
+      <SessionHeader live={live} setLive={setLive} variant="pro" />
+
+      <div className="ws-card-2" style={{
+        margin: '0 16px 12px', padding: '10px 14px',
+        background: 'var(--ws-console)',
+        border: '1px solid var(--ws-border)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ width: 6, height: 6, borderRadius: 999,
+            background: '#7ee787', boxShadow: '0 0 6px #7ee787' }} />
+          <span className="ws-mono" style={{ fontSize: 10, color: '#7ee787', letterSpacing: '0.08em' }}>
+            wscan.ingest@.nyx
+          </span>
+          <span className="ws-mono" style={{ fontSize: 10, color: '#646e78', marginLeft: 'auto' }}>
+            cap={SESSION.capability}
+          </span>
+        </div>
+        <pre className="ws-mono" style={{
+          margin: '8px 0 0', fontSize: 10.5, color: '#a5b4c0',
+          lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-all',
+        }}>{`19:47:11  INFO  wifi   suspicious_portal ssid=xfinitywifi cert_issuer=Δ
+19:47:09  WARN  wifi   tls_chain mismatch hops=+1
+19:45:08  INFO  ble    adv_burst pattern_id=p-12 cadence=220ms
+19:44:32  INFO  wifi   new_ap_cluster bssid=02:8C:5D:7F:11:01 lifetime=4m
+19:43:50  TRACE wifi   baseline_drift ssid=PRIVATE-HOME-5G Δrssi=-8dB`}</pre>
+        <div className="ws-mono" style={{
+          marginTop: 6, fontSize: 11, color: '#7ee787',
+          display: 'flex', alignItems: 'center', gap: 6,
+        }}>
+          <span style={{ color: '#5b6470' }}>.nyx&gt;</span>
+          investigation recommended on a-019 (suspicious portal)
+          <span style={{ width: 6, height: 11, background: '#7ee787',
+            animation: 'ws-blink 1s steps(2) infinite', marginLeft: 2 }} />
+        </div>
+      </div>
+
+      <div className="ws-card" data-an="ap-table" style={{ margin: '0 16px 12px', overflow: 'hidden' }}>
+        <div style={{
+          padding: '8px 14px', borderBottom: '1px solid var(--ws-border)',
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          <I.Wifi />
+          <span className="ws-meta">access points · {WIFI.length}</span>
+          <span style={{ flex: 1 }} />
+          <span className="ws-mono" style={{ fontSize: 9.5, color: 'var(--ws-text-2)' }}>BSSID · CH · SEC · RSSI</span>
+        </div>
+        {WIFI.slice(0, 6).map((w, i) => (
+          <div key={w.bssid} style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 28px 36px 56px 14px',
+            alignItems: 'center', gap: 8,
+            padding: '7px 14px', fontSize: 11,
+            borderBottom: i < 5 ? '1px solid var(--ws-border)' : 'none',
+            background: w.anomaly ? 'color-mix(in oklab, var(--ws-threat-' + ({low:'low',medium:'medium',high:'high',critical:'critical'}[w.anomaly]) + ') 6%, transparent)' : 'transparent',
+          }}>
+            <div style={{ minWidth: 0 }}>
+              <div className="ws-mono ws-h" style={{ fontSize: 11.5,
+                color: w.anomaly ? 'var(--ws-threat-' + w.anomaly + ')' : 'var(--ws-text-h)',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {w.ssid}
+              </div>
+              <div className="ws-mono" style={{ fontSize: 9.5, color: 'var(--ws-text-3)',
+                letterSpacing: 0.2,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {w.bssid}
+              </div>
+            </div>
+            <span className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)' }}>{w.ch}</span>
+            <span className="ws-mono" style={{ fontSize: 9.5, color: 'var(--ws-text-2)',
+              padding: '1px 4px', background: 'var(--ws-panel-2)', borderRadius: 3,
+              textAlign: 'center',
+            }}>{w.sec}</span>
+            <span className="ws-num" style={{ fontSize: 11, color: 'var(--ws-text)', textAlign: 'right' }}>
+              {w.rssi}
+            </span>
+            <RssiBars rssi={w.rssi} />
+          </div>
+        ))}
+      </div>
+
+      <div className="ws-card" style={{ margin: '0 16px 14px', padding: '8px 0' }}>
+        <div style={{ padding: '4px 14px 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <I.Ble />
+          <span className="ws-meta">ble · {BLE.length}</span>
+        </div>
+        {BLE.map((b, i) => (
+          <div key={b.addr} style={{
+            display: 'grid', gridTemplateColumns: '1fr 64px 50px',
+            gap: 8, padding: '6px 14px', alignItems: 'center', fontSize: 11,
+          }}>
+            <div style={{ minWidth: 0 }}>
+              <div className="ws-mono ws-h" style={{ fontSize: 11,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {b.name}
+              </div>
+              <div className="ws-mono" style={{ fontSize: 9.5, color: 'var(--ws-text-3)' }}>{b.addr}</div>
+            </div>
+            <span className="ws-mono" style={{ fontSize: 9.5, color: 'var(--ws-text-2)', whiteSpace: 'nowrap' }}>
+              {b.recur.split(' · ')[0]}
+            </span>
+            <span className="ws-num" style={{ fontSize: 11, color: 'var(--ws-text)', textAlign: 'right' }}>
+              {b.rssi} dBm
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Spatial / radar variant ───────────────────────────────────────
+function SessionSpatial({ live, setLive, onOpenAnomaly }) {
+  // Place APs and BLE on a radar at a deterministic angle/radius from RSSI.
+  const pts = React.useMemo(() => {
+    const out = [];
+    WIFI.forEach((w, i) => {
+      const a = (i * 47 + 30) % 360;
+      const r = Math.min(0.95, (w.rssi + 95) / 60);
+      out.push({ kind: 'wifi', a, r, label: w.ssid, anomaly: w.anomaly });
+    });
+    BLE.forEach((b, i) => {
+      const a = (i * 73 + 200) % 360;
+      const r = Math.min(0.95, (b.rssi + 95) / 60);
+      out.push({ kind: 'ble', a, r, label: b.name, anomaly: b.anomaly });
+    });
+    return out;
+  }, []);
+  const R = 130;
+
+  return (
+    <div className="ws-screen ws-scroll">
+      <SessionHeader live={live} setLive={setLive} variant="spatial" />
+
+      <div className="ws-card ws-grid-bg" style={{
+        margin: '0 16px 12px', padding: 18,
+        position: 'relative', overflow: 'hidden',
+        background: 'var(--ws-panel)',
+      }}>
+        <svg viewBox={`-${R+18} -${R+18} ${(R+18)*2} ${(R+18)*2}`} style={{ display: 'block', width: '100%', height: 'auto' }}>
+          {/* Sweep cone */}
+          {live && (
+            <g style={{ transformOrigin: '0 0', animation: 'ws-sweep 6s linear infinite' }}>
+              <defs>
+                <linearGradient id="sweep" x1="0" x2="1" y1="0" y2="0">
+                  <stop offset="0%" stopColor="var(--ws-accent-scan)" stopOpacity="0.0" />
+                  <stop offset="100%" stopColor="var(--ws-accent-scan)" stopOpacity="0.35" />
+                </linearGradient>
+              </defs>
+              <path d={`M0 0 L${R} 0 A${R} ${R} 0 0 0 ${R*0.5} ${-R*0.866} Z`} fill="url(#sweep)" />
+            </g>
+          )}
+          {/* Rings */}
+          {[0.25, 0.5, 0.75, 1].map(p => (
+            <circle key={p} cx="0" cy="0" r={R * p} fill="none"
+                    stroke="var(--ws-border)" strokeWidth="0.6" />
+          ))}
+          {/* Cross axes */}
+          <line x1={-R} x2={R} y1="0" y2="0" stroke="var(--ws-border)" strokeWidth="0.5" />
+          <line x1="0" x2="0" y1={-R} y2={R} stroke="var(--ws-border)" strokeWidth="0.5" />
+          {/* Center "me" */}
+          <circle cx="0" cy="0" r="4" fill="var(--ws-accent-scan)" />
+          <circle cx="0" cy="0" r="9" fill="none" stroke="var(--ws-accent-scan)" strokeWidth="1" opacity="0.6" />
+
+          {/* Points */}
+          {pts.map((p, i) => {
+            const x = Math.cos(p.a * Math.PI / 180) * R * p.r;
+            const y = Math.sin(p.a * Math.PI / 180) * R * p.r;
+            const c = p.anomaly
+              ? `var(--ws-threat-${p.anomaly})`
+              : p.kind === 'wifi' ? 'var(--ws-accent-scan)' : 'var(--ws-accent-focus)';
+            return (
+              <g key={i}>
+                {p.anomaly && (
+                  <circle cx={x} cy={y} r="6" fill={c} opacity="0.18" />
+                )}
+                <circle cx={x} cy={y} r={p.anomaly ? 3.6 : 2.4} fill={c} />
+              </g>
+            );
+          })}
+
+          {/* Distance rings labels */}
+          {[0.5, 1].map(p => (
+            <text key={p} x={R*p + 4} y="-4" fontFamily="var(--ws-f-mono)"
+                  fontSize="7" fill="var(--ws-text-3)"
+                  style={{ letterSpacing: 0.5 }}>
+              {Math.round((1-p) * 60 + 35)}dB
+            </text>
+          ))}
+        </svg>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+          <span className="ws-meta">proximity · rssi-derived</span>
+          <span className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)' }}>
+            wifi {WIFI.length} · ble {BLE.length}
+          </span>
+        </div>
+      </div>
+
+      <div style={{ padding: '0 16px 12px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <span className="ws-chip" style={{ background: 'color-mix(in oklab, var(--ws-accent-scan) 18%, var(--ws-panel-2))' }}>
+          <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--ws-accent-scan)' }} />
+          wifi
+        </span>
+        <span className="ws-chip" style={{ background: 'color-mix(in oklab, var(--ws-accent-focus) 18%, var(--ws-panel-2))' }}>
+          <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--ws-accent-focus)' }} />
+          ble
+        </span>
+        <span className="ws-chip" style={{ background: 'color-mix(in oklab, var(--ws-threat-high) 18%, var(--ws-panel-2))' }}>
+          <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--ws-threat-high)' }} />
+          anomalous
+        </span>
+      </div>
+
+      <div className="ws-card" style={{ margin: '0 16px 16px', padding: '10px 14px' }}>
+        <div className="ws-meta" style={{ marginBottom: 6 }}>.nyx</div>
+        <div className="ws-mono" style={{ fontSize: 12, color: 'var(--ws-text)', lineHeight: 1.45 }}>
+          {ANOMALIES[0].summary}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const SESSION_VARIANTS = [
+  { id: 'newbie',   label: 'Plain',    Component: SessionNewbie },
+  { id: 'advanced', label: 'Advanced', Component: SessionAdvanced },
+  { id: 'pro',      label: 'Pro',      Component: SessionPro },
+  { id: 'spatial',  label: 'Spatial',  Component: SessionSpatial },
+];
+
+Object.assign(window, { SESSION_VARIANTS });
+
+</script>
+
+<script type="text/babel">
+// screen-history.jsx — Past sessions / anomalies timeline. 4 variants.
+
+function HistHeader({ subtitle }) {
+  return (
+    <div style={{ padding: '8px 16px 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <div>
+          <div className="ws-display ws-h" style={{ fontSize: 17, fontWeight: 500 }}>History</div>
+          <div className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)' }}>
+            {subtitle}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button className="ws-btn-icon" aria-label="Search"><I.Search /></button>
+          <button className="ws-btn-icon" aria-label="Filter"><I.Filter /></button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── V1: Newbie · session cards ────────────────────────────────────
+function HistoryNewbie({ onOpenAnomaly }) {
+  return (
+    <div className="ws-screen ws-scroll">
+      <HistHeader subtitle={`${SESSIONS.length} sessions · last 7 days`} />
+      <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {SESSIONS.map(s => (
+          <div key={s.id} className="ws-card" style={{
+            padding: '14px 14px',
+            borderLeft: s.top ? `3px solid var(--ws-threat-${s.top})` : `3px solid var(--ws-border)`,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+              <span className="ws-mono ws-h" style={{ fontSize: 13, fontWeight: 600 }}>{s.t}</span>
+              <span className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)' }}>{s.dur}</span>
+            </div>
+            <div className="ws-mono" style={{ fontSize: 11, color: 'var(--ws-text-2)', marginTop: 2 }}>
+              {s.loc}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+              <span style={{ fontSize: 13, color: 'var(--ws-text)' }}>
+                {s.an === 0 ? 'No anomalies observed' :
+                 s.an === 1 ? '1 anomaly observed' :
+                 `${s.an} anomalies observed`}
+              </span>
+              <span style={{ flex: 1 }} />
+              {s.top && <AnomalyPill level={s.top} />}
+            </div>
+            <div className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-3)', marginTop: 8 }}>
+              {s.obs} observations
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── V2: Advanced · anomaly list with recurrence info ─────────────
+function HistoryAdvanced({ onOpenAnomaly }) {
+  // Sessions interleaved with anomaly callouts.
+  const flat = React.useMemo(() => {
+    const items = [];
+    SESSIONS.forEach((s, idx) => {
+      items.push({ kind: 'sess', ...s });
+      if (idx === 0) {
+        ANOMALIES.slice(0, 3).forEach(a => items.push({ kind: 'an', ...a, sess: s.id }));
+      } else if (idx === 1) {
+        items.push({ kind: 'an', ...ANOMALIES[3], sess: s.id });
+      }
+    });
+    return items;
+  }, []);
+  return (
+    <div className="ws-screen ws-scroll">
+      <HistHeader subtitle={`${SESSIONS.length} sessions · ${ANOMALIES.length} anomalies`} />
+      <div style={{ display: 'flex', gap: 6, padding: '0 16px 12px', overflowX: 'auto' }}>
+        {['all', 'recurring', 'first-seen', 'high+', 'wifi', 'ble'].map((f, i) => (
+          <button key={f} className={i === 0 ? 'ws-chip ws-chip-on' : 'ws-chip'} style={{ cursor: 'pointer', flexShrink: 0 }}>
+            {f}
+          </button>
+        ))}
+      </div>
+      <div className="ws-card" style={{ margin: '0 16px 16px' }}>
+        {flat.map((it, i) => (
+          <div key={it.kind + it.id} style={{
+            padding: it.kind === 'sess' ? '10px 14px' : '10px 14px 12px 30px',
+            background: it.kind === 'sess' ? 'var(--ws-panel-2)' : 'transparent',
+            borderBottom: i < flat.length - 1 ? '1px solid var(--ws-border)' : 'none',
+            position: 'relative',
+          }}>
+            {it.kind === 'sess' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span className="ws-mono ws-h" style={{ fontSize: 12, fontWeight: 600 }}>{it.t}</span>
+                <span className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)' }}>{it.loc}</span>
+                <span style={{ flex: 1 }} />
+                <span className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)' }}>
+                  {it.obs} obs · {it.an} anomalies · {it.dur}
+                </span>
+              </div>
+            ) : (
+              <button onClick={() => onOpenAnomaly(it)} style={{
+                background: 'transparent', border: 0, width: '100%',
+                textAlign: 'left', cursor: 'pointer', color: 'inherit', padding: 0,
+              }}>
+                <div style={{ position: 'absolute', left: 14, top: 14 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 999,
+                    background: `var(--ws-threat-${it.level})`, display: 'block',
+                    boxShadow: `0 0 6px var(--ws-threat-${it.level})` }} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <AnomalyPill level={it.level} />
+                  <span className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)' }}>{it.t}</span>
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--ws-text-h)' }}>{it.title}</div>
+                <div className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)', marginTop: 3 }}>
+                  {it.recurrence}
+                </div>
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── V3: Pro · dense heatmap (day × hour) ─────────────────────────
+function HistoryPro({ onOpenAnomaly }) {
+  const days = ['mon','tue','wed','thu','fri','sat','sun'];
+  // Synthesize per-cell counts from session data.
+  const grid = React.useMemo(() => {
+    const m = Array.from({ length: 7 }, () => Array(24).fill(0));
+    SESSIONS.forEach(s => {
+      const day = ({Mon:0,Tue:1,Wed:2,Thu:3,Fri:4,Sat:5,Sun:6})[s.t.split(' ')[0]] ?? 0;
+      const hr = parseInt(s.t.split(' ')[1].slice(0,2), 10);
+      m[day][hr] += s.an + 1;
+    });
+    // Sprinkle filler
+    for (let d = 0; d < 7; d++) for (let h = 0; h < 24; h++) {
+      const k = (d * 37 + h * 11) % 11;
+      if (k > 8 && m[d][h] === 0) m[d][h] = 1;
+    }
+    return m;
+  }, []);
+  return (
+    <div className="ws-screen ws-scroll">
+      <HistHeader subtitle="density · 7 days × 24h · all anomaly levels" />
+      <div className="ws-card" style={{ margin: '0 16px 12px', padding: 14 }}>
+        <div className="ws-meta" style={{ marginBottom: 12 }}>density</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '22px repeat(24, 1fr)', gap: 2 }}>
+          {days.map((d, di) => (
+            <React.Fragment key={d}>
+              <div className="ws-mono" style={{
+                fontSize: 9, color: 'var(--ws-text-2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+                paddingRight: 4,
+              }}>{d}</div>
+              {grid[di].map((v, h) => (
+                <div key={h} style={{
+                  aspectRatio: '1',
+                  background: v ? `var(--ws-accent-scan)` : 'var(--ws-panel-2)',
+                  opacity: v ? Math.min(1, 0.18 + v * 0.18) : 1,
+                  borderRadius: 1.5,
+                }} title={`${d} ${h}:00 · ${v}`} />
+              ))}
+            </React.Fragment>
+          ))}
+          <div />
+          {[0, 6, 12, 18].map(h => (
+            <div key={h} className="ws-mono" style={{
+              gridColumn: `${h + 2} / span 6`,
+              fontSize: 9, color: 'var(--ws-text-3)', marginTop: 4,
+            }}>{String(h).padStart(2,'0')}:00</div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ padding: '0 16px 8px' }}>
+        <div className="ws-meta" style={{ marginBottom: 6 }}>recurring patterns</div>
+      </div>
+      <div className="ws-card" style={{ margin: '0 16px 16px' }}>
+        {[
+          { id: 'p-12', name: 'BLE adv burst · p-12', count: 5, last: 'now', level: 'medium' },
+          { id: 'p-08', name: 'Open-SSID transient cluster', count: 3, last: 'Fri', level: 'medium' },
+          { id: 'p-04', name: 'Captive portal cert mismatch', count: 1, last: 'now', level: 'high' },
+        ].map((p, i, a) => (
+          <button key={p.id} onClick={() => onOpenAnomaly(ANOMALIES[0])} style={{
+            width: '100%', textAlign: 'left', background: 'transparent', border: 0,
+            padding: '12px 14px',
+            borderBottom: i < a.length - 1 ? '1px solid var(--ws-border)' : 'none',
+            cursor: 'pointer', color: 'inherit',
+            display: 'grid', gridTemplateColumns: '1fr auto auto',
+            gap: 12, alignItems: 'center',
+          }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 13, color: 'var(--ws-text-h)' }}>{p.name}</div>
+              <div className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)' }}>{p.id} · last seen {p.last}</div>
+            </div>
+            <span className="ws-mono" style={{ fontSize: 11, color: 'var(--ws-text-h)' }}>
+              <span style={{ color: 'var(--ws-text-2)' }}>×</span>{p.count}
+            </span>
+            <AnomalyPill level={p.level} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── V4: Spatial · chronological ribbon ───────────────────────────
+function HistoryRibbon({ onOpenAnomaly }) {
+  return (
+    <div className="ws-screen ws-scroll">
+      <HistHeader subtitle="chronological · scroll back through time" />
+      <div style={{ position: 'relative', padding: '0 0 24px' }}>
+        <div style={{
+          position: 'absolute', left: 60, top: 0, bottom: 0,
+          width: 1, background: 'var(--ws-border)',
+        }} />
+        {SESSIONS.flatMap((s, si) => [
+          <div key={s.id} style={{
+            display: 'flex', alignItems: 'flex-start', gap: 14,
+            padding: '14px 16px 4px 0',
+          }}>
+            <div className="ws-mono" style={{
+              width: 50, fontSize: 10, color: 'var(--ws-text-2)',
+              textAlign: 'right', paddingTop: 6, flexShrink: 0,
+            }}>{s.t.split(' ')[0]}<br/>{s.t.split(' ')[1]}</div>
+            <div style={{
+              width: 18, height: 18, borderRadius: '50%',
+              background: 'var(--ws-canvas)',
+              border: `2px solid ${s.top ? `var(--ws-threat-${s.top})` : 'var(--ws-border-2)'}`,
+              flexShrink: 0, marginTop: 4, zIndex: 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span style={{ width: 4, height: 4, background:
+                s.top ? `var(--ws-threat-${s.top})` : 'var(--ws-border-2)',
+                borderRadius: 999 }} />
+            </div>
+            <div style={{ flex: 1, padding: '0 16px 8px 0' }}>
+              <div className="ws-display ws-h" style={{ fontSize: 14, fontWeight: 500 }}>
+                {s.loc}
+              </div>
+              <div className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)', marginTop: 2 }}>
+                {s.dur} · {s.obs} obs · {s.an} anomalies
+              </div>
+            </div>
+          </div>,
+          ...(si === 0 ? ANOMALIES.slice(0, 2).map(a => (
+            <button key={a.id} onClick={() => onOpenAnomaly(a)} style={{
+              display: 'flex', alignItems: 'flex-start', gap: 14,
+              padding: '4px 16px 10px 0', width: '100%',
+              background: 'transparent', border: 0, cursor: 'pointer',
+              color: 'inherit', textAlign: 'left',
+            }}>
+              <div style={{ width: 50, flexShrink: 0 }} />
+              <div style={{ width: 18, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+                <span style={{ width: 6, height: 6, marginTop: 6,
+                  background: `var(--ws-threat-${a.level})`, borderRadius: 999,
+                  boxShadow: `0 0 8px var(--ws-threat-${a.level})` }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                  <AnomalyPill level={a.level} />
+                  <span className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)' }}>{a.t}</span>
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--ws-text-h)' }}>{a.title}</div>
+              </div>
+            </button>
+          )) : []),
+        ])}
+      </div>
+    </div>
+  );
+}
+
+const HISTORY_VARIANTS = [
+  { id: 'newbie',   label: 'Plain',    Component: HistoryNewbie },
+  { id: 'advanced', label: 'Advanced', Component: HistoryAdvanced },
+  { id: 'pro',      label: 'Pro',      Component: HistoryPro },
+  { id: 'spatial',  label: 'Ribbon',   Component: HistoryRibbon },
+];
+
+Object.assign(window, { HISTORY_VARIANTS });
+
+</script>
+
+<script type="text/babel">
+// screen-detail.jsx — Anomaly detail bottom-sheet + map/diag screens
+
+// ── Anomaly Detail (bottom sheet overlay) ─────────────────────────
+function AnomalyDetail({ anomaly, onClose, tier }) {
+  if (!anomaly) return null;
+  return (
+    <div onClick={onClose} style={{
+      position: 'absolute', inset: 0, zIndex: 30,
+      background: 'rgba(0,0,0,0.55)',
+      display: 'flex', alignItems: 'flex-end',
+      animation: 'ws-in 0.18s',
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: '100%', background: 'var(--ws-canvas)',
+        borderRadius: '20px 20px 0 0',
+        maxHeight: '88%', display: 'flex', flexDirection: 'column',
+        animation: 'ws-in 0.24s',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 6px' }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--ws-border-2)' }} />
+        </div>
+        <div className="ws-scroll" style={{ padding: '0 16px 22px', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <AnomalyPill level={anomaly.level}>{anomaly.level}</AnomalyPill>
+            <button onClick={onClose} className="ws-btn-icon" aria-label="Close anomaly details"><I.Close /></button>
+          </div>
+          <div className="ws-display ws-h" style={{
+            fontSize: 20, fontWeight: 500, lineHeight: 1.25, marginTop: 8,
+          }}>{anomaly.title}</div>
+          <div className="ws-mono" style={{ fontSize: 11, color: 'var(--ws-text-2)', marginTop: 6 }}>
+            {anomaly.id} · {anomaly.t} · {anomaly.signals.map(s => s.toUpperCase()).join(' + ')}
+          </div>
+
+          {/* .nyx interpretation */}
+          <div className="ws-card" style={{ padding: '14px', marginTop: 14,
+            borderLeft: `3px solid var(--ws-threat-${anomaly.level})` }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+              <NyxAvatar size={24} />
+              <div>
+                <div className="ws-meta" style={{ marginBottom: 4 }}>.nyx · interpretation</div>
+                <div style={{ fontSize: 13, color: 'var(--ws-text)', lineHeight: 1.5 }}>
+                  {anomaly.summary}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Reasons */}
+          {tier !== 'newbie' && (
+            <div className="ws-card" style={{ marginTop: 12, padding: '12px 14px' }}>
+              <div className="ws-meta" style={{ marginBottom: 8 }}>reasons (heuristic)</div>
+              {anomaly.reasons.map((r, i) => (
+                <div key={i} style={{
+                  display: 'flex', gap: 8, padding: '5px 0',
+                  borderBottom: i < anomaly.reasons.length - 1 ? '1px dashed var(--ws-border)' : 'none',
+                }}>
+                  <span className="ws-mono" style={{ fontSize: 9.5, color: 'var(--ws-accent-scan)', width: 22, flexShrink: 0 }}>
+                    R{i+1}
+                  </span>
+                  <span style={{ fontSize: 12, color: 'var(--ws-text)', lineHeight: 1.4 }}>{r}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Recurrence */}
+          <div className="ws-card" style={{ marginTop: 12, padding: '12px 14px' }}>
+            <div className="ws-meta" style={{ marginBottom: 4 }}>recurrence</div>
+            <div className="ws-mono" style={{ fontSize: 12, color: 'var(--ws-text)' }}>{anomaly.recurrence}</div>
+          </div>
+
+          {/* Investigation */}
+          <div className="ws-card" style={{ marginTop: 12, padding: '12px 14px', background: 'var(--ws-panel-2)' }}>
+            <div className="ws-meta" style={{ marginBottom: 4 }}>recommendation</div>
+            <div style={{ fontSize: 13, color: 'var(--ws-text)', lineHeight: 1.5 }}>{anomaly.investigation}</div>
+            <div className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-3)', marginTop: 8 }}>
+              · no actor identification · no intent attribution
+            </div>
+          </div>
+
+          {/* Pro: raw JSON */}
+          {tier === 'pro' && (
+            <div style={{
+              marginTop: 12, padding: '12px 14px',
+              background: 'var(--ws-console)', border: '1px solid var(--ws-border)',
+              borderRadius: 'var(--ws-r-md)',
+            }}>
+              <pre className="ws-mono" style={{
+                margin: 0, fontSize: 10, color: '#a5b4c0', lineHeight: 1.5,
+                whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+              }}>{JSON.stringify({
+                id: anomaly.id, level: anomaly.level, t: anomaly.t,
+                signals: anomaly.signals, reasons: anomaly.reasons,
+                recurrence: anomaly.recurrence,
+                session: SESSION.id, capability: SESSION.capability,
+              }, null, 2)}</pre>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+            <button className="ws-btn" style={{ flex: 1 }}>
+              {tier === 'pro' ? 'Export JSON' : 'Share report'}
+            </button>
+            <button className="ws-btn ws-btn-primary" style={{ flex: 1 }}>Mark reviewed</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Map screen (all 4 variants share same base) ──────────────────
+function ScreenMap() {
+  return (
+    <div className="ws-screen ws-scroll">
+      <div style={{ padding: '8px 16px 12px' }}>
+        <div className="ws-display ws-h" style={{ fontSize: 17, fontWeight: 500 }}>Spatial Map</div>
+        <div className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)' }}>
+          rssi heatmap · {HEATMAP.length} cells · indoor
+        </div>
+      </div>
+      <div className="ws-card ws-grid-bg" style={{
+        margin: '0 16px 12px', padding: 14, position: 'relative',
+      }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(14, 1fr)',
+          gap: 2,
+        }}>
+          {HEATMAP.map((c, i) => {
+            const norm = Math.min(1, Math.max(0, (c.rssi + 95) / 55));
+            const col = c.anomaly
+              ? `var(--ws-threat-${c.anomaly})`
+              : norm > 0.7 ? 'var(--ws-rssi-strong)'
+              : norm > 0.4 ? 'var(--ws-rssi-moderate)'
+              : 'var(--ws-rssi-weak)';
+            return (
+              <div key={i} style={{
+                aspectRatio: '1', borderRadius: 2,
+                background: col,
+                opacity: c.anomaly ? 0.9 : 0.15 + norm * 0.65,
+              }} title={`${c.rssi}dBm ${c.anomaly || ''}`} />
+            );
+          })}
+        </div>
+        <div className="ws-mono" style={{
+          display: 'flex', justifyContent: 'space-between',
+          marginTop: 10, fontSize: 9, color: 'var(--ws-text-3)',
+        }}>
+          <span>−95 dBm</span><span>−42 dBm</span>
+        </div>
+      </div>
+      <div style={{ padding: '0 16px 12px', display: 'flex', gap: 8 }}>
+        <span className="ws-chip"><span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--ws-rssi-strong)' }} />strong</span>
+        <span className="ws-chip"><span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--ws-rssi-moderate)' }} />moderate</span>
+        <span className="ws-chip"><span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--ws-rssi-weak)' }} />weak</span>
+        <span className="ws-chip"><span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--ws-threat-high)' }} />anomaly</span>
+      </div>
+      <div className="ws-card" style={{ margin: '0 16px 16px', padding: '12px 14px' }}>
+        <div className="ws-meta" style={{ marginBottom: 6 }}>.nyx</div>
+        <div className="ws-mono" style={{ fontSize: 12, color: 'var(--ws-text)', lineHeight: 1.45 }}>
+          Strongest RSSI near center (AP location estimate). Anomalous cells clustered NE corner
+          — likely origin zone for suspicious open SSIDs observed this session.
+        </div>
+        <div className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-3)', marginTop: 6 }}>
+          · rssi-derived · not confirmed location · needs additional sessions
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Diagnostics / Capability screen ──────────────────────────────
+function ScreenDiag() {
+  const stateColor = {
+    WORKS_NATIVE: 'var(--ws-threat-low)',
+    WORKS_ADB: 'var(--ws-accent-focus)',
+    WORKS_ADB_ENHANCED: 'var(--ws-accent-scan)',
+    WORKS_DEGRADED: 'var(--ws-threat-medium)',
+    FAILS: 'var(--ws-threat-critical)',
+    UNTESTED: 'var(--ws-text-3)',
+  };
+  return (
+    <div className="ws-screen ws-scroll">
+      <div style={{ padding: '8px 16px 12px' }}>
+        <div className="ws-display ws-h" style={{ fontSize: 17, fontWeight: 500 }}>Diagnostics</div>
+        <div className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)' }}>
+          capability manifest · {SESSION.device}
+        </div>
+      </div>
+
+      <div className="ws-card" style={{ margin: '0 16px 12px', padding: '14px' }}>
+        <div className="ws-meta" style={{ marginBottom: 6 }}>session</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {[
+            ['device', SESSION.device.split(' · ')[0]],
+            ['os', SESSION.device.split(' · ')[1]],
+            ['mode', SESSION.capability],
+            ['session', SESSION.id],
+          ].map(([k, v]) => (
+            <div key={k}>
+              <div className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-3)' }}>{k}</div>
+              <div className="ws-mono ws-h" style={{ fontSize: 12, marginTop: 2 }}>{v}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="ws-card" style={{ margin: '0 16px 12px', overflow: 'hidden' }}>
+        <div style={{
+          padding: '10px 14px', borderBottom: '1px solid var(--ws-border)',
+          display: 'flex', justifyContent: 'space-between',
+        }}>
+          <span className="ws-meta">capability manifest</span>
+          <span className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)' }}>
+            {CAPABILITY.length} features
+          </span>
+        </div>
+        {CAPABILITY.map((c, i) => (
+          <div key={c.id} style={{
+            display: 'grid', gridTemplateColumns: '1fr auto',
+            padding: '10px 14px', gap: 10, alignItems: 'center',
+            borderBottom: i < CAPABILITY.length - 1 ? '1px solid var(--ws-border)' : 'none',
+          }}>
+            <div>
+              <div style={{ fontSize: 13, color: 'var(--ws-text-h)' }}>{c.name}</div>
+              <div className="ws-mono" style={{ fontSize: 10, color: 'var(--ws-text-2)', marginTop: 2 }}>{c.note}</div>
+            </div>
+            <span className="ws-mono" style={{
+              fontSize: 9, padding: '3px 8px', borderRadius: 999,
+              background: `color-mix(in oklab, ${stateColor[c.state]} 16%, transparent)`,
+              color: stateColor[c.state],
+              border: `1px solid color-mix(in oklab, ${stateColor[c.state]} 30%, transparent)`,
+              letterSpacing: '0.06em', fontWeight: 600, whiteSpace: 'nowrap',
+            }}>{c.state}</span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ padding: '0 16px 18px', display: 'flex', gap: 8 }}>
+        <button className="ws-btn" style={{ flex: 1 }}>Run self-test</button>
+        <button className="ws-btn" style={{ flex: 1 }}>Export manifest</button>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { AnomalyDetail, ScreenMap, ScreenDiag });
+
+</script>
+
+<script type="text/babel">
+
+// tweaks-panel.jsx
+// Reusable Tweaks shell + form-control helpers.
+//
+// Owns the host protocol (listens for __activate_edit_mode / __deactivate_edit_mode,
+// posts __edit_mode_available / __edit_mode_set_keys / __edit_mode_dismissed) so
+// individual prototypes don't re-roll it. Ships a consistent set of controls so you
+// don't hand-draw <input type="range">, segmented radios, steppers, etc.
+//
+// Usage (in an HTML file that loads React + Babel):
+//
+//   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+//     "primaryColor": "#D97757",
+//     "palette": ["#D97757", "#29261b", "#f6f4ef"],
+//     "fontSize": 16,
+//     "density": "regular",
+//     "dark": false
+//   }/*EDITMODE-END*/;
+//
+//   function App() {
+//     const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+//     return (
+//       <div style={{ fontSize: t.fontSize, color: t.primaryColor }}>
+//         Hello
+//         <TweaksPanel>
+//           <TweakSection label="Typography" />
+//           <TweakSlider label="Font size" value={t.fontSize} min={10} max={32} unit="px"
+//                        onChange={(v) => setTweak('fontSize', v)} />
+//           <TweakRadio  label="Density" value={t.density}
+//                        options={['compact', 'regular', 'comfy']}
+//                        onChange={(v) => setTweak('density', v)} />
+//           <TweakSection label="Theme" />
+//           <TweakColor  label="Primary" value={t.primaryColor}
+//                        options={['#D97757', '#2A6FDB', '#1F8A5B', '#7A5AE0']}
+//                        onChange={(v) => setTweak('primaryColor', v)} />
+//           <TweakColor  label="Palette" value={t.palette}
+//                        options={[['#D97757', '#29261b', '#f6f4ef'],
+//                                  ['#475569', '#0f172a', '#f1f5f9']]}
+//                        onChange={(v) => setTweak('palette', v)} />
+//           <TweakToggle label="Dark mode" value={t.dark}
+//                        onChange={(v) => setTweak('dark', v)} />
+//         </TweaksPanel>
+//       </div>
+//     );
+//   }
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+const __TWEAKS_STYLE = `
+  .twk-panel{position:fixed;right:16px;bottom:16px;z-index:2147483646;width:280px;
+    max-height:calc(100vh - 32px);display:flex;flex-direction:column;
+    transform:scale(var(--dc-inv-zoom,1));transform-origin:bottom right;
+    background:rgba(250,249,247,.78);color:#29261b;
+    -webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
+    border:.5px solid rgba(255,255,255,.6);border-radius:14px;
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 12px 40px rgba(0,0,0,.18);
+    font:11.5px/1.4 ui-sans-serif,system-ui,-apple-system,sans-serif;overflow:hidden}
+  .twk-hd{display:flex;align-items:center;justify-content:space-between;
+    padding:10px 8px 10px 14px;cursor:move;user-select:none}
+  .twk-hd b{font-size:12px;font-weight:600;letter-spacing:.01em}
+  .twk-x{appearance:none;border:0;background:transparent;color:rgba(41,38,27,.55);
+    width:22px;height:22px;border-radius:6px;cursor:default;font-size:13px;line-height:1}
+  .twk-x:hover{background:rgba(0,0,0,.06);color:#29261b}
+  .twk-body{padding:2px 14px 14px;display:flex;flex-direction:column;gap:10px;
+    overflow-y:auto;overflow-x:hidden;min-height:0;
+    scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.15) transparent}
+  .twk-body::-webkit-scrollbar{width:8px}
+  .twk-body::-webkit-scrollbar-track{background:transparent;margin:2px}
+  .twk-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:4px;
+    border:2px solid transparent;background-clip:content-box}
+  .twk-body::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.25);
+    border:2px solid transparent;background-clip:content-box}
+  .twk-row{display:flex;flex-direction:column;gap:5px}
+  .twk-row-h{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+  .twk-lbl{display:flex;justify-content:space-between;align-items:baseline;
+    color:rgba(41,38,27,.72)}
+  .twk-lbl>span:first-child{font-weight:500}
+  .twk-val{color:rgba(41,38,27,.5);font-variant-numeric:tabular-nums}
+
+  .twk-sect{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    color:rgba(41,38,27,.45);padding:10px 0 0}
+  .twk-sect:first-child{padding-top:0}
+
+  .twk-field{appearance:none;box-sizing:border-box;width:100%;min-width:0;height:26px;padding:0 8px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:7px;
+    background:rgba(255,255,255,.6);color:inherit;font:inherit;outline:none}
+  .twk-field:focus{border-color:rgba(0,0,0,.25);background:rgba(255,255,255,.85)}
+  select.twk-field{padding-right:22px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='rgba(0,0,0,.5)' d='M0 0h10L5 6z'/></svg>");
+    background-repeat:no-repeat;background-position:right 8px center}
+
+  .twk-slider{appearance:none;-webkit-appearance:none;width:100%;height:4px;margin:6px 0;
+    border-radius:999px;background:rgba(0,0,0,.12);outline:none}
+  .twk-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:14px;height:14px;border-radius:50%;background:#fff;
+    border:.5px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default}
+  .twk-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;
+    background:#fff;border:.5px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default}
+
+  .twk-seg{position:relative;display:flex;padding:2px;border-radius:8px;
+    background:rgba(0,0,0,.06);user-select:none}
+  .twk-seg-thumb{position:absolute;top:2px;bottom:2px;border-radius:6px;
+    background:rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(0,0,0,.12);
+    transition:left .15s cubic-bezier(.3,.7,.4,1),width .15s}
+  .twk-seg.dragging .twk-seg-thumb{transition:none}
+  .twk-seg button{appearance:none;position:relative;z-index:1;flex:1;border:0;
+    background:transparent;color:inherit;font:inherit;font-weight:500;min-height:22px;
+    border-radius:6px;cursor:default;padding:4px 6px;line-height:1.2;
+    overflow-wrap:anywhere}
+
+  .twk-toggle{position:relative;width:32px;height:18px;border:0;border-radius:999px;
+    background:rgba(0,0,0,.15);transition:background .15s;cursor:default;padding:0}
+  .twk-toggle[data-on="1"]{background:#34c759}
+  .twk-toggle i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+  .twk-toggle[data-on="1"] i{transform:translateX(14px)}
+
+  .twk-num{display:flex;align-items:center;box-sizing:border-box;min-width:0;height:26px;padding:0 0 0 8px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:7px;background:rgba(255,255,255,.6)}
+  .twk-num-lbl{font-weight:500;color:rgba(41,38,27,.6);cursor:ew-resize;
+    user-select:none;padding-right:8px}
+  .twk-num input{flex:1;min-width:0;height:100%;border:0;background:transparent;
+    font:inherit;font-variant-numeric:tabular-nums;text-align:right;padding:0 8px 0 0;
+    outline:none;color:inherit;-moz-appearance:textfield}
+  .twk-num input::-webkit-inner-spin-button,.twk-num input::-webkit-outer-spin-button{
+    -webkit-appearance:none;margin:0}
+  .twk-num-unit{padding-right:8px;color:rgba(41,38,27,.45)}
+
+  .twk-btn{appearance:none;height:26px;padding:0 12px;border:0;border-radius:7px;
+    background:rgba(0,0,0,.78);color:#fff;font:inherit;font-weight:500;cursor:default}
+  .twk-btn:hover{background:rgba(0,0,0,.88)}
+  .twk-btn.secondary{background:rgba(0,0,0,.06);color:inherit}
+  .twk-btn.secondary:hover{background:rgba(0,0,0,.1)}
+
+  .twk-swatch{appearance:none;-webkit-appearance:none;width:56px;height:22px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:6px;padding:0;cursor:default;
+    background:transparent;flex-shrink:0}
+  .twk-swatch::-webkit-color-swatch-wrapper{padding:0}
+  .twk-swatch::-webkit-color-swatch{border:0;border-radius:5.5px}
+  .twk-swatch::-moz-color-swatch{border:0;border-radius:5.5px}
+
+  .twk-chips{display:flex;gap:6px}
+  .twk-chip{position:relative;appearance:none;flex:1;min-width:0;height:46px;
+    padding:0;border:0;border-radius:6px;overflow:hidden;cursor:default;
+    box-shadow:0 0 0 .5px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.06);
+    transition:transform .12s cubic-bezier(.3,.7,.4,1),box-shadow .12s}
+  .twk-chip:hover{transform:translateY(-1px);
+    box-shadow:0 0 0 .5px rgba(0,0,0,.18),0 4px 10px rgba(0,0,0,.12)}
+  .twk-chip[data-on="1"]{box-shadow:0 0 0 1.5px rgba(0,0,0,.85),
+    0 2px 6px rgba(0,0,0,.15)}
+  .twk-chip>span{position:absolute;top:0;bottom:0;right:0;width:34%;
+    display:flex;flex-direction:column;box-shadow:-1px 0 0 rgba(0,0,0,.1)}
+  .twk-chip>span>i{flex:1;box-shadow:0 -1px 0 rgba(0,0,0,.1)}
+  .twk-chip>span>i:first-child{box-shadow:none}
+  .twk-chip svg{position:absolute;top:6px;left:6px;width:13px;height:13px;
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+`;
+
+// ── useTweaks ───────────────────────────────────────────────────────────────
+// Single source of truth for tweak values. setTweak persists via the host
+// (__edit_mode_set_keys → host rewrites the EDITMODE block on disk).
+function useTweaks(defaults) {
+  const [values, setValues] = React.useState(defaults);
+  // Accepts either setTweak('key', value) or setTweak({ key: value, ... }) so a
+  // useState-style call doesn't write a "[object Object]" key into the persisted
+  // JSON block.
+  const setTweak = React.useCallback((keyOrEdits, val) => {
+    const edits = typeof keyOrEdits === 'object' && keyOrEdits !== null
+      ? keyOrEdits : { [keyOrEdits]: val };
+    setValues((prev) => ({ ...prev, ...edits }));
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, '*');
+    // Same-window signal so in-page listeners (deck-stage rail thumbnails)
+    // can react — the parent message only reaches the host, not peers.
+    window.dispatchEvent(new CustomEvent('tweakchange', { detail: edits }));
+  }, []);
+  return [values, setTweak];
+}
+
+// ── TweaksPanel ─────────────────────────────────────────────────────────────
+// Floating shell. Registers the protocol listener BEFORE announcing
+// availability — if the announce ran first, the host's activate could land
+// before our handler exists and the toolbar toggle would silently no-op.
+// The close button posts __edit_mode_dismissed so the host's toolbar toggle
+// flips off in lockstep; the host echoes __deactivate_edit_mode back which
+// is what actually hides the panel.
+function TweaksPanel({ title = 'Tweaks', noDeckControls = false, children }) {
+  const [open, setOpen] = React.useState(false);
+  const dragRef = React.useRef(null);
+  // Auto-inject a rail toggle when a <deck-stage> is on the page. The
+  // toggle drives the deck's per-viewer _railVisible via window message;
+  // state is mirrored from the same localStorage key the deck reads so
+  // the control reflects reality across reloads. The mechanism is the
+  // message — authors who want custom placement can post it directly
+  // and pass noDeckControls to suppress this one.
+  const hasDeckStage = React.useMemo(
+    () => typeof document !== 'undefined' && !!document.querySelector('deck-stage'),
+    [],
+  );
+  // deck-stage enables its rail in connectedCallback, but this panel can
+  // mount before that element has upgraded. The initial read catches the
+  // common case; the listener covers mounting first. (Older deck-stage.js
+  // copies still wait for the host's __omelette_rail_enabled postMessage —
+  // same listener handles those.)
+  const [railEnabled, setRailEnabled] = React.useState(
+    () => hasDeckStage && !!document.querySelector('deck-stage')?._railEnabled,
+  );
+  React.useEffect(() => {
+    if (!hasDeckStage || railEnabled) return undefined;
+    const onMsg = (e) => {
+      if (e.data && e.data.type === '__omelette_rail_enabled') setRailEnabled(true);
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, [hasDeckStage, railEnabled]);
+  const [railVisible, setRailVisible] = React.useState(() => {
+    try { return localStorage.getItem('deck-stage.railVisible') !== '0'; } catch (e) { return true; }
+  });
+  const toggleRail = (on) => {
+    setRailVisible(on);
+    window.postMessage({ type: '__deck_rail_visible', on }, '*');
+  };
+  const offsetRef = React.useRef({ x: 16, y: 16 });
+  const PAD = 16;
+
+  const clampToViewport = React.useCallback(() => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const w = panel.offsetWidth, h = panel.offsetHeight;
+    const maxRight = Math.max(PAD, window.innerWidth - w - PAD);
+    const maxBottom = Math.max(PAD, window.innerHeight - h - PAD);
+    offsetRef.current = {
+      x: Math.min(maxRight, Math.max(PAD, offsetRef.current.x)),
+      y: Math.min(maxBottom, Math.max(PAD, offsetRef.current.y)),
+    };
+    panel.style.right = offsetRef.current.x + 'px';
+    panel.style.bottom = offsetRef.current.y + 'px';
+  }, []);
+
+  React.useEffect(() => {
+    if (!open) return;
+    clampToViewport();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', clampToViewport);
+      return () => window.removeEventListener('resize', clampToViewport);
+    }
+    const ro = new ResizeObserver(clampToViewport);
+    ro.observe(document.documentElement);
+    return () => ro.disconnect();
+  }, [open, clampToViewport]);
+
+  React.useEffect(() => {
+    if (window.parent === window) setOpen(true);
+    const onMsg = (e) => {
+      if (e.source !== window.parent) return;
+      const t = e?.data?.type;
+      if (t === '__activate_edit_mode') setOpen(true);
+      else if (t === '__deactivate_edit_mode') setOpen(false);
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  const dismiss = () => {
+    setOpen(false);
+    window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*');
+  };
+
+  const onDragStart = (e) => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const r = panel.getBoundingClientRect();
+    const sx = e.clientX, sy = e.clientY;
+    const startRight = window.innerWidth - r.right;
+    const startBottom = window.innerHeight - r.bottom;
+    const move = (ev) => {
+      offsetRef.current = {
+        x: startRight - (ev.clientX - sx),
+        y: startBottom - (ev.clientY - sy),
+      };
+      clampToViewport();
+    };
+    const up = () => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+    };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  };
+
+  if (!open) return null;
+  return (
+    <>
+      <style>{__TWEAKS_STYLE}</style>
+      <div ref={dragRef} className="twk-panel" data-noncommentable=""
+           style={{ right: offsetRef.current.x, bottom: offsetRef.current.y }}>
+        <div className="twk-hd" onMouseDown={onDragStart}>
+          <b>{title}</b>
+          <button className="twk-x" aria-label="Close tweaks"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={dismiss}>✕</button>
+        </div>
+        <div className="twk-body">
+          {children}
+          {hasDeckStage && railEnabled && !noDeckControls && (
+            <TweakSection label="Deck">
+              <TweakToggle label="Thumbnail rail" value={railVisible} onChange={toggleRail} />
+            </TweakSection>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── Layout helpers ──────────────────────────────────────────────────────────
+
+function TweakSection({ label, children }) {
+  return (
+    <>
+      <div className="twk-sect">{label}</div>
+      {children}
+    </>
+  );
+}
+
+function TweakRow({ label, value, children, inline = false }) {
+  return (
+    <div className={inline ? 'twk-row twk-row-h' : 'twk-row'}>
+      <div className="twk-lbl">
+        <span>{label}</span>
+        {value != null && <span className="twk-val">{value}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ── Controls ────────────────────────────────────────────────────────────────
+
+function TweakSlider({ label, value, min = 0, max = 100, step = 1, unit = '', onChange }) {
+  return (
+    <TweakRow label={label} value={`${value}${unit}`}>
+      <input type="range" className="twk-slider" min={min} max={max} step={step}
+             value={value} onChange={(e) => onChange(Number(e.target.value))} />
+    </TweakRow>
+  );
+}
+
+function TweakToggle({ label, value, onChange }) {
+  return (
+    <div className="twk-row twk-row-h">
+      <div className="twk-lbl"><span>{label}</span></div>
+      <button type="button" className="twk-toggle" data-on={value ? '1' : '0'}
+              role="switch" aria-checked={!!value} aria-label={label}
+              onClick={() => onChange(!value)}><i /></button>
+    </div>
+  );
+}
+
+function TweakRadio({ label, value, options, onChange }) {
+  const trackRef = React.useRef(null);
+  const [dragging, setDragging] = React.useState(false);
+  // The active value is read by pointer-move handlers attached for the lifetime
+  // of a drag — ref it so a stale closure doesn't fire onChange for every move.
+  const valueRef = React.useRef(value);
+  valueRef.current = value;
+
+  // Segments wrap mid-word once per-segment width runs out. The track is
+  // ~248px (280 panel − 28 body pad − 4 seg pad), each button loses 12px
+  // to its own padding, and 11.5px system-ui averages ~6.3px/char — so 2
+  // options fit ~16 chars each, 3 fit ~10. Past that (or >3 options), fall
+  // back to a dropdown rather than wrap.
+  const labelLen = (o) => String(typeof o === 'object' ? o.label : o).length;
+  const maxLen = options.reduce((m, o) => Math.max(m, labelLen(o)), 0);
+  const fitsAsSegments = maxLen <= ({ 2: 16, 3: 10 }[options.length] ?? 0);
+  if (!fitsAsSegments) {
+    // <select> emits strings — map back to the original option value so the
+    // fallback stays type-preserving (numbers, booleans) like the segment path.
+    const resolve = (s) => {
+      const m = options.find((o) => String(typeof o === 'object' ? o.value : o) === s);
+      return m === undefined ? s : typeof m === 'object' ? m.value : m;
+    };
+    return <TweakSelect label={label} value={value} options={options}
+                        onChange={(s) => onChange(resolve(s))} />;
+  }
+  const opts = options.map((o) => (typeof o === 'object' ? o : { value: o, label: o }));
+  const idx = Math.max(0, opts.findIndex((o) => o.value === value));
+  const n = opts.length;
+
+  const segAt = (clientX) => {
+    const r = trackRef.current.getBoundingClientRect();
+    const inner = r.width - 4;
+    const i = Math.floor(((clientX - r.left - 2) / inner) * n);
+    return opts[Math.max(0, Math.min(n - 1, i))].value;
+  };
+
+  const onPointerDown = (e) => {
+    setDragging(true);
+    const v0 = segAt(e.clientX);
+    if (v0 !== valueRef.current) onChange(v0);
+    const move = (ev) => {
+      if (!trackRef.current) return;
+      const v = segAt(ev.clientX);
+      if (v !== valueRef.current) onChange(v);
+    };
+    const up = () => {
+      setDragging(false);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+
+  return (
+    <TweakRow label={label}>
+      <div ref={trackRef} role="radiogroup" onPointerDown={onPointerDown}
+           className={dragging ? 'twk-seg dragging' : 'twk-seg'}>
+        <div className="twk-seg-thumb"
+             style={{ left: `calc(2px + ${idx} * (100% - 4px) / ${n})`,
+                      width: `calc((100% - 4px) / ${n})` }} />
+        {opts.map((o) => (
+          <button key={o.value} type="button" role="radio" aria-checked={o.value === value}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </TweakRow>
+  );
+}
+
+function TweakSelect({ label, value, options, onChange }) {
+  return (
+    <TweakRow label={label}>
+      <select className="twk-field" value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map((o) => {
+          const v = typeof o === 'object' ? o.value : o;
+          const l = typeof o === 'object' ? o.label : o;
+          return <option key={v} value={v}>{l}</option>;
+        })}
+      </select>
+    </TweakRow>
+  );
+}
+
+function TweakText({ label, value, placeholder, onChange }) {
+  return (
+    <TweakRow label={label}>
+      <input className="twk-field" type="text" value={value} placeholder={placeholder}
+             onChange={(e) => onChange(e.target.value)} />
+    </TweakRow>
+  );
+}
+
+function TweakNumber({ label, value, min, max, step = 1, unit = '', onChange }) {
+  const clamp = (n) => {
+    if (min != null && n < min) return min;
+    if (max != null && n > max) return max;
+    return n;
+  };
+  const startRef = React.useRef({ x: 0, val: 0 });
+  const onScrubStart = (e) => {
+    e.preventDefault();
+    startRef.current = { x: e.clientX, val: value };
+    const decimals = (String(step).split('.')[1] || '').length;
+    const move = (ev) => {
+      const dx = ev.clientX - startRef.current.x;
+      const raw = startRef.current.val + dx * step;
+      const snapped = Math.round(raw / step) * step;
+      onChange(clamp(Number(snapped.toFixed(decimals))));
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  return (
+    <div className="twk-num">
+      <span className="twk-num-lbl" onPointerDown={onScrubStart}>{label}</span>
+      <input type="number" value={value} min={min} max={max} step={step}
+             onChange={(e) => onChange(clamp(Number(e.target.value)))} />
+      {unit && <span className="twk-num-unit">{unit}</span>}
+    </div>
+  );
+}
+
+// Relative-luminance contrast pick — checkmarks drawn over a swatch need to
+// read on both #111 and #fafafa without per-option configuration. Hex input
+// only (#rgb / #rrggbb); named or rgb()/hsl() colors fall through to "light".
+function __twkIsLight(hex) {
+  const h = String(hex).replace('#', '');
+  const x = h.length === 3 ? h.replace(/./g, (c) => c + c) : h.padEnd(6, '0');
+  const n = parseInt(x.slice(0, 6), 16);
+  if (Number.isNaN(n)) return true;
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return r * 299 + g * 587 + b * 114 > 148000;
+}
+
+const __TwkCheck = ({ light }) => (
+  <svg viewBox="0 0 14 14" aria-hidden="true">
+    <path d="M3 7.2 5.8 10 11 4.2" fill="none" strokeWidth="2.2"
+          strokeLinecap="round" strokeLinejoin="round"
+          stroke={light ? 'rgba(0,0,0,.78)' : '#fff'} />
+  </svg>
+);
+
+// TweakColor — curated color/palette picker. Each option is either a single
+// hex string or an array of 1-5 hex strings; the card adapts — a lone color
+// renders solid, a palette renders colors[0] as the hero (left ~2/3) with the
+// rest stacked in a sharp column on the right. onChange emits the
+// option in the shape it was passed (string stays string, array stays array).
+// Without options it falls back to the native color input for back-compat.
+function TweakColor({ label, value, options, onChange }) {
+  if (!options || !options.length) {
+    return (
+      <div className="twk-row twk-row-h">
+        <div className="twk-lbl"><span>{label}</span></div>
+        <input type="color" className="twk-swatch" value={value}
+               onChange={(e) => onChange(e.target.value)} />
+      </div>
+    );
+  }
+  // Native <input type=color> emits lowercase hex per the HTML spec, so
+  // compare case-insensitively. String() guards JSON.stringify(undefined),
+  // which returns the primitive undefined (no .toLowerCase).
+  const key = (o) => String(JSON.stringify(o)).toLowerCase();
+  const cur = key(value);
+  return (
+    <TweakRow label={label}>
+      <div className="twk-chips" role="radiogroup">
+        {options.map((o, i) => {
+          const colors = Array.isArray(o) ? o : [o];
+          const [hero, ...rest] = colors;
+          const sup = rest.slice(0, 4);
+          const on = key(o) === cur;
+          return (
+            <button key={i} type="button" className="twk-chip" role="radio"
+                    aria-checked={on} data-on={on ? '1' : '0'}
+                    aria-label={colors.join(', ')} title={colors.join(' · ')}
+                    style={{ background: hero }}
+                    onClick={() => onChange(o)}>
+              {sup.length > 0 && (
+                <span>
+                  {sup.map((c, j) => <i key={j} style={{ background: c }} />)}
+                </span>
+              )}
+              {on && <__TwkCheck light={__twkIsLight(hero)} />}
+            </button>
+          );
+        })}
+      </div>
+    </TweakRow>
+  );
+}
+
+function TweakButton({ label, onClick, secondary = false }) {
+  return (
+    <button type="button" className={secondary ? 'twk-btn secondary' : 'twk-btn'}
+            onClick={onClick}>{label}</button>
+  );
+}
+
+Object.assign(window, {
+  useTweaks, TweaksPanel, TweakSection, TweakRow,
+  TweakSlider, TweakToggle, TweakRadio, TweakSelect,
+  TweakText, TweakNumber, TweakColor, TweakButton,
+});
+
+</script>
+
+<script type="text/babel">
+const TWEAK_DEFAULTS = {
+  "theme": "dark",
+  "nav": "command",
+  "sessionView": "newbie",
+  "historyView": "newbie",
+  "showChrome": true,
+  "showAnnotations": false
+};
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [screen, setScreen] = React.useState('session');
+  const [live, setLive] = React.useState(true);
+  const [detail, setDetail] = React.useState(null);
+
+  const theme = t.theme;
+  const navVariant = t.nav;
+
+  const sessionVar = SESSION_VARIANTS.find(v => v.id === t.sessionView) || SESSION_VARIANTS[0];
+  const historyVar = HISTORY_VARIANTS.find(v => v.id === t.historyView) || HISTORY_VARIANTS[0];
+
+  const openAnomaly = (a) => setDetail(a);
+  const closeAnomaly = () => setDetail(null);
+
+  const renderScreen = () => {
+    const SV = sessionVar.Component;
+    const HV = historyVar.Component;
+    switch (screen) {
+      case 'session': return <SV live={live} setLive={setLive} onOpenAnomaly={openAnomaly} />;
+      case 'history': return <HV onOpenAnomaly={openAnomaly} />;
+      case 'map':     return <ScreenMap />;
+      case 'diag':    return <ScreenDiag />;
+      default:        return <SV live={live} setLive={setLive} onOpenAnomaly={openAnomaly} />;
+    }
+  };
+
+  return (
+    <div className="phone-wrap" data-theme={theme}>
+      <div className="ws-app">
+        <StatusBar time="19:42" show={t.showChrome} />
+        {navVariant === 'tabs' && <NavTop screen={screen} setScreen={setScreen} />}
+        {navVariant === 'rail' && <NavRail screen={screen} setScreen={setScreen} />}
+        <div style={{
+          flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
+          marginLeft: navVariant === 'rail' ? 60 : 0,
+          position: 'relative',
+        }}>
+          {renderScreen()}
+        </div>
+        {navVariant === 'bottom'  && <NavBottom screen={screen} setScreen={setScreen} />}
+        {navVariant === 'command' && <NavCmd screen={screen} setScreen={setScreen} />}
+        <NavHandle show={t.showChrome} />
+        {detail && <AnomalyDetail anomaly={detail} onClose={closeAnomaly} tier={t.sessionView} />}
+      </div>
+
+      <TweaksPanel title="wscan+ Tweaks">
+        <TweakSection label="Theme" />
+        <TweakRadio label="Mode" value={t.theme}
+          options={['dark', 'light']}
+          onChange={v => setTweak('theme', v)} />
+        <TweakSection label="Navigation" />
+        <TweakRadio label="Nav style" value={t.nav}
+          options={[
+            { value: 'bottom',  label: 'Bottom' },
+            { value: 'tabs',    label: 'Top' },
+            { value: 'rail',    label: 'Rail' },
+            { value: 'command', label: 'FAB' },
+          ]}
+          onChange={v => setTweak('nav', v)} />
+        <TweakSection label="Session view" />
+        <TweakSelect label="Presentation tier" value={t.sessionView}
+          options={SESSION_VARIANTS.map(v => ({ value: v.id, label: v.label }))}
+          onChange={v => setTweak('sessionView', v)} />
+        <TweakSection label="History view" />
+        <TweakSelect label="Variant" value={t.historyView}
+          options={HISTORY_VARIANTS.map(v => ({ value: v.id, label: v.label }))}
+          onChange={v => setTweak('historyView', v)} />
+        <TweakSection label="Chrome" />
+        <TweakToggle label="Status bar + handle" value={t.showChrome}
+          onChange={v => setTweak('showChrome', v)} />
+      </TweaksPanel>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+</script>
+
+</body>
+</html>
