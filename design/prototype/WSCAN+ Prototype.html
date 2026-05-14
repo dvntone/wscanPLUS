@@ -2050,6 +2050,7 @@ function TweaksPanel({ title = 'Tweaks', noDeckControls = false, children }) {
   }, [open, clampToViewport]);
 
   React.useEffect(() => {
+    if (window.parent === window) setOpen(true);
     const onMsg = (e) => {
       if (e.source !== window.parent) return;
       const t = e?.data?.type;
