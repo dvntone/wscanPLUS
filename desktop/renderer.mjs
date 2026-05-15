@@ -1,11 +1,3 @@
-import {
-  buildAnomalyReport,
-  findAnomaly,
-  handoffRisks,
-  handoffWifiAps,
-  summarizeHandoffSession,
-} from './handoffPrototypeModel.js';
-
 const api = window.wscan ?? window.wscanplus ?? window.wscanPlus ?? {};
 
 const state = {
@@ -13,7 +5,6 @@ const state = {
   risks: [],
   events: [],
   selectedBssid: null,
-  reviewedAnomalies: new Set(),
   scanState: { running: false, scanning: false },
   companion: null,
   adb: { status: 'unknown' },
@@ -22,7 +13,6 @@ const state = {
 
 const severityRank = { high: 3, critical: 3, threat: 3, watch: 2, medium: 2, warning: 2, low: 1, info: 0 };
 const $ = (id) => document.getElementById(id);
-let anomalyModalCleanup = null;
 
 function normalizeBssid(value) {
   return typeof value === 'string' ? value.trim().toUpperCase() : '';
@@ -113,7 +103,6 @@ function normalizeRiskEntry(input) {
     reason,
     timestamp,
     status: String(input.status ?? 'open'),
-    source: String(input.source ?? ''),
   };
 }
 
@@ -252,7 +241,6 @@ function renderApTable(aps) {
     tr.className = `${ap.risk === 'high' ? 'high' : ap.risk === 'watch' ? 'watch' : ''} ${state.selectedBssid === ap.bssid ? 'selected' : ''}`;
     tr.tabIndex = 0;
     tr.dataset.bssid = ap.bssid;
-    if (ap.source) tr.dataset.source = ap.source;
     const cells = [ap.ssid, ap.bssid, Number.isFinite(ap.rssi) ? `${ap.rssi}` : '--', Number.isFinite(ap.channel) ? `${ap.channel}` : '--', summarizeSecurity(ap.security), ap.risk.toUpperCase(), formatAge(ap.lastSeen)];
     for (const cell of cells) {
       const td = document.createElement('td');
@@ -289,27 +277,11 @@ function renderThreats() {
   for (const risk of risks) {
     const li = document.createElement('li');
     li.className = 'threat-item';
-    if (risk.source) li.dataset.source = risk.source;
-    const anomaly = findAnomaly(risk.id) ?? findAnomaly(risk.bssid);
-    const reviewed = anomaly && state.reviewedAnomalies.has(anomaly.id);
-    if (anomaly) {
-      li.tabIndex = 0;
-      li.setAttribute('role', 'button');
-      li.setAttribute('aria-label', `Open anomaly detail for ${anomaly.title}`);
-      li.classList.toggle('reviewed', Boolean(reviewed));
-      li.addEventListener('click', () => openAnomalyDetail(anomaly.id, li));
-      li.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          openAnomalyDetail(anomaly.id, li);
-        }
-      });
-    }
     const badge = document.createElement('span');
     badge.className = `badge ${risk.severity === 'high' ? 'badge-threat' : risk.severity === 'watch' ? 'badge-warning' : 'badge-neutral'}`;
-    badge.textContent = reviewed ? 'REVIEWED' : `${risk.severity.toUpperCase()} ${risk.confidence ? `${Math.round(risk.confidence)}%` : ''}`.trim();
+    badge.textContent = `${risk.severity.toUpperCase()} ${risk.confidence ? `${Math.round(risk.confidence)}%` : ''}`.trim();
     const title = document.createElement('strong');
-    title.textContent = anomaly?.title ?? (risk.bssid || risk.ssid || 'Detector event');
+    title.textContent = risk.bssid || risk.ssid || 'Detector event';
     const body = document.createElement('p');
     body.textContent = `${risk.reason} • ${formatAge(risk.timestamp)} ago`;
     li.append(badge, title, body);
@@ -322,115 +294,6 @@ function renderThreats() {
     list.appendChild(li);
   }
   $('threat-count').textContent = `${state.risks.length} events`;
-}
-
-function openAnomalyDetail(identifier, returnFocusTo = document.activeElement) {
-  const anomaly = findAnomaly(identifier);
-  if (!anomaly) return;
-
-  anomalyModalCleanup?.();
-  document.getElementById('anomaly-detail-modal')?.remove();
-
-  const overlay = document.createElement('section');
-  overlay.id = 'anomaly-detail-modal';
-  overlay.className = 'anomaly-detail-modal';
-  overlay.setAttribute('role', 'dialog');
-  overlay.setAttribute('aria-modal', 'true');
-  overlay.setAttribute('aria-label', anomaly.title);
-
-  const sheet = document.createElement('article');
-  sheet.className = 'anomaly-detail-sheet';
-  sheet.addEventListener('click', (event) => event.stopPropagation());
-
-  const closeModal = ({ rerender = false, restoreFocus = true } = {}) => {
-    overlay.remove();
-    anomalyModalCleanup?.();
-    anomalyModalCleanup = null;
-    if (rerender) render();
-    if (restoreFocus && returnFocusTo?.isConnected && typeof returnFocusTo.focus === 'function') returnFocusTo.focus();
-  };
-
-  const onKeydown = (event) => {
-    if (event.key !== 'Escape') return;
-    event.preventDefault();
-    closeModal();
-  };
-  document.addEventListener('keydown', onKeydown);
-  anomalyModalCleanup = () => document.removeEventListener('keydown', onKeydown);
-
-  const close = document.createElement('button');
-  close.className = 'secondary-action';
-  close.type = 'button';
-  close.textContent = 'Close';
-  close.addEventListener('click', closeModal);
-
-  const badge = document.createElement('span');
-  badge.className = `badge ${anomaly.level === 'high' ? 'badge-threat' : anomaly.level === 'medium' ? 'badge-warning' : 'badge-neutral'}`;
-  badge.textContent = anomaly.level.toUpperCase();
-
-  const heading = document.createElement('h2');
-  heading.textContent = anomaly.title;
-
-  const summary = document.createElement('p');
-  summary.textContent = anomaly.summary;
-
-  const reasons = document.createElement('ul');
-  reasons.className = 'anomaly-reasons';
-  for (const reason of anomaly.reasons) {
-    const item = document.createElement('li');
-    item.textContent = reason;
-    reasons.appendChild(item);
-  }
-
-  const meta = document.createElement('p');
-  meta.className = 'muted';
-  meta.textContent = `${anomaly.sourceId} · ${anomaly.t} · ${anomaly.signals.join(' + ')} · ${anomaly.recurrence}`;
-
-  const recommendation = document.createElement('p');
-  recommendation.className = 'anomaly-recommendation';
-  recommendation.textContent = `${anomaly.investigation} No actor identification or intent attribution.`;
-
-  const report = document.createElement('button');
-  report.className = 'secondary-action';
-  report.type = 'button';
-  report.textContent = 'Copy Report';
-  report.addEventListener('click', async () => {
-    const text = buildAnomalyReport(anomaly);
-    try {
-      const clipboard = window.navigator?.clipboard;
-      if (!clipboard?.writeText) throw new Error('Clipboard API unavailable');
-      await clipboard.writeText(text);
-      addEvent({ level: 'INFO', source: 'handoff', message: `report copied for ${anomaly.id}` });
-    } catch (error) {
-      report.textContent = 'Copy failed';
-      report.disabled = true;
-      addEvent({ level: 'WARN', source: 'handoff', message: `report copy failed for ${anomaly.id}: ${error?.message ?? error}` });
-      setTimeout(() => {
-        report.textContent = 'Copy Report';
-        report.disabled = false;
-      }, 2000);
-    }
-  });
-
-  const reviewed = document.createElement('button');
-  reviewed.className = 'primary-action';
-  reviewed.type = 'button';
-  reviewed.textContent = state.reviewedAnomalies.has(anomaly.id) ? 'Reviewed' : 'Mark Reviewed';
-  reviewed.addEventListener('click', () => {
-    state.reviewedAnomalies.add(anomaly.id);
-    addEvent({ level: 'INFO', source: 'handoff', message: `${anomaly.id} marked reviewed` }, false);
-    closeModal({ rerender: true });
-  });
-
-  const actions = document.createElement('div');
-  actions.className = 'anomaly-actions';
-  actions.append(report, reviewed, close);
-
-  overlay.addEventListener('click', closeModal);
-  sheet.append(badge, heading, meta, summary, reasons, recommendation, actions);
-  overlay.appendChild(sheet);
-  document.body.appendChild(overlay);
-  close.focus();
 }
 
 function renderCompanion() {
@@ -622,21 +485,15 @@ function wireSubscriptions() {
 
 function seedDemoIfEmpty() {
   if (state.aps.size) return;
-  const session = summarizeHandoffSession();
-  handoffWifiAps().forEach(upsertAp);
-  handoffRisks().forEach((risk) => addRisk(risk, false));
-  state.companion = {
-    status: 'offline',
-    deviceId: 'handoff prototype',
-    payloadRate: 0,
-    rejects: 0,
-  };
-  addEvent({
-    level: 'INFO',
-    source: 'handoff',
-    message: `${session.title}: ${session.totalWifi} APs, ${session.totalAnomalies} anomalies seeded until live scanner data arrives`,
-  }, false);
-  $('workspace-subtitle').textContent = `${session.id} · ${session.duration} · ${session.totalAnomalies} anomalies · ${session.location}`;
+  [
+    { ssid: 'Home-5G', bssid: '9C:3A:AF:22:10:8B', rssi: -48, channel: 149, frequency: 5745, security: 'WPA3', risk: 'low', lastSeen: Date.now() - 2000, source: 'demo' },
+    { ssid: 'xfinitywifi', bssid: '1E:89:41:77:A0:2C', rssi: -69, channel: 11, frequency: 2462, security: 'open', risk: 'watch', lastSeen: Date.now() - 4200, source: 'demo' },
+    { ssid: 'Unknown_AP', bssid: 'F2:1D:02:90:11:FE', rssi: -57, channel: 1, frequency: 2412, security: 'WPA2', risk: 'high', lastSeen: Date.now() - 8000, source: 'demo' },
+    { ssid: 'PrinterNet', bssid: '58:EF:68:41:90:7A', rssi: -73, channel: 3, frequency: 2422, security: 'WPA2', risk: 'low', lastSeen: Date.now() - 21000, source: 'demo' },
+  ].forEach(upsertAp);
+  addRisk({ bssid: 'F2:1D:02:90:11:FE', ssid: 'Unknown_AP', severity: 'high', confidence: 82, reason: 'Unknown AP near trusted SSID pattern' });
+  state.companion = { status: 'offline', deviceId: '--', payloadRate: 0, rejects: 0 };
+  addEvent({ level: 'INFO', source: 'ui', message: 'demo data loaded until scanner emits AP state' }, false);
 }
 
 async function boot() {
