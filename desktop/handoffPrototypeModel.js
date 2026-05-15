@@ -15,7 +15,7 @@ export const WIFI = [
     sec: 'WPA3',
     rssi: -42,
     vendor: 'Cisco Meraki',
-    lastSeen: '19:59:48',
+    lastSeen: '2026-05-15T19:59:48Z',
   },
   {
     bssid: '78:8A:20:11:E8:0A',
@@ -24,7 +24,7 @@ export const WIFI = [
     sec: 'WPA2',
     rssi: -54,
     vendor: 'Cisco Meraki',
-    lastSeen: '19:59:48',
+    lastSeen: '2026-05-15T19:59:48Z',
   },
   {
     bssid: 'AE:4F:91:CC:31:F0',
@@ -33,7 +33,7 @@ export const WIFI = [
     sec: 'open',
     rssi: -68,
     vendor: 'Comcast (Xfinity)',
-    lastSeen: '19:59:48',
+    lastSeen: '2026-05-15T19:59:48Z',
     anomaly: 'high',
   },
   {
@@ -43,7 +43,7 @@ export const WIFI = [
     sec: 'open',
     rssi: -71,
     vendor: 'Comcast (Xfinity)',
-    lastSeen: '19:59:48',
+    lastSeen: '2026-05-15T19:59:48Z',
     anomaly: 'high',
   },
   {
@@ -53,7 +53,7 @@ export const WIFI = [
     sec: 'open',
     rssi: -77,
     vendor: 'unknown (locally-administered)',
-    lastSeen: '19:48:30',
+    lastSeen: '2026-05-15T19:48:30Z',
     anomaly: 'medium',
   },
   {
@@ -63,7 +63,7 @@ export const WIFI = [
     sec: 'WPA2',
     rssi: -83,
     vendor: 'Netgear',
-    lastSeen: '19:59:48',
+    lastSeen: '2026-05-15T19:59:48Z',
   },
   {
     bssid: '00:1B:11:9A:03:CC',
@@ -72,7 +72,7 @@ export const WIFI = [
     sec: 'WPA2',
     rssi: -85,
     vendor: 'TP-Link',
-    lastSeen: '19:59:48',
+    lastSeen: '2026-05-15T19:59:48Z',
   },
   {
     bssid: '50:C7:BF:01:22:81',
@@ -81,7 +81,7 @@ export const WIFI = [
     sec: 'WPA2',
     rssi: -76,
     vendor: 'unknown',
-    lastSeen: '19:59:48',
+    lastSeen: '2026-05-15T19:59:48Z',
   },
 ];
 
@@ -92,7 +92,7 @@ export const ANOMALIES = [
     bssid: 'AE:4F:91:CC:31:F0',
     title: 'Suspicious captive portal',
     level: 'high',
-    t: '19:47:11',
+    t: '2026-05-15T19:47:11Z',
     summary:
       'Open WiFi captive portal for xfinitywifi does not match known-good baseline.',
     reasons: [
@@ -109,7 +109,7 @@ export const ANOMALIES = [
     sourceId: 'a-018',
     title: 'BLE advertisement burst - rotating identifier',
     level: 'medium',
-    t: '19:45:08',
+    t: '2026-05-15T19:45:08Z',
     summary:
       'Rotating BLE advertisement pattern with sub-second cadence recurred across recent sessions.',
     reasons: [
@@ -127,7 +127,7 @@ export const ANOMALIES = [
     bssid: '02:8C:5D:7F:11:01',
     title: 'New AP cluster on busy channel',
     level: 'medium',
-    t: '19:44:32',
+    t: '2026-05-15T19:44:32Z',
     summary:
       'Short-lived BSSIDs broadcast open networks within the same scan window.',
     reasons: [
@@ -145,7 +145,7 @@ export const ANOMALIES = [
     bssid: '4C:5E:0C:91:8A:42',
     title: 'Baseline RSSI drift - PRIVATE-HOME-5G',
     level: 'low',
-    t: '19:43:50',
+    t: '2026-05-15T19:43:50Z',
     summary:
       'Trusted AP RSSI is 8 dB below the 7-day median for this hour.',
     reasons: ['RSSI median delta is -8 dB within the urban damping band'],

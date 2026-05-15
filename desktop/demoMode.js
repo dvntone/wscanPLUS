@@ -1,11 +1,6 @@
 /* global window, document, MutationObserver */
 
-import { WIFI } from './handoffPrototypeModel.js';
-
 const api = window.wscan ?? window.wscanplus ?? window.wscanPlus ?? {};
-
-// Normalize to uppercase so dataset.bssid lookups always match regardless of model casing.
-const HANDOFF_BSSIDS = new Set(WIFI.map((row) => row.bssid.toUpperCase()));
 
 let liveDataSeen = false;
 let domObserver = null;
@@ -60,12 +55,6 @@ function markLiveMode() {
   }
 
   hideSeededDemoRows();
-
-  // Once live, seeded rows are permanently hidden — no further rerenders need observation.
-  if (domObserver) {
-    domObserver.disconnect();
-    domObserver = null;
-  }
 }
 
 function isHandoffThreatItem(item) {
@@ -75,9 +64,7 @@ function isHandoffThreatItem(item) {
 function hideSeededDemoRows() {
   const rows = document.querySelectorAll('#ap-table-body tr');
   for (const row of rows) {
-    // dataset.bssid is the canonical identifier written by renderApTable.
-    const bssid = row.dataset.bssid?.toUpperCase();
-    if (bssid && HANDOFF_BSSIDS.has(bssid)) {
+    if (row.dataset.source === 'handoff') {
       row.hidden = liveDataSeen;
       row.classList.add('demo-seeded-row');
       row.setAttribute('aria-label', 'Seeded handoff row, hidden when live data is present');

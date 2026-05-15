@@ -22,7 +22,7 @@ test('handoff WiFi rows map to desktop AP rows', () => {
     channel: 11,
     security: 'open',
     risk: 'high',
-    lastSeen: '19:59:48',
+    lastSeen: '2026-05-15T19:59:48Z',
     source: 'handoff',
     vendor: 'Comcast (Xfinity)',
   });

@@ -252,6 +252,7 @@ function renderApTable(aps) {
     tr.className = `${ap.risk === 'high' ? 'high' : ap.risk === 'watch' ? 'watch' : ''} ${state.selectedBssid === ap.bssid ? 'selected' : ''}`;
     tr.tabIndex = 0;
     tr.dataset.bssid = ap.bssid;
+    if (ap.source) tr.dataset.source = ap.source;
     const cells = [ap.ssid, ap.bssid, Number.isFinite(ap.rssi) ? `${ap.rssi}` : '--', Number.isFinite(ap.channel) ? `${ap.channel}` : '--', summarizeSecurity(ap.security), ap.risk.toUpperCase(), formatAge(ap.lastSeen)];
     for (const cell of cells) {
       const td = document.createElement('td');
@@ -308,7 +309,7 @@ function renderThreats() {
     badge.className = `badge ${risk.severity === 'high' ? 'badge-threat' : risk.severity === 'watch' ? 'badge-warning' : 'badge-neutral'}`;
     badge.textContent = reviewed ? 'REVIEWED' : `${risk.severity.toUpperCase()} ${risk.confidence ? `${Math.round(risk.confidence)}%` : ''}`.trim();
     const title = document.createElement('strong');
-    title.textContent = anomaly?.title ?? risk.bssid ?? risk.ssid ?? 'Detector event';
+    title.textContent = anomaly?.title ?? (risk.bssid || risk.ssid || 'Detector event');
     const body = document.createElement('p');
     body.textContent = `${risk.reason} • ${formatAge(risk.timestamp)} ago`;
     li.append(badge, title, body);
