@@ -91,6 +91,11 @@ function upsertAp(input) {
 
 function setAps(payload) {
   const list = Array.isArray(payload) ? payload : Array.isArray(payload?.aps) ? payload.aps : Array.isArray(payload?.networks) ? payload.networks : [];
+  if (list.some((ap) => String(ap?.source ?? 'desktop') !== 'handoff')) {
+    state.aps = new Map([...state.aps].filter(([, ap]) => ap.source !== 'handoff'));
+    state.risks = state.risks.filter((risk) => risk.source !== 'handoff');
+    if (!state.aps.has(state.selectedBssid)) state.selectedBssid = state.aps.keys().next().value ?? null;
+  }
   for (const ap of list) upsertAp(ap);
   render();
 }
@@ -341,9 +346,17 @@ function openAnomalyDetail(identifier, returnFocusTo = document.activeElement) {
   const sheet = document.createElement('article');
   sheet.className = 'anomaly-detail-sheet';
   sheet.addEventListener('click', (event) => event.stopPropagation());
+  const restoreBackground = [...document.body.children]
+    .filter((element) => element !== overlay)
+    .map((element) => [element, element.inert, element.getAttribute('aria-hidden')]);
+  restoreBackground.forEach(([element]) => { element.inert = true; element.setAttribute('aria-hidden', 'true'); });
 
   const closeModal = ({ rerender = false, restoreFocus = true } = {}) => {
     overlay.remove();
+    restoreBackground.forEach(([element, inert, ariaHidden]) => {
+      element.inert = inert;
+      ariaHidden === null ? element.removeAttribute('aria-hidden') : element.setAttribute('aria-hidden', ariaHidden);
+    });
     anomalyModalCleanup?.();
     anomalyModalCleanup = null;
     if (rerender) render();
@@ -351,9 +364,16 @@ function openAnomalyDetail(identifier, returnFocusTo = document.activeElement) {
   };
 
   const onKeydown = (event) => {
-    if (event.key !== 'Escape') return;
-    event.preventDefault();
-    closeModal();
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeModal();
+      return;
+    }
+    if (event.key === 'Tab') {
+      const buttons = [...sheet.querySelectorAll('button:not([disabled])')];
+      const edge = buttons[event.shiftKey ? 0 : buttons.length - 1];
+      if (document.activeElement === edge) { event.preventDefault(); buttons[event.shiftKey ? buttons.length - 1 : 0]?.focus(); }
+    }
   };
   document.addEventListener('keydown', onKeydown);
   anomalyModalCleanup = () => document.removeEventListener('keydown', onKeydown);
