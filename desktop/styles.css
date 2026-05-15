@@ -320,32 +320,20 @@ dd { margin: 0; font-family: var(--mono); font-size: 12px; overflow-wrap: anywhe
 }
 
 @media (max-width: 760px) {
-  .topbar,
-  .workspace-header,
-  .status-strip { align-items: flex-start; flex-direction: column; }
+  .topbar, .workspace-header, .status-strip { align-items: flex-start; flex-direction: column; }
   .app-shell {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "topbar"
-      "sidebar"
-      "workspace"
-      "inspector"
-      "console";
+    grid-template-areas: "topbar" "sidebar" "workspace" "inspector" "console";
     grid-template-rows: auto auto auto auto 180px;
     gap: 12px;
     padding: 0 12px 12px;
   }
   .topbar { gap: 12px; margin: 0 -12px; padding: 12px; }
-  .workspace,
-  .workspace-with-demo-banner { grid-template-rows: none; }
-  .metrics-grid,
-  .lower-grid,
-  .inspector { grid-template-columns: minmax(0, 1fr); }
-  .control-row { justify-content: flex-start; }
-  .status-strip,
-  .control-row { width: 100%; }
-  .primary-action,
-  .secondary-action { flex: 1 1 120px; }
+  .workspace, .workspace-with-demo-banner { grid-template-rows: none; }
+  .metrics-grid, .lower-grid, .inspector { grid-template-columns: minmax(0, 1fr); }
+  .control-row { justify-content: flex-start; width: 100%; }
+  .status-strip { width: 100%; }
+  .primary-action, .secondary-action { flex: 1 1 120px; }
   .anomaly-detail-modal { align-items: end; padding: 12px; }
   .anomaly-detail-sheet { max-height: calc(100vh - 24px); border-radius: 14px; }
 }
