@@ -1,12 +1,6 @@
 /* global window, document, MutationObserver */
 
 const api = window.wscan ?? window.wscanplus ?? window.wscanPlus ?? {};
-const DEMO_BSSIDS = new Set([
-  '9C:3A:AF:22:10:8B',
-  '1E:89:41:77:A0:2C',
-  'F2:1D:02:90:11:FE',
-  '58:EF:68:41:90:7A',
-]);
 
 let liveDataSeen = false;
 
@@ -26,11 +20,11 @@ function createBanner() {
   const badge = document.createElement('span');
   badge.id = 'data-mode-badge';
   badge.className = 'badge badge-warning';
-  badge.textContent = 'DEMO DATA';
+  badge.textContent = 'HANDOFF DATA';
 
   const text = document.createElement('p');
   text.id = 'data-mode-message';
-  text.textContent = 'Sample AP rows and threat entries are layout placeholders only, not live evidence.';
+  text.textContent = 'Prototype AP rows and anomaly entries are seeded from the implementation handoff, not live evidence.';
 
   banner.append(badge, text);
   header.insertAdjacentElement('afterend', banner);
@@ -56,27 +50,29 @@ function markLiveMode() {
 
   const message = document.getElementById('data-mode-message');
   if (message) {
-    message.textContent = 'Live scanner or companion AP data has arrived. Seeded demo rows are hidden from the operator view.';
+    message.textContent = 'Live scanner or companion AP data has arrived. Seeded handoff rows are hidden from the operator view.';
   }
 
   hideSeededDemoRows();
 }
 
+function isHandoffThreatItem(item) {
+  return item.dataset.source === 'handoff';
+}
+
 function hideSeededDemoRows() {
   const rows = document.querySelectorAll('#ap-table-body tr');
   for (const row of rows) {
-    const bssid = row.children?.[1]?.textContent?.trim().toUpperCase();
-    if (bssid && DEMO_BSSIDS.has(bssid)) {
+    if (row.dataset.source === 'handoff') {
       row.hidden = liveDataSeen;
       row.classList.add('demo-seeded-row');
-      row.setAttribute('aria-label', 'Seeded demo row, hidden when live data is present');
+      row.setAttribute('aria-label', 'Seeded handoff row, hidden when live data is present');
     }
   }
 
   const threatItems = document.querySelectorAll('.threat-item');
   for (const item of threatItems) {
-    const text = item.textContent ?? '';
-    if (text.includes('F2:1D:02:90:11:FE') || text.includes('Unknown AP near trusted SSID pattern')) {
+    if (isHandoffThreatItem(item)) {
       item.hidden = liveDataSeen;
       item.classList.add('demo-seeded-threat');
     }
