@@ -3,7 +3,6 @@
 const api = window.wscan ?? window.wscanplus ?? window.wscanPlus ?? {};
 
 let liveDataSeen = false;
-let domObserver = null;
 
 function createBanner() {
   if (document.getElementById('demo-data-banner')) return;
@@ -95,8 +94,8 @@ function subscribeToLiveAps() {
 function observeTableRerenders() {
   const target = document.querySelector('.workspace');
   if (!target) return;
-  domObserver = new MutationObserver(() => hideSeededDemoRows());
-  domObserver.observe(target, { childList: true, subtree: true });
+  const observer = new MutationObserver(() => hideSeededDemoRows());
+  observer.observe(target, { childList: true, subtree: true });
 }
 
 createBanner();
