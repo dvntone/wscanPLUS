@@ -1,14 +1,14 @@
 /* global window, document, MutationObserver */
 
+import { WIFI } from './handoffPrototypeModel.js';
+
 const api = window.wscan ?? window.wscanplus ?? window.wscanPlus ?? {};
-const DEMO_BSSIDS = new Set([
-  '9C:3A:AF:22:10:8B',
-  '1E:89:41:77:A0:2C',
-  'F2:1D:02:90:11:FE',
-  '58:EF:68:41:90:7A',
-]);
+
+// Normalize to uppercase so dataset.bssid lookups always match regardless of model casing.
+const HANDOFF_BSSIDS = new Set(WIFI.map((row) => row.bssid.toUpperCase()));
 
 let liveDataSeen = false;
+let domObserver = null;
 
 function createBanner() {
   if (document.getElementById('demo-data-banner')) return;
@@ -26,11 +26,11 @@ function createBanner() {
   const badge = document.createElement('span');
   badge.id = 'data-mode-badge';
   badge.className = 'badge badge-warning';
-  badge.textContent = 'DEMO DATA';
+  badge.textContent = 'HANDOFF DATA';
 
   const text = document.createElement('p');
   text.id = 'data-mode-message';
-  text.textContent = 'Sample AP rows and threat entries are layout placeholders only, not live evidence.';
+  text.textContent = 'Prototype AP rows and anomaly entries are seeded from the implementation handoff, not live evidence.';
 
   banner.append(badge, text);
   header.insertAdjacentElement('afterend', banner);
@@ -56,27 +56,37 @@ function markLiveMode() {
 
   const message = document.getElementById('data-mode-message');
   if (message) {
-    message.textContent = 'Live scanner or companion AP data has arrived. Seeded demo rows are hidden from the operator view.';
+    message.textContent = 'Live scanner or companion AP data has arrived. Seeded handoff rows are hidden from the operator view.';
   }
 
   hideSeededDemoRows();
+
+  // Once live, seeded rows are permanently hidden — no further rerenders need observation.
+  if (domObserver) {
+    domObserver.disconnect();
+    domObserver = null;
+  }
+}
+
+function isHandoffThreatItem(item) {
+  return item.dataset.source === 'handoff';
 }
 
 function hideSeededDemoRows() {
   const rows = document.querySelectorAll('#ap-table-body tr');
   for (const row of rows) {
-    const bssid = row.children?.[1]?.textContent?.trim().toUpperCase();
-    if (bssid && DEMO_BSSIDS.has(bssid)) {
+    // dataset.bssid is the canonical identifier written by renderApTable.
+    const bssid = row.dataset.bssid?.toUpperCase();
+    if (bssid && HANDOFF_BSSIDS.has(bssid)) {
       row.hidden = liveDataSeen;
       row.classList.add('demo-seeded-row');
-      row.setAttribute('aria-label', 'Seeded demo row, hidden when live data is present');
+      row.setAttribute('aria-label', 'Seeded handoff row, hidden when live data is present');
     }
   }
 
   const threatItems = document.querySelectorAll('.threat-item');
   for (const item of threatItems) {
-    const text = item.textContent ?? '';
-    if (text.includes('F2:1D:02:90:11:FE') || text.includes('Unknown AP near trusted SSID pattern')) {
+    if (isHandoffThreatItem(item)) {
       item.hidden = liveDataSeen;
       item.classList.add('demo-seeded-threat');
     }
@@ -98,8 +108,8 @@ function subscribeToLiveAps() {
 function observeTableRerenders() {
   const target = document.querySelector('.workspace');
   if (!target) return;
-  const observer = new MutationObserver(() => hideSeededDemoRows());
-  observer.observe(target, { childList: true, subtree: true });
+  domObserver = new MutationObserver(() => hideSeededDemoRows());
+  domObserver.observe(target, { childList: true, subtree: true });
 }
 
 createBanner();
