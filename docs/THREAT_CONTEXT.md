@@ -30,7 +30,8 @@ This document captures the threat model and the product requirements it implies.
 
 - Loss of trust in home network and connected devices.
 - **Credibility gap:** difficult to communicate the situation to non-technical people (neighbours, building management, support services) without tangible evidence.
-- Concern that a low-technical-literacy population may be broadly targeted (credentials, financial accounts), not just a single individual.
+- Concern that a low-technical-literacy population may be broadly targeted (credentials, financial accounts, privacy monitoring), not just a single individual.
+- **Privacy beyond credentials:** peer-reviewed research demonstrates that a rogue AP is not only a credential-theft risk but a through-wall surveillance platform capable of tracking presence, movement, and activity (see WiFi-Based Passive Surveillance section).
 
 ---
 
@@ -49,8 +50,61 @@ This document captures the threat model and the product requirements it implies.
   - Deauthentication and disassociation pressure
   - Beacon / SSID flooding to create noise and obscure activity
   - Opportunistic credential theft via MITM or social engineering
+  - **Passive presence and movement monitoring via WiFi CSI** (see section below)
 - Attacker may be persistent and may target populations with limited technical literacy.
 - Remote/internet threats are considered secondary; local RF-layer attacks are the primary concern.
+
+---
+
+## WiFi-Based Passive Surveillance (Peer-Reviewed Research)
+
+Standard consumer WiFi hardware can be repurposed as a silent, through-wall surveillance platform. This is not theoretical — it is demonstrated in peer-reviewed academic research using inexpensive commodity equipment.
+
+### What the Research Shows
+
+**Carnegie Mellon University — "DensePose From WiFi" (2023)**
+Using two standard 802.11 routers (~$60 total), CMU researchers generated full-body 3D pose maps of people in the same room — posture, limb positions, activity patterns, and movement tracking — using only standard WiFi Channel State Information (CSI). No cameras. No microphones. No specialized hardware. Performance approaches image-based pose estimation in the same environment.
+
+**La Sapienza University, Rome — "WhoFi" (2025)**
+Using the same class of hardware, researchers achieved **95.5% accuracy** in re-identifying specific individuals by their unique "radio biometric signature" — the characteristic way a person's body alters WiFi signals as they move through space. The system distinguishes person A from person B through walls, across clothing changes, without any camera data.
+
+### What This Means for This Threat Model
+
+A rogue AP or evil-twin device deployed in a hallway, adjacent apartment, or shared space can — simultaneously — perform credential theft AND silently:
+
+1. **Detect presence** — is the target currently home?
+2. **Track movement** — where in the unit are they moving?
+3. **Estimate activity** — sleeping, sitting, in the bathroom, walking to the door
+4. **Re-identify specific individuals** — distinguish resident A from resident B
+5. **Build a behavioral profile** — routine, schedule, occupancy patterns across days and weeks
+
+No cameras. No audio. No visible intrusion. No victim awareness. The required hardware costs approximately $60.
+
+This capability does not require the attacker to compromise any device or intercept any traffic. The signals are ambient — every WiFi-capable device in the area passively emits the RF that enables this.
+
+### Implication for Evidence Framing
+
+When wscan+ detects and documents a rogue AP, the significance of that detection is materially different than "someone may be trying to capture your Wi-Fi password."
+
+**Upgraded threat statement for non-technical communication:**
+> "The device detected near your unit can silently track movements through walls without cameras, confirm when you are home, and distinguish between different people in the space — peer-reviewed research from Carnegie Mellon University demonstrates this using hardware available for $60."
+
+This framing is factually accurate, cites verifiable academic sources, and communicates the actual risk to building management, law enforcement, or support services in terms they will take seriously.
+
+### Detection Signals (New)
+
+An AP performing CSI-based sensing typically exhibits a characteristic configuration:
+- **Fixed channel** — no roaming (CSI sensing requires a stable channel to build spatial models)
+- **Elevated beacon rate** — more frequent beacons = more CSI samples = higher sensing resolution
+- **Wide channel width** (40/80 MHz) — more subcarriers = more spatial information encoded per sample
+- **Minimal associated clients** — the AP is not being used for actual internet access
+- **Near-zero data traffic ratio** — high beacon activity, negligible data throughput
+
+These signals are available in current `WifiScanResult` fields and represent a candidate heuristic for future development.
+
+### References
+- Geng, Huang, De la Torre. "DensePose From WiFi." *arXiv:2301.00250*. Carnegie Mellon University, 2023.
+- Avola, Emam, Montagnini, Pannone, Ranaldi. "WhoFi: Deep Person Re-Identification via Wi-Fi Channel Signal Encoding." *arXiv:2507.12869*. La Sapienza University of Rome, 2025.
 
 ---
 
