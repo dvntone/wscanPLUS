@@ -1,0 +1,80 @@
+/**
+ * tokens.css — wscan+ shared CSS variables.
+ *
+ * Identical surface to design/prototype/tokens.css; this file exists in @wscanplus/theme
+ * so both desktop and web can import the same CSS variables without duplicating them.
+ *
+ * Source of truth: design/tokens/wscan.tokens.json
+ */
+
+:root {
+  /* Type */
+  --ws-f-display: "Space Grotesk", "Inter Tight", system-ui, sans-serif;
+  --ws-f-body: "Inter", "IBM Plex Sans", system-ui, sans-serif;
+  --ws-f-mono: "JetBrains Mono", "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Spacing */
+  --ws-s-1: 4px;  --ws-s-2: 8px;  --ws-s-3: 12px;
+  --ws-s-4: 16px; --ws-s-5: 20px; --ws-s-6: 24px; --ws-s-8: 32px;
+
+  /* Radii */
+  --ws-r-sm: 6px; --ws-r-md: 10px; --ws-r-lg: 14px; --ws-r-xl: 18px; --ws-r-pill: 999px;
+
+  /* Motion */
+  --ws-m-fast: 120ms; --ws-m-med: 200ms;
+
+  /* Threat scale */
+  --ws-threat-low:      #2FBF71;
+  --ws-threat-medium:   #F2B94B;
+  --ws-threat-high:     #FF8A3D;
+  --ws-threat-critical: #FF5A5F;
+
+  /* RSSI */
+  --ws-rssi-strong:   #2FBF71;
+  --ws-rssi-moderate: #F2B94B;
+  --ws-rssi-weak:     #FF8A3D;
+
+  /* Accents */
+  --ws-accent-scan:  #2AC3FF;
+  --ws-accent-focus: #7C5CFF;
+}
+
+/* Dark — operator default */
+:root,
+[data-theme="dark"] {
+  --ws-canvas:    #0B1220;
+  --ws-panel:     #121A2B;
+  --ws-panel-2:   #1A2336;
+  --ws-panel-3:   #24324A;
+  --ws-border:    #2A3850;
+  --ws-border-2:  #42526B;
+  --ws-console:   #05070B;
+  --ws-text:      #D6DCE7;
+  --ws-text-2:    #A4AFBF;
+  --ws-text-3:    #6B7586;
+  --ws-text-h:    #F2F5F9;
+  --ws-grid:      rgba(42, 195, 255, 0.06);
+  --ws-shadow:    0 12px 32px rgba(0,0,0,0.45);
+}
+
+/* Light — operator daylight mode */
+[data-theme="light"] {
+  --ws-canvas:    #F2F5F9;
+  --ws-panel:     #FFFFFF;
+  --ws-panel-2:   #ECEFF4;
+  --ws-panel-3:   #DDE3EB;
+  --ws-border:    rgba(11, 18, 32, 0.10);
+  --ws-border-2:  rgba(11, 18, 32, 0.22);
+  --ws-console:   #0E1422;
+  --ws-text:      #1A2336;
+  --ws-text-2:    #4B5668;
+  --ws-text-3:    #7A8395;
+  --ws-text-h:    #0B1220;
+  --ws-grid:      rgba(11, 18, 32, 0.05);
+  --ws-shadow:    0 12px 32px rgba(11, 18, 32, 0.10);
+
+  --ws-threat-low:      #1AA361;
+  --ws-threat-medium:   #C58E1A;
+  --ws-threat-high:     #D86E1A;
+  --ws-threat-critical: #D63A40;
+}
