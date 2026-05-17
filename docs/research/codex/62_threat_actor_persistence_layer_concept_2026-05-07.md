@@ -11,7 +11,7 @@
 
 Every threat detection in wscanplus is currently **siloed per scan session**. When a session ends and a new one begins, the system has no memory of previous attacker devices. A motivated attacker who simply rotates their MAC address between sessions becomes invisible to all historical detection — including `BssidFingerprintHeuristic`, which only fires within a session.
 
-This means a single session's evidence is inherently thin. One rogue AP event, one session of SSID flooding — these are dismissable as coincidence or equipment malfunction. What would be compelling to building management or law enforcement is a **30-day log showing the same device appearing 47 times**, persisting through 12 different BSSIDs.
+This means a single session's evidence is inherently thin. One rogue AP event, one session of SSID flooding — these are dismissible as coincidence or equipment malfunction. What would be compelling to building management or law enforcement is a **30-day log showing the same device appearing 47 times**, persisting through 12 different BSSIDs.
 
 Currently wscanplus cannot produce that report because it has no way to assert "these 12 different BSSIDs are the same physical device."
 

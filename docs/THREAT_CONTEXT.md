@@ -93,14 +93,17 @@ This framing is factually accurate, cites verifiable academic sources, and commu
 
 ### Detection Signals (New)
 
-An AP performing CSI-based sensing typically exhibits a characteristic configuration:
-- **Fixed channel** — no roaming (CSI sensing requires a stable channel to build spatial models)
-- **Elevated beacon rate** — more frequent beacons = more CSI samples = higher sensing resolution
-- **Wide channel width** (40/80 MHz) — more subcarriers = more spatial information encoded per sample
-- **Minimal associated clients** — the AP is not being used for actual internet access
-- **Near-zero data traffic ratio** — high beacon activity, negligible data throughput
+An AP performing CSI-based sensing typically exhibits a characteristic configuration. Some signals are observable from current `WifiScanResult` fields; others require monitor-mode capture or additional telemetry:
 
-These signals are available in current `WifiScanResult` fields and represent a candidate heuristic for future development.
+**Observable from current scan results (`WifiScanResult`):**
+- **Fixed channel** — `frequencyMhz` stable across consecutive scans (no roaming)
+- **Wide channel width** (40/80 MHz) — `channelWidth` field (API 23+)
+- **Persistent high RSSI** — low `signalLevel` variance across scans from a fixed position
+
+**Requires monitor-mode / extra telemetry (not in `WifiScanResult`):**
+- **Elevated beacon rate** — not exposed by the Android scan API; requires raw frame capture (Kismet/monitor mode)
+- **Minimal associated clients** — not visible from passive scan results alone
+- **Near-zero data-to-beacon traffic ratio** — requires traffic observation beyond beacon IE fields
 
 ### References
 - Geng, Huang, De la Torre. "DensePose From WiFi." *arXiv:2301.00250*. Carnegie Mellon University, 2023.

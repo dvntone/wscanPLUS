@@ -21,20 +21,22 @@ The only observable artifact is the AP's own configuration.
 
 An AP performing CSI-based sensing operates with a characteristic profile driven by the physics of what it is doing:
 
-| Signal | Why it appears | WifiScanResult field |
-|--------|---------------|----------------------|
-| Fixed channel, no band steering | Spatial model breaks if channel changes | `frequency` stable across scans |
-| 40 or 80 MHz channel width | More subcarriers → higher spatial resolution | `channelWidth` (API 30+) |
-| No associated clients (or very few) | Not providing actual internet service | Inferred from beacon load field or context |
-| Near-zero data traffic relative to beacon rate | Beacons are the sensing signal; no data needed | Beacon interval vs. load metrics |
-| Elevated SSID broadcast frequency | More beacon transmissions = more CSI samples per second | Beacon interval < 100ms (typical is 100ms) |
-| Presence near residential unit, sustained over hours | Calibration and collection require physical proximity and time | RSSI + temporal persistence |
+| Signal | Why it appears | Source |
+|--------|---------------|--------|
+| Fixed channel, no band steering | Spatial model breaks if channel changes | `frequencyMhz` stable across scans (WifiScanResult) |
+| 40 or 80 MHz channel width | More subcarriers → higher spatial resolution | `channelWidth` (WifiScanResult, API 23+) |
+| Persistent high RSSI from fixed position | Same hardware, same location across sessions | `signalLevel` variance over time (WifiScanResult) |
+| No associated clients (or very few) | Not providing actual internet service | Not in WifiScanResult — requires monitor-mode |
+| Near-zero data traffic relative to beacon rate | Beacons are the sensing signal; no data needed | Not in WifiScanResult — requires monitor-mode |
+| Elevated beacon rate | More CSI samples per second | Not in WifiScanResult — requires raw frame capture |
 
 Not all signals are available from `WifiScanResult` alone. The most accessible are:
-- `frequency` — channel stability across multiple scans
-- `channelWidth` — via `ScanResult.channelWidth` (API 30+)
-- RSSI temporal pattern — persistent strong RSSI at fixed position
+- `frequencyMhz` — channel stability across multiple scans (API 1+)
+- `channelWidth` — via `ScanResult.channelWidth` (API 23+)
+- `signalLevel` temporal pattern — persistent strong RSSI at fixed position
 - No SSID rotation — surveillance APs typically hold a fixed (often generic) SSID
+
+Signals requiring monitor-mode / raw frame capture (not in `WifiScanResult`): beacon interval, associated client count, data-to-beacon traffic ratio.
 
 ---
 

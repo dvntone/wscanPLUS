@@ -29,7 +29,7 @@ This is more mature than wscanplus's current flat `ThreatSignal` model. Gaps:
 - No cross-session entity identity
 
 **Confidence propagation**  
-Lattice tracks confidence per source per entity update, enabling downstream consumers to weight signals by source reliability. Maps directly to the unimplemented confidence propagation requirement in wscanplus SESSION_STATE.md.
+Lattice tracks confidence per source per entity update, enabling downstream consumers to weight signals by source reliability. Maps directly to the unimplemented confidence propagation requirement in `docs/SESSION_STATE.md`.
 
 **Persistent track identity**  
 Lattice maintains entity tracks that survive identifier changes (AIS MMSI spoofing, transponder failures). wscanplus needs the equivalent: a `threatActorId` UUID persisting across BSSID rotations. See `62_threat_actor_persistence_layer_concept_2026-05-07.md`.
@@ -58,8 +58,8 @@ Sub-meter indoor/outdoor positioning using existing WiFi and cellular infrastruc
 ### Applicable Concepts
 
 **Rogue AP triangulation**  
-If 2+ Android devices observe the same BSSID with RSSI + precise timestamps, the physical position of a rogue AP can be estimated using TDOA. This answers "where in the building is the attacker" — currently missing from wscanplus's evidence output.  
-Prerequisites: multi-device correlation (Phase 5), high-resolution per-scan timestamps (already in DB).
+If 2+ Android devices observe the same BSSID with RSSI + synchronized timestamps, the physical position of a rogue AP can be estimated using TDOA. This answers "where in the building is the attacker" — currently missing from wscanplus's evidence output.  
+Prerequisites: multi-device correlation (Phase 5), explicit clock synchronization across devices. Note: `WifiScanResult.timestamp` is microseconds since each device's individual boot — these values are not comparable across devices without a shared time reference. Practical TDOA requires either NTP-aligned wall-clock timestamps or WiFi RTT/FTM (`WifiRttManager`, Android 9+) as the ranging primitive instead.
 
 **WiFi Fine Timing Measurement (FTM / IEEE 802.11mc)**  
 Android 9+ has `WifiRttManager` for hardware-level ranging (sub-meter accuracy, ~1–2m typical indoors). This is a Phase 6 natural extension for rogue AP triangulation — complements `BarometerSampler` altitude with horizontal position.
@@ -132,14 +132,7 @@ The same physical phenomenon that enables person Re-ID means each WiFi radio has
 **This extends `BssidFingerprintHeuristic` beyond what scan results alone can achieve.**
 
 ### New Heuristic Concept — Surveillance AP Configuration
-An AP performing CSI-based sensing uses a characteristic operating profile:
-- Fixed channel (no roaming — spatial model requires stable channel)
-- 40/80 MHz channel width (more subcarriers = higher spatial resolution)
-- Elevated beacon rate (more CSI samples per second)
-- Minimal associated clients (not being used for actual connectivity)
-- Near-zero data-to-beacon traffic ratio
-
-These signals are available in current `WifiScanResult` fields. See `63_surveillance_ap_heuristic_concept_2026-05-07.md`.
+An AP performing CSI-based sensing uses a characteristic operating profile. Observable from current `WifiScanResult` fields: fixed `frequencyMhz` across scans, wide `channelWidth` (API 23+), low RSSI variance over time. Requires monitor-mode/extra telemetry: elevated beacon rate, associated client count, data-to-beacon traffic ratio. See `63_surveillance_ap_heuristic_concept_2026-05-07.md` for full signal breakdown.
 
 ---
 
