@@ -1,11 +1,14 @@
 {
   "name": "wscanplus-desktop",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "wscan+ Desktop — Linux-first Electron WiFi threat detection hub",
   "type": "module",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "npm run build && electron .",
+    "dev": "concurrently -k -n vite,electron -c blue,green \"vite\" \"wait-on http://localhost:5174 && electron .\"",
+    "build": "vite build",
+    "preview": "vite preview",
     "lint": "eslint . --max-warnings=0",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --passWithNoTests && node --test adbPreflight.test.js apInventoryControls.test.js bssidInspector.test.js companionModel.test.js companionServer.test.js detector.test.js handoffPrototypeModel.test.js ouiIntel.test.js portalWorkbench.test.js scanner.test.js sessionWorkbench.test.js"
   },
@@ -17,11 +20,18 @@
   "devDependencies": {
     "@babel/preset-react": "7.28.5",
     "@eslint/js": "^10.0.1",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.4",
+    "concurrently": "9.1.0",
     "electron": "41.1.1",
     "eslint": "10.3.0",
     "jest": "30.4.2",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "typescript": "5.7.2",
+    "vite": "6.0.6",
+    "wait-on": "8.0.1"
   },
   "engines": {
     "node": ">=22.0.0"
