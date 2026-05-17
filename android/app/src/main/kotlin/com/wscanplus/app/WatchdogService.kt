@@ -448,18 +448,23 @@ class WatchdogService : Service() {
         scanResults: List<WifiScanResult>,
         sessionId: Long?,
     ) {
-        val candidateIps =
-            filteredSignals
-                .filter { it.bssid != "SCAN_LEVEL" }
-                .mapNotNull { signal ->
-                    val bssid = scanResults.firstOrNull { it.bssid == signal.bssid }?.bssid ?: signal.bssid
-                    bssidToGatewayIp(bssid)
-                }.distinct()
+        // Map each unique gateway IP to the first BSSID that produced it so CTI
+        // signals can be stored under the originating AP's MAC address.
+        val ipToBssid =
+            buildMap<String, String> {
+                filteredSignals
+                    .filter { it.bssid != "SCAN_LEVEL" }
+                    .forEach { signal ->
+                        val bssid = scanResults.firstOrNull { it.bssid == signal.bssid }?.bssid ?: signal.bssid
+                        val ip = bssidToGatewayIp(bssid) ?: return@forEach
+                        putIfAbsent(ip, bssid)
+                    }
+            }
 
-        if (candidateIps.isEmpty()) return
+        if (ipToBssid.isEmpty()) return
 
         val ctiSignals = mutableListOf<ThreatSignal>()
-        for (ip in candidateIps) {
+        for ((ip, origBssid) in ipToBssid) {
             val result = ctiCacheRepository.lookup(ip)
             val rawJson =
                 when (result) {
@@ -475,16 +480,16 @@ class WatchdogService : Service() {
             val confidence = parsed.confidence ?: continue
             Log.i(
                 TAG,
-                "CTI corroboration: $ip aggressive=${parsed.aggressiveScore} " +
+                "CTI corroboration: $ip (bssid=$origBssid) aggressive=${parsed.aggressiveScore} " +
                     "noise=${parsed.backgroundNoiseScore} confidence=$confidence",
             )
             ctiSignals.add(
                 ThreatSignal(
                     confidence = confidence,
                     source = ThreatSource.CROWDSEC_CTI,
-                    reasons = parsed.reasons(),
+                    reasons = parsed.reasons() + "gateway IP: $ip",
                     heuristicType = null,
-                    bssid = ip,
+                    bssid = origBssid,
                 ),
             )
         }
@@ -500,6 +505,7 @@ class WatchdogService : Service() {
                     heuristicType = signal.heuristicType,
                     reasons = signal.reasons,
                     detectedAt = signal.detectedAt,
+                    schemaVersion = signal.schemaVersion,
                 )
             },
         )
