@@ -21,6 +21,7 @@ import com.wscanplus.app.capabilities.CapabilityProbe
 import com.wscanplus.app.capabilities.DeviceCapabilityManifest
 import com.wscanplus.app.cti.BuildConfigCrowdSecCtiKeyProvider
 import com.wscanplus.app.cti.CrowdSecCtiClient
+import com.wscanplus.app.cti.CrowdSecSmokeParser
 import com.wscanplus.app.cti.CtiCacheRepository
 import com.wscanplus.app.cti.CtiLookupResult
 import com.wscanplus.app.cti.SharedPrefsQuotaTracker
@@ -56,6 +57,8 @@ import com.wscanplus.core.threat.RssiAnomalyHeuristic
 import com.wscanplus.core.threat.ScanContext
 import com.wscanplus.core.threat.ScanInput
 import com.wscanplus.core.threat.SsidFloodingHeuristic
+import com.wscanplus.core.threat.ThreatSignal
+import com.wscanplus.core.threat.ThreatSource
 import com.wscanplus.core.threat.WepOpenHeuristic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -282,6 +285,12 @@ class WatchdogService : Service() {
                         "PolicyGate: ${filtered.size} of ${rawSignals.size} signals passed " +
                             "(min confidence ${filtered.minOfOrNull { signal -> signal.confidence } ?: 0f})",
                     )
+                    val snapSessionId = currentSessionId
+                    if (filtered.isNotEmpty()) {
+                        serviceScope.launch {
+                            runCtiCorroboration(filtered, results, snapSessionId)
+                        }
+                    }
                     persistResults(
                         results = results,
                         filteredSignals = filtered,
@@ -421,6 +430,86 @@ class WatchdogService : Service() {
         val result = ctiCacheRepository.lookup(ip)
         Log.i(TAG, "CTI lookup $ip → ${result::class.simpleName}")
         return result
+    }
+
+    /**
+     * For each flagged BSSID, derive a candidate gateway IP (first three octets of BSSID → .1),
+     * run a CTI lookup, and persist a corroborating [ThreatSignal] when the lookup returns a
+     * non-zero score. Signals are appended — existing heuristic signals are not modified.
+     *
+     * The BSSID-to-IP derivation is a heuristic: consumer APs often share an OUI prefix with
+     * their management IP subnet (e.g. BSSID D4:6A:35:xx:xx:xx → try 212.106.53.1). This
+     * produces false positives for enterprise gear with split management planes; those will
+     * return CTI Unavailable and are silently skipped. The quota guard in [CtiCacheRepository]
+     * ensures runaway lookups cannot exhaust the daily allowance.
+     */
+    private suspend fun runCtiCorroboration(
+        filteredSignals: List<ThreatSignal>,
+        scanResults: List<WifiScanResult>,
+        sessionId: Long?,
+    ) {
+        // Map each unique gateway IP to the first BSSID that produced it so CTI
+        // signals can be stored under the originating AP's MAC address.
+        val ipToBssid =
+            buildMap<String, String> {
+                filteredSignals
+                    .filter { it.bssid != "SCAN_LEVEL" }
+                    .forEach { signal ->
+                        val bssid = scanResults.firstOrNull { it.bssid == signal.bssid }?.bssid ?: signal.bssid
+                        val ip = bssidToGatewayIp(bssid) ?: return@forEach
+                        putIfAbsent(ip, bssid)
+                    }
+            }
+
+        if (ipToBssid.isEmpty()) return
+
+        val ctiSignals = mutableListOf<ThreatSignal>()
+        for ((ip, origBssid) in ipToBssid) {
+            val result = ctiCacheRepository.lookup(ip)
+            val rawJson =
+                when (result) {
+                    is CtiLookupResult.Fresh -> result.rawJson
+                    is CtiLookupResult.CacheHit -> result.rawJson
+                    is CtiLookupResult.Degraded -> result.rawJson
+                    CtiLookupResult.Unavailable -> null
+                } ?: continue
+
+            val parsed = CrowdSecSmokeParser.parse(rawJson)
+            if (!parsed.hasSignal) continue
+
+            val confidence = parsed.confidence ?: continue
+            Log.i(
+                TAG,
+                "CTI corroboration: $ip (bssid=$origBssid) aggressive=${parsed.aggressiveScore} " +
+                    "noise=${parsed.backgroundNoiseScore} confidence=$confidence",
+            )
+            ctiSignals.add(
+                ThreatSignal(
+                    confidence = confidence,
+                    source = ThreatSource.CROWDSEC_CTI,
+                    reasons = parsed.reasons() + "gateway IP: $ip",
+                    heuristicType = null,
+                    bssid = origBssid,
+                ),
+            )
+        }
+
+        if (ctiSignals.isEmpty() || sessionId == null) return
+        database.threatSignalDao().insertAll(
+            ctiSignals.map { signal ->
+                ThreatSignalEntity(
+                    sessionId = sessionId,
+                    bssid = signal.bssid,
+                    confidence = signal.confidence,
+                    source = signal.source,
+                    heuristicType = signal.heuristicType,
+                    reasons = signal.reasons,
+                    detectedAt = signal.detectedAt,
+                    schemaVersion = signal.schemaVersion,
+                )
+            },
+        )
+        Log.i(TAG, "CTI corroboration: persisted ${ctiSignals.size} signal(s) for session $sessionId")
     }
 
     override fun onDestroy() {
@@ -900,6 +989,25 @@ class WatchdogService : Service() {
 
         // Number of recent sessions to use for computing baseline network statistics
         private const val BASELINE_SESSION_LIMIT = 10
+
+        /**
+         * Derives a candidate gateway IP from a BSSID.
+         * Takes the first three octets of the MAC, interprets them as an IPv4 prefix, appends .1.
+         * Returns null for malformed BSSIDs or non-routable prefixes.
+         */
+        internal fun bssidToGatewayIp(bssid: String): String? {
+            val octets = bssid.split(":").takeIf { it.size == 6 } ?: return null
+            return try {
+                val a = octets[0].toInt(16)
+                val b = octets[1].toInt(16)
+                val c = octets[2].toInt(16)
+                // Skip multicast, loopback, link-local, and non-routable prefixes.
+                if (a == 0 || a >= 224) return null
+                "$a.$b.$c.1"
+            } catch (_: NumberFormatException) {
+                null
+            }
+        }
 
         /**
          * Pass true to start in degraded mode: ACCESS_FINE_LOCATION is required but
