@@ -45,6 +45,7 @@ import com.wscanplus.core.scanner.ScannerChain
 import com.wscanplus.core.scanner.WifiScanResult
 import com.wscanplus.core.scanner.toScanInput
 import com.wscanplus.core.threat.BssidFingerprintHeuristic
+import BssidProfile
 import com.wscanplus.core.threat.EncryptionDowngradeHeuristic
 import com.wscanplus.core.threat.EnvironmentType
 import com.wscanplus.core.threat.EvilTwinHeuristic
@@ -714,7 +715,7 @@ class WatchdogService : Service() {
 
     private fun persistResults(
         results: List<WifiScanResult>,
-        filteredSignals: List<com.wscanplus.core.threat.ThreatSignal>,
+        filteredSignals: List<ThreatSignal>,
     ) {
         val sessionId = currentSessionId ?: return
         val locationSample = latestLocationSample
@@ -772,7 +773,7 @@ class WatchdogService : Service() {
     private val scanAnalysisCacheTtlMs = 60_000L
     private val scanAnalysisCacheLock = Any()
 
-    @Volatile private var knownProfilesCache: Map<String, com.wscanplus.core.threat.BssidProfile> = emptyMap()
+    @Volatile private var knownProfilesCache: Map<String, BssidProfile> = emptyMap()
 
     @Volatile private var knownProfilesCacheAtMillis: Long = 0L
 
@@ -780,7 +781,7 @@ class WatchdogService : Service() {
 
     @Volatile private var baselineStatsCacheAtMillis: Long = 0L
 
-    private fun buildKnownProfiles(): Map<String, com.wscanplus.core.threat.BssidProfile> {
+    private fun buildKnownProfiles(): Map<String, BssidProfile> {
         val now = System.currentTimeMillis()
         if (now - knownProfilesCacheAtMillis < scanAnalysisCacheTtlMs && knownProfilesCache.isNotEmpty()) {
             return knownProfilesCache
@@ -798,7 +799,7 @@ class WatchdogService : Service() {
                 val profiles =
                     entities.associate { entity ->
                         entity.bssid to
-                            com.wscanplus.core.threat.BssidProfile(
+                            BssidProfile(
                                 bssid = entity.bssid,
                                 firstSeenAt = entity.firstSeenAt,
                                 lastSeenAt = entity.lastSeenAt,
