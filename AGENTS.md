@@ -128,3 +128,26 @@ Every change must be traceable. This means:
 ### Wiki & Projects
 - Wiki: disabled ❌ — all documentation lives in repo markdown files (AGENTS.md, docs/).
 - Projects: disabled ❌ — work tracked via Issues only.
+
+## Cursor Cloud specific instructions
+
+### Services overview
+
+| Component | Stack | Build/test commands |
+|-----------|-------|-------------------|
+| Android | Kotlin, Gradle 9.4, AGP 9.1, JDK 17+ | See `CLAUDE.md` → Commands → Android |
+| Desktop | Electron, Node.js ≥22, ESM-only | See `CLAUDE.md` → Commands → Desktop |
+
+### Android setup caveats
+
+- **Android SDK** must be installed at `$HOME/android-sdk` with `platforms;android-36`, `build-tools;36.0.0`, and `platform-tools`. Export `ANDROID_HOME=$HOME/android-sdk` and `JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64`.
+- **`google-services.json`** is gitignored. For builds without Firebase, write a mock CI placeholder to `android/app/google-services.json` (see `.github/workflows/ci.yml` step "Write mock google-services.json for CI" for the exact JSON).
+- **`./gradlew`** needs `chmod +x` after fresh checkout.
+- **Pre-existing test failures**: `CrowdSecSmokeParserTest` (7 tests in `:app`) fails in both local and CI because `org.json.JSONObject` returns stubs in Android JVM unit tests. `:core:test` passes cleanly. This is tracked and not caused by environment issues.
+- JDK 21 is compatible with the project's JDK 17 target — no downgrade needed.
+
+### Desktop setup caveats
+
+- Run `npm ci` in `desktop/` (lockfile: `package-lock.json`).
+- `npm start` (Electron) requires a display server (X11/Xvfb). Tests and lint run headless.
+- All modules are ESM-only (`"type": "module"`). No CommonJS.
