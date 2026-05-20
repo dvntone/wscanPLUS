@@ -10,6 +10,7 @@ Before any session work, read these files in order:
 2. `AGENTS.md` — agent rules summary
 3. `KNOWN_ISSUES.md` — active bugs and deferred items
 4. `docs/ROADMAP.md` — phased plan (for context only, not sprint planning)
+5. `.claude/HARDWARE_MANIFEST.md` — confirmed hardware inventory, pinouts, and wiring. Read before any hardware/ESP32/sensor work.
 
 ## Commands
 
