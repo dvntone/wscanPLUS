@@ -45,7 +45,7 @@ import com.wscanplus.core.scanner.ScannerChain
 import com.wscanplus.core.scanner.WifiScanResult
 import com.wscanplus.core.scanner.toScanInput
 import com.wscanplus.core.threat.BssidFingerprintHeuristic
-import BssidProfile
+import com.wscanplus.core.threat.BssidProfile
 import com.wscanplus.core.threat.EncryptionDowngradeHeuristic
 import com.wscanplus.core.threat.EnvironmentType
 import com.wscanplus.core.threat.EvilTwinHeuristic
