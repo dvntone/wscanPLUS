@@ -97,7 +97,7 @@ dependencies {
     testImplementation("com.squareup.okhttp3:mockwebserver:5.3.2")
     // Provides the real org.json.JSONObject in JVM unit tests.
     // Without this, Android's stub returns 0 for all optInt() calls, breaking CrowdSecSmokeParser tests.
-    testImplementation("org.json:json:20231013")
+    testImplementation("org.json:json:20240303")
 
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
