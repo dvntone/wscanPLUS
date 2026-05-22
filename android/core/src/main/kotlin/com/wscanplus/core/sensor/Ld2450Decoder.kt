@@ -81,8 +81,13 @@ object Ld2450Decoder {
 
     /**
      * Parses a raw BLE notification or UART byte buffer.
-     * Returns decoded active targets; inactive slots (x=0, y=0) are omitted.
+     * Returns decoded active targets from the most recent complete frame.
      * Config/ACK frames (FD FC FB FA header) are skipped automatically.
+     *
+     * Firmware V2.14+ (transparent-transmission mode) batches multiple 30-byte
+     * frames into a single BLE notification (e.g. 5×30 = 150 bytes). This method
+     * scans all frame boundaries and returns targets from the LAST complete frame,
+     * which carries the most recent radar data.
      */
     fun decodePacket(
         payload: ByteArray,
@@ -90,17 +95,27 @@ object Ld2450Decoder {
     ): List<Target> {
         if (payload.size < FRAME_LENGTH) return emptyList()
 
-        val headerOffset = findHeader(payload)
-        if (headerOffset == -1 || payload.size - headerOffset < FRAME_LENGTH) return emptyList()
-
-        val dataStart = headerOffset + HEADER_LENGTH
-        return (0 until TARGET_COUNT).mapNotNull { i ->
-            decodeTarget(payload, dataStart + i * BYTES_PER_TARGET, i + 1, calibration)
+        var lastTargets: List<Target> = emptyList()
+        var searchFrom = 0
+        while (searchFrom <= payload.size - FRAME_LENGTH) {
+            val headerOffset = findHeader(payload, searchFrom)
+            if (headerOffset == -1 || payload.size - headerOffset < FRAME_LENGTH) break
+            val dataStart = headerOffset + HEADER_LENGTH
+            val targets =
+                (0 until TARGET_COUNT).mapNotNull { i ->
+                    decodeTarget(payload, dataStart + i * BYTES_PER_TARGET, i + 1, calibration)
+                }
+            lastTargets = targets
+            searchFrom = headerOffset + FRAME_LENGTH
         }
+        return lastTargets
     }
 
-    private fun findHeader(payload: ByteArray): Int {
-        for (i in 0..payload.size - HEADER_LENGTH) {
+    private fun findHeader(
+        payload: ByteArray,
+        startFrom: Int = 0,
+    ): Int {
+        for (i in startFrom..payload.size - HEADER_LENGTH) {
             if (HEADER.indices.all { payload[i + it] == HEADER[it] }) return i
         }
         return -1
