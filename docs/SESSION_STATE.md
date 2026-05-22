@@ -151,7 +151,16 @@ PR simultaneous check failing — PR queue has multiple open Dependabot PRs. Red
 - Standalone battery-powered node: HLK-LD2450 + 5V boost converter + 18650 cell(s), no ESP32 required
 - BLE data streams immediately on GATT subscribe (`fff0`/`fff1`), no password
 - One-time BLE provisioning command (UART, run once before going headless): `FD FC FB FA 04 00 A4 00 01 00 04 03 02 01`
-- Sensor mounted **vertically** (standing upright, length-wise)
+- Sensor mounted **vertically** (standing upright, long 44mm edge vertical, antenna face forward)
+- Vertical mount implications (confirmed via Gemini orientation research):
+  - Native X axis tracks height/vertical variance; native Y still tracks depth
+  - Decoder swaps X↔Y when `mountedVertically = true` to preserve output semantics
+  - Multi-target tracking unreliable in vertical orientation (ghost targets, blending)
+  - Binary presence (`targets.isNotEmpty()`) works correctly in any orientation
+  - For coordinate-accurate tracking, horizontal mount strongly preferred
+- Firmware updated to **V2.14.25112412** ("transparent transmission" trial firmware) via OTA in HLK app
+- Hardware in progress (Amazon cart ~$88): SUNAPEX 12V/24V battery box + AITRIP ESP32-C3 expansion board + battery terminal clamps
+- Serial terminal test (Android) showed raw UART at 256000 baud arriving but garbled — buffer too small in terminal app, not a sensor issue
 - **Route all wires BEHIND the board** — front face is the 24GHz radar array; metal/wires in front cause ghost targets
 - External 2.4GHz flex PCB patch antenna (U.FL pigtail) tested — BLE range improved over stock; exact numbers TBD
 - Unit cost: <$10 on Amazon → disposable covert deploy use case
