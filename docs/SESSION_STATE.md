@@ -161,7 +161,8 @@ PR simultaneous check failing — PR queue has multiple open Dependabot PRs. Red
 - Operating voltage: **5V DC only** (4.5–5.5V). 12V is NOT supported — causes thermal runaway
 - The 12V confusion originates from documentation copy-paste from HLK-LD2410B/C (which genuinely supports 5–12V). LD2450 has a miniature LDO with no thermal headroom for high-voltage drop.
 - At 12V: LDO dissipates ~1.044W → junction temp ~286°C → instant thermal destruction (silicon max 150°C). May pass unregulated 12V into 3.3V logic rail, destroying RF IC.
-- **The sensor used during the 3h Codex session may have been damaged by 12V input** — verify it still operates on 5V before trusting it for further testing
+- **The sensor is operational** — confirmed running all day, warm to touch (normal: ~204mW LDO dissipation at 5V), no damage observed. The 3-hour 18650 runtime was likely from an inefficient boost stage, a partially-discharged cell, or the battery supplying other loads in the test rig.
+- 12V direct-to-sensor remains documented as destructive per thermal analysis (LDO junction ~286°C). If 12V was in the test chain, a regulator was likely stepping it down before the sensor.
 - Average draw: **~120mA** continuous; peaks 150–200mA during active FMCW chirp + BLE TX
 - No native sleep mode — sensor is always active when powered
 - Recommended supply decoupling: 100µF electrolytic + 100nF ceramic cap near VCC/GND pins
