@@ -3,6 +3,7 @@ package com.wscanplus.core.sensor
 import android.util.Log
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 /**
  * Decodes raw byte packets from the HLK-LD2450 24GHz FMCW radar over BLE or UART.
@@ -31,6 +32,8 @@ object Ld2450Decoder {
     private const val BYTES_PER_TARGET = 8
     private const val TARGET_COUNT = 3
 
+    private const val MM_PER_FOOT = 304.8
+
     private val HEADER =
         byteArrayOf(0xAA.toByte(), 0xFF.toByte(), 0x03.toByte(), 0x00.toByte())
 
@@ -42,7 +45,17 @@ object Ld2450Decoder {
         val zMm: Double,
         val speedMps: Double,
         val resolutionMm: Int,
-    )
+    ) {
+        val xM: Double get() = xMm / 1_000.0
+        val yM: Double get() = yMm / 1_000.0
+        val zM: Double get() = zMm / 1_000.0
+        val xFt: Double get() = xMm / MM_PER_FOOT
+        val yFt: Double get() = yMm / MM_PER_FOOT
+        val zFt: Double get() = zMm / MM_PER_FOOT
+        val rangeMm: Double get() = sqrt(xMm * xMm + yMm * yMm)
+        val rangeM: Double get() = rangeMm / 1_000.0
+        val rangeFt: Double get() = rangeMm / MM_PER_FOOT
+    }
 
     /** Physical sensor placement parameters for 3-D coordinate correction. */
     data class SensorCalibration(

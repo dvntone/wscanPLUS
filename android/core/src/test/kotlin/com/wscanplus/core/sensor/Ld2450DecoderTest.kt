@@ -167,4 +167,24 @@ class Ld2450DecoderTest {
         val targets = Ld2450Decoder.decodePacket(configFrame)
         assertTrue("Config/ACK frame must not be decoded as data", targets.isEmpty())
     }
+
+    @Test
+    fun `meter and foot properties convert from mm correctly`() {
+        val frame = buildFrame(x = 1000, y = 2000)
+        val t = Ld2450Decoder.decodePacket(frame)[0]
+        assertEquals(1.0, t.xM, 0.001)
+        assertEquals(2.0, t.yM, 0.001)
+        assertEquals(1000.0 / 304.8, t.xFt, 0.001)
+        assertEquals(2000.0 / 304.8, t.yFt, 0.001)
+    }
+
+    @Test
+    fun `range is 2D Euclidean distance from sensor origin`() {
+        // 3-4-5 right triangle: x=3000mm, y=4000mm → range=5000mm
+        val frame = buildFrame(x = 3000, y = 4000)
+        val t = Ld2450Decoder.decodePacket(frame)[0]
+        assertEquals(5000.0, t.rangeMm, 1.0)
+        assertEquals(5.0, t.rangeM, 0.001)
+        assertEquals(5000.0 / 304.8, t.rangeFt, 0.001)
+    }
 }
