@@ -187,4 +187,33 @@ class Ld2450DecoderTest {
         assertEquals(5.0, t.rangeM, 0.001)
         assertEquals(5000.0 / 304.8, t.rangeFt, 0.001)
     }
+
+    @Test
+    fun `multi-frame payload returns targets from last frame only`() {
+        // Firmware V2.14 transparent mode concatenates up to 5 frames per BLE notification.
+        // We expect the LAST frame's targets to be returned (most recent radar data).
+        val firstFrame = buildFrame(x = 100, y = 100)
+        val lastFrame = buildFrame(x = 999, y = 888)
+        val payload = firstFrame + firstFrame + firstFrame + lastFrame
+        val targets = Ld2450Decoder.decodePacket(payload)
+        assertEquals(1, targets.size)
+        assertEquals(999.0, targets[0].xMm, 0.01)
+        assertEquals(888.0, targets[0].yMm, 0.01)
+    }
+
+    @Test
+    fun `vertical mount swaps x and y axes`() {
+        val cal =
+            Ld2450Decoder.SensorCalibration(
+                heightMm = 1500.0,
+                mountedVertically = true,
+            )
+        // With mountedVertically, native X (height variance) → output Y, native Y (depth) → output X
+        val frame = buildFrame(x = 400, y = 1200)
+        val targets = Ld2450Decoder.decodePacket(frame, cal)
+        assertEquals(1, targets.size)
+        // raw X=400 becomes yRaw; raw Y=1200 becomes xRaw
+        assertEquals(1200.0, targets[0].xMm, 0.01)
+        assertEquals(400.0, targets[0].yMm, 0.01)
+    }
 }
