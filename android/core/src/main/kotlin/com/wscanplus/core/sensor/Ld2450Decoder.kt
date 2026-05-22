@@ -6,16 +6,33 @@ import kotlin.math.sin
 
 /**
  * Decodes raw byte packets from the HLK-LD2450 24GHz FMCW radar over BLE or UART.
- * Supports both BLE-mode and standard UART frame headers; tracks up to 3 simultaneous targets.
+ *
+ * Data frame format (HLK-LD2450 serial protocol v1.03, Table 9):
+ *   Header  : AA FF 03 00       (4 bytes)
+ *   Target 1: X-lo X-hi Y-lo Y-hi V-lo V-hi RES-lo RES-hi (8 bytes)
+ *   Target 2: same layout       (8 bytes)
+ *   Target 3: same layout       (8 bytes)
+ *   Tail    : 55 CC             (2 bytes)
+ *   Total   : 30 bytes, 10 Hz
+ *
+ * Config/ACK frames use a different header (FD FC FB FA … 04 03 02 01) and are
+ * ignored by this decoder — only data frames are parsed.
+ *
+ * Coordinate encoding (signed-magnitude — NOT two's-complement, per Table 10):
+ *   MSB of high byte = 1 → positive: value = raw − 0x8000
+ *   MSB of high byte = 0 → negative: value = −raw
+ *
+ * Speed field is in cm/s.  Resolution field is uint16 mm (distance-gate size).
  */
 object Ld2450Decoder {
     private const val TAG = "Ld2450Decoder"
+    private const val FRAME_LENGTH = 30
+    private const val HEADER_LENGTH = 4
+    private const val BYTES_PER_TARGET = 8
+    private const val TARGET_COUNT = 3
 
-    // Standard UART header: 0xFAFBFCFD little-endian
-    private val HEADER_STANDARD = byteArrayOf(0xFD.toByte(), 0xFC.toByte(), 0xFB.toByte(), 0xFA.toByte())
-
-    // BLE notification header
-    private val HEADER_BLE = byteArrayOf(0xAA.toByte(), 0xFF.toByte(), 0x03.toByte(), 0x00.toByte())
+    private val HEADER =
+        byteArrayOf(0xAA.toByte(), 0xFF.toByte(), 0x03.toByte(), 0x00.toByte())
 
     /** Decoded spatial target with millimetre precision. */
     data class Target(
@@ -24,10 +41,10 @@ object Ld2450Decoder {
         val yMm: Double,
         val zMm: Double,
         val speedMps: Double,
-        val resolutionMm: Double,
+        val resolutionMm: Int,
     )
 
-    /** Physical sensor placement parameters for 3D coordinate correction. */
+    /** Physical sensor placement parameters for 3-D coordinate correction. */
     data class SensorCalibration(
         val heightMm: Double = 1200.0,
         val tiltDegrees: Double = 0.0,
@@ -38,62 +55,37 @@ object Ld2450Decoder {
 
     /**
      * Parses a raw BLE notification or UART byte buffer.
-     * Returns decoded targets; vacant slots (x=0, y=0) are omitted.
+     * Returns decoded active targets; inactive slots (x=0, y=0) are omitted.
+     * Config/ACK frames (FD FC FB FA header) are skipped automatically.
      */
     fun decodePacket(
         payload: ByteArray,
         calibration: SensorCalibration = SensorCalibration(),
     ): List<Target> {
-        if (payload.size < 10) return emptyList()
+        if (payload.size < FRAME_LENGTH) return emptyList()
 
         val headerOffset = findHeader(payload)
-        if (headerOffset == -1) {
-            // No recognised header — try raw aligned parse (BLE characteristic chunks)
-            return parseAligned(payload, 0, payload.size, calibration)
+        if (headerOffset == -1 || payload.size - headerOffset < FRAME_LENGTH) return emptyList()
+
+        val dataStart = headerOffset + HEADER_LENGTH
+        return (0 until TARGET_COUNT).mapNotNull { i ->
+            decodeTarget(payload, dataStart + i * BYTES_PER_TARGET, i + 1, calibration)
         }
-
-        val dataOffset = headerOffset + 4
-        val available = payload.size - dataOffset
-        if (available < 14) return emptyList() // need at least 1 target (10 B) + trailer (4 B)
-
-        val maxTargets = (available - 4) / 10
-        return (0 until minOf(3, maxTargets))
-            .mapNotNull { i -> decodeTarget(payload, dataOffset + i * 10, i + 1, calibration) }
     }
 
     private fun findHeader(payload: ByteArray): Int {
-        for (i in 0..payload.size - 4) {
-            if (matches(payload, i, HEADER_STANDARD) || matches(payload, i, HEADER_BLE)) return i
+        for (i in 0..payload.size - HEADER_LENGTH) {
+            if (HEADER.indices.all { payload[i + it] == HEADER[it] }) return i
         }
         return -1
     }
 
-    private fun matches(
-        buf: ByteArray,
-        offset: Int,
-        header: ByteArray,
-    ): Boolean = header.indices.all { buf[offset + it] == header[it] }
-
-    private fun parseAligned(
-        payload: ByteArray,
-        start: Int,
-        length: Int,
-        calibration: SensorCalibration,
-    ): List<Target> {
-        val count = minOf(payload.size - start, length) / 10
-        return (0 until minOf(3, count))
-            .mapNotNull { i -> decodeTarget(payload, start + i * 10, i + 1, calibration) }
-    }
-
     /**
-     * Decodes a single 10-byte target subfield.
-     *
-     * Byte layout (HLK spec):
-     *   [0-1]  X coordinate — signed magnitude, MSB bit 15 = sign
-     *   [2-3]  Y coordinate — signed magnitude, MSB bit 15 = sign
-     *   [4-5]  Speed — signed magnitude, MSB bit 15 = sign
-     *   [6-7]  Resolution / uncertainty radius — unsigned 16-bit
-     *   [8-9]  Status / CRC
+     * Decodes one 8-byte target record (Table 10):
+     *   [0-1] X coordinate (signed-magnitude, mm)
+     *   [2-3] Y coordinate (signed-magnitude, mm)
+     *   [4-5] Speed        (signed-magnitude, cm/s)
+     *   [6-7] Resolution   (uint16, mm — distance-gate size)
      */
     private fun decodeTarget(
         payload: ByteArray,
@@ -101,13 +93,14 @@ object Ld2450Decoder {
         id: Int,
         cal: SensorCalibration,
     ): Target? {
+        if (offset + BYTES_PER_TARGET > payload.size) return null
         return try {
             val xRaw = signedMagnitude(payload[offset], payload[offset + 1])
             val yRaw = signedMagnitude(payload[offset + 2], payload[offset + 3])
-            val speedRaw = signedMagnitude(payload[offset + 4], payload[offset + 5])
-            val resolution = unsigned16(payload[offset + 6], payload[offset + 7]).toDouble()
+            val speedCms = signedMagnitude(payload[offset + 4], payload[offset + 5])
+            val resolution = unsigned16(payload[offset + 6], payload[offset + 7])
 
-            // HLK-LD2450 marks vacant target slots with (0, 0)
+            // Inactive slot: sensor reports all-zero bytes for absent targets
             if (xRaw == 0 && yRaw == 0) return null
 
             val xMm = xRaw.toDouble()
@@ -128,8 +121,8 @@ object Ld2450Decoder {
                 xMm = xFinal,
                 yMm = yFinal,
                 zMm = zFinal,
-                speedMps = speedRaw / 1000.0, // mm/s → m/s
-                resolutionMm = if (resolution <= 0.0) 100.0 else resolution,
+                speedMps = speedCms / 100.0,
+                resolutionMm = resolution,
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error decoding target $id at offset $offset: ${e.message}")
@@ -137,16 +130,19 @@ object Ld2450Decoder {
         }
     }
 
-    /** Signed-magnitude decode: bit 15 of the high byte is the sign. */
+    /**
+     * Signed-magnitude decode per HLK-LD2450 v1.03 spec:
+     *   MSB (bit 15) = 1 → positive: value = raw − 0x8000
+     *   MSB (bit 15) = 0 → negative: value = −raw
+     */
     private fun signedMagnitude(
         low: Byte,
         high: Byte,
     ): Int {
         val lo = low.toInt() and 0xFF
         val hi = high.toInt() and 0xFF
-        val sign = if ((hi and 0x80) != 0) -1 else 1
-        val magnitude = lo or ((hi and 0x7F) shl 8)
-        return magnitude * sign
+        val raw = lo or (hi shl 8)
+        return if ((hi and 0x80) != 0) raw - 0x8000 else -raw
     }
 
     private fun unsigned16(
