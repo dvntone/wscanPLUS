@@ -157,14 +157,20 @@ PR simultaneous check failing — PR queue has multiple open Dependabot PRs. Red
 - Unit cost: <$10 on Amazon → disposable covert deploy use case
 - wscan+ needs: BLE-only connect flow, presence state machine, arm/deploy UI (see issue #369)
 
-**Power profile (corrected from field research):**
-- Operating voltage: **5V DC nominal** (4.5–5.5V range); 5V is full active mode, NOT sleep mode
-- Average draw: **~120mA** continuous; 200mA supply headroom needed for transient spikes
+**Power profile (verified — Gemini deep research + thermal analysis):**
+- Operating voltage: **5V DC only** (4.5–5.5V). 12V is NOT supported — causes thermal runaway
+- The 12V confusion originates from documentation copy-paste from HLK-LD2410B/C (which genuinely supports 5–12V). LD2450 has a miniature LDO with no thermal headroom for high-voltage drop.
+- At 12V: LDO dissipates ~1.044W → junction temp ~286°C → instant thermal destruction (silicon max 150°C). May pass unregulated 12V into 3.3V logic rail, destroying RF IC.
+- **The sensor used during the 3h Codex session may have been damaged by 12V input** — verify it still operates on 5V before trusting it for further testing
+- Average draw: **~120mA** continuous; peaks 150–200mA during active FMCW chirp + BLE TX
 - No native sleep mode — sensor is always active when powered
-- Earlier 3h test at 12V was LDO waste heat (~27% efficient) — 12V is not a valid supply
+- Recommended supply decoupling: 100µF electrolytic + 100nF ceramic cap near VCC/GND pins
 - **Single 18650 (3500mAh) + 5V boost at 85% efficiency: ~22–24 hours**
 - 2× 18650 parallel: ~44–48 hours; 2S series + 5V buck: ~48–52 hours
 - Radome: ABS plastic / polycarbonate / glass ≤2mm passes 24GHz cleanly
+- UART logic: 3.3V CMOS — direct connect to ESP32/Pi Pico; level-shift required for 5V MCUs (Arduino Uno etc.)
+
+**Speed field note:** Gemini research doc claims mm/s; official HLK V1.03 spec golden frame confirms **cm/s** (verified by decoder test). Gemini spec is incorrect on this point — do not update decoder.
 
 ### No-Google policy (active)
 
