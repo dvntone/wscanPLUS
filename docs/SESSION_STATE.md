@@ -148,12 +148,19 @@ PR simultaneous check failing — PR queue has multiple open Dependabot PRs. Red
 
 ### Hardware — LD2450 sensor node (issue #369)
 
-- Standalone battery-powered node: HLK-LD2450 + USB power bank or 18650+boost, no ESP32 required
+- Standalone battery-powered node: HLK-LD2450 + 12V supply + 18650 cell, no ESP32 required
 - BLE data streams immediately on GATT subscribe (`fff0`/`fff1`), no password
 - Sensor mounted **vertically** (standing upright, length-wise)
 - External 2.4GHz flex PCB patch antenna (U.FL pigtail) tested — BLE range improved over stock PCB trace; exact numbers TBD from field testing
 - Unit cost: <$10 on Amazon → disposable covert deploy use case
 - wscan+ needs: BLE-only connect flow, presence state machine, arm/deploy UI (see issue #369)
+
+**Power constraint (field-researched — significant):**
+- Active radar operation requires **12V** — 5V is sleep/low-power mode, not suitable for active monitoring
+- Single 18650 + boost-to-12V: **~3 hours** tested runtime (pushing the limit)
+- Standard 5V USB power banks will NOT drive active radar mode
+- For >3h deploy: parallel 18650 cells or a 12V LiPo pack required
+- App should warn user as session approaches 3h on single-cell config
 
 ### No-Google policy (active)
 
