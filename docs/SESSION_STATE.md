@@ -148,19 +148,23 @@ PR simultaneous check failing — PR queue has multiple open Dependabot PRs. Red
 
 ### Hardware — LD2450 sensor node (issue #369)
 
-- Standalone battery-powered node: HLK-LD2450 + 12V supply + 18650 cell, no ESP32 required
+- Standalone battery-powered node: HLK-LD2450 + 5V boost converter + 18650 cell(s), no ESP32 required
 - BLE data streams immediately on GATT subscribe (`fff0`/`fff1`), no password
+- One-time BLE provisioning command (UART, run once before going headless): `FD FC FB FA 04 00 A4 00 01 00 04 03 02 01`
 - Sensor mounted **vertically** (standing upright, length-wise)
-- External 2.4GHz flex PCB patch antenna (U.FL pigtail) tested — BLE range improved over stock PCB trace; exact numbers TBD from field testing
+- **Route all wires BEHIND the board** — front face is the 24GHz radar array; metal/wires in front cause ghost targets
+- External 2.4GHz flex PCB patch antenna (U.FL pigtail) tested — BLE range improved over stock; exact numbers TBD
 - Unit cost: <$10 on Amazon → disposable covert deploy use case
 - wscan+ needs: BLE-only connect flow, presence state machine, arm/deploy UI (see issue #369)
 
-**Power constraint (field-researched — significant):**
-- Active radar operation requires **12V** — 5V is sleep/low-power mode, not suitable for active monitoring
-- Single 18650 + boost-to-12V: **~3 hours** tested runtime (pushing the limit)
-- Standard 5V USB power banks will NOT drive active radar mode
-- For >3h deploy: parallel 18650 cells or a 12V LiPo pack required
-- App should warn user as session approaches 3h on single-cell config
+**Power profile (corrected from field research):**
+- Operating voltage: **5V DC nominal** (4.5–5.5V range); 5V is full active mode, NOT sleep mode
+- Average draw: **~120mA** continuous; 200mA supply headroom needed for transient spikes
+- No native sleep mode — sensor is always active when powered
+- Earlier 3h test at 12V was LDO waste heat (~27% efficient) — 12V is not a valid supply
+- **Single 18650 (3500mAh) + 5V boost at 85% efficiency: ~22–24 hours**
+- 2× 18650 parallel: ~44–48 hours; 2S series + 5V buck: ~48–52 hours
+- Radome: ABS plastic / polycarbonate / glass ≤2mm passes 24GHz cleanly
 
 ### No-Google policy (active)
 
