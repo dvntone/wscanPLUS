@@ -138,13 +138,41 @@ Closes #367. Adds to `android/core/src/main/kotlin/com/wscanplus/core/sensor/`:
   3. Speed: cm/s ÷ 100 → m/s (not mm/s ÷ 1000)
   - Config/ACK frames (`FD FC FB FA`) silently ignored; only `AA FF 03 00` data frames parsed
 - **`StaticClutterCalibrator.kt`** — 150mm Cartesian grid, Welford online mean, `persistenceFactor` decay wired into filter gate (was tracked but never read in source)
-- **`Ld2450DecoderTest.kt`** — 9 tests, correct signed-magnitude encoding, golden frame from spec page 12
+- **`Ld2450DecoderTest.kt`** — 13 tests (updated this session): correct signed-magnitude encoding, golden frame from spec page 12, multi-frame V2.14 burst, vertical mount axis swap, meter/foot conversion, 3-4-5 range check
 
-Tests: `./gradlew :core:test :core:ktlintCheck` — **BUILD SUCCESSFUL**
+Tests: `./gradlew :core:testDebugUnitTest :core:ktlintCheck` — **BUILD SUCCESSFUL**
 
 ### CI blocker
 
-PR simultaneous check failing — PR queue has multiple open Dependabot PRs. Reduce open PRs to ≤2 before marking #368 ready for review.
+PR queue has 8 open PRs — reduce before marking #368 ready for review.
+Recommended merge order: #360 → #362 → #365 → #364 → #366 → #363 (React 18→19, potentially breaking — last) → then #368 ready.
+
+### Open issues (2026-05-22)
+
+- **#367** — LD2450 decoder spec (closes via #368)
+- **#369** — BLE sensor node connect flow + presence state machine (next after #368)
+- **#370** — BLE radar surveillance detection, HLK LD-family (filed 2026-05-22, 3-tier detection strategy designed)
+
+### Hardware — ESP32 bridge node
+
+**Boards (confirmed — do not confuse with C3):**
+- 2× **Waveshare ESP32-S3-Zero** (S3, not C3)
+  - Unit 1: pre-soldered headers
+  - Unit 2: bare board
+  - 9 pins per side, USB-C port
+  - Red silk screen markings are Waveshare branding — NOT a C3 indicator
+  - Codex misidentified these as C3 based on visual markings; spent 45+ min arguing incorrect pinout; user verified correct pins manually
+
+**Pin assignment protocol (mandatory for any ESP32 sketch):**
+- Always reference Waveshare ESP32-S3-Zero pinout by GPIO number AND physical position
+- Write a pin-probe diagnostic sketch FIRST (outputs which pins are active) before any functional sketch
+- Physical pin count confirmed: 9 per side. USB-C orientation = north for position reference
+- Never assert pin identity from board markings alone — verify against Waveshare S3-Zero datasheet
+
+**Other hardware (cart / arriving):**
+- ACEIRMC 18650 Battery Shield (USB 5V/2A out, charging) — power for sensor node
+- GPS module (NEO-6M style) — for Kismet GPS delivery (`kismet/` package)
+- Dupont jumper wires — breadboard connections
 
 ### Hardware — LD2450 sensor node (issue #369)
 
