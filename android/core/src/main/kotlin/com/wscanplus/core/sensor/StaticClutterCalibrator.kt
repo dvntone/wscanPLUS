@@ -110,7 +110,7 @@ class StaticClutterCalibrator {
                     centerX = target.xMm,
                     centerY = target.yMm,
                     hits = 0,
-                    avgResolution = target.resolutionMm,
+                    avgResolution = target.resolutionMm.toDouble(),
                 )
             }
         cell.hits++
