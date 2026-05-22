@@ -57,13 +57,26 @@ object Ld2450Decoder {
         val rangeFt: Double get() = rangeMm / MM_PER_FOOT
     }
 
-    /** Physical sensor placement parameters for 3-D coordinate correction. */
+    /**
+     * Physical sensor placement parameters for 3-D coordinate correction.
+     *
+     * Mounting notes (HLK-LD2450 1T2R antenna geometry):
+     *   Horizontal (default): antenna face forward, long 44mm edge parallel to floor.
+     *     X = lateral (±3000mm), Y = depth (0–6000mm), FoV ±60° H × ±35° V.
+     *   Vertical (mountedVertically = true): long edge upright.
+     *     Native X now tracks vertical/height variance; native Y still tracks depth.
+     *     The decoder swaps X↔Y so that output coordinates remain depth-in-Y.
+     *     Multi-target tracking is unreliable in vertical orientation — ghost targets
+     *     and target blending are common. Use binary presence (targets.isNotEmpty())
+     *     rather than trusting individual X/Y positions.
+     */
     data class SensorCalibration(
         val heightMm: Double = 1200.0,
         val tiltDegrees: Double = 0.0,
         val rotationDegrees: Double = 0.0,
         val xOffsetMm: Double = 0.0,
         val yOffsetMm: Double = 0.0,
+        val mountedVertically: Boolean = false,
     )
 
     /**
@@ -108,8 +121,12 @@ object Ld2450Decoder {
     ): Target? {
         if (offset + BYTES_PER_TARGET > payload.size) return null
         return try {
-            val xRaw = signedMagnitude(payload[offset], payload[offset + 1])
-            val yRaw = signedMagnitude(payload[offset + 2], payload[offset + 3])
+            val rawX = signedMagnitude(payload[offset], payload[offset + 1])
+            val rawY = signedMagnitude(payload[offset + 2], payload[offset + 3])
+            // Vertical mount: native X tracks height variance, Y tracks depth.
+            // Swap so output semantics (X=lateral, Y=depth) are preserved.
+            val xRaw = if (cal.mountedVertically) rawY else rawX
+            val yRaw = if (cal.mountedVertically) rawX else rawY
             val speedCms = signedMagnitude(payload[offset + 4], payload[offset + 5])
             val resolution = unsigned16(payload[offset + 6], payload[offset + 7])
 
