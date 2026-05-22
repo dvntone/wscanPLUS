@@ -114,6 +114,60 @@ See [docs/ROADMAP.md](/docs/ROADMAP.md) for the full phased plan.
 
 ---
 
+## 2026-05-22 Handoff Snapshot
+
+### Remote repo state (2026-05-22)
+
+- `main` is current
+- Open draft PR: **#368** `claude/feat-ld2450-decoder` — LD2450 decoder + static clutter calibrator (awaiting CI green + PR queue reduction)
+- Open feature issue: **#369** — standalone battery-powered LD2450 BLE sensor node deploy mode
+
+### Agent status
+
+- **Claude**: primary coder — active
+- **Codex**: removed from main coder role; trust revoked after repeated failures and token burn. May occasionally submit work but Claude must review before any merge.
+- **Copilot**: review role unchanged
+
+### Branch: `claude/feat-ld2450-decoder` (PR #368)
+
+Closes #367. Adds to `android/core/src/main/kotlin/com/wscanplus/core/sensor/`:
+
+- **`Ld2450Decoder.kt`** — corrected against HLK-LD2450 V1.03 spec (Table 10, page 12). Three bugs fixed vs Gemini-generated spatialtracker source:
+  1. Sign convention: MSB=1 → positive (`raw − 0x8000`), was inverted
+  2. Target record: 8 bytes (not 10) — phantom status bytes removed
+  3. Speed: cm/s ÷ 100 → m/s (not mm/s ÷ 1000)
+  - Config/ACK frames (`FD FC FB FA`) silently ignored; only `AA FF 03 00` data frames parsed
+- **`StaticClutterCalibrator.kt`** — 150mm Cartesian grid, Welford online mean, `persistenceFactor` decay wired into filter gate (was tracked but never read in source)
+- **`Ld2450DecoderTest.kt`** — 9 tests, correct signed-magnitude encoding, golden frame from spec page 12
+
+Tests: `./gradlew :core:test :core:ktlintCheck` — **BUILD SUCCESSFUL**
+
+### CI blocker
+
+PR simultaneous check failing — PR queue has multiple open Dependabot PRs. Reduce open PRs to ≤2 before marking #368 ready for review.
+
+### Hardware — LD2450 sensor node (issue #369)
+
+- Standalone battery-powered node: HLK-LD2450 + USB power bank or 18650+boost, no ESP32 required
+- BLE data streams immediately on GATT subscribe (`fff0`/`fff1`), no password
+- Sensor mounted **vertically** (standing upright, length-wise)
+- External 2.4GHz flex PCB patch antenna (U.FL pigtail) tested — BLE range improved over stock PCB trace; exact numbers TBD from field testing
+- Unit cost: <$10 on Amazon → disposable covert deploy use case
+- wscan+ needs: BLE-only connect flow, presence state machine, arm/deploy UI (see issue #369)
+
+### No-Google policy (active)
+
+User has declared no new Google/Firebase dependencies anywhere. Existing `firebase-ai` integration is untouched (existing, consent-gated). All new sensor/BLE work is FOSS-only.
+
+### Recommended next work
+
+1. Merge/close Dependabot PRs to unblock CI queue for PR #368
+2. Merge PR #360 (WatchdogService FQN fix, reviewed and ready) — this also lands `org.json:20240303` dep on main
+3. After #368 merges: implement #369 BLE sensor node connect flow + presence state machine
+4. `knownProfiles` still not populated from Room DB — three heuristics receive no historical data at runtime (carry-forward gap)
+
+---
+
 ## 2026-04-24 Handoff Snapshot
 
 This section is the fast re-entry point for the next session.
