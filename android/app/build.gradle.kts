@@ -1,15 +1,8 @@
 plugins {
     id("com.android.application")
-    id("com.google.gms.google-services") apply false
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("org.jlleitschuh.gradle.ktlint")
-}
-
-// Conditionally apply google-services plugin if google-services.json is present.
-// This allows builds to succeed in CI and clean environments where Firebase is not configured.
-if (file("google-services.json").exists()) {
-    apply(plugin = "com.google.gms.google-services")
 }
 
 android {
@@ -70,13 +63,6 @@ dependencies {
     implementation("androidx.core:core-ktx:1.18.0")
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("com.google.android.gms:play-services-location:21.3.0")
-
-    // Firebase AI Logic SDK (Gemini in-app threat analysis — Android only)
-    // BOM manages all firebase-* versions. Do NOT pin firebase-ai explicitly.
-    // google-services plugin + google-services.json required before Firebase
-    // initialises at runtime.
-    implementation(platform("com.google.firebase:firebase-bom:34.11.0"))
-    implementation("com.google.firebase:firebase-ai")
 
     // Kotlin coroutines — required by CrowdSecCtiClient (withContext) and other async flows
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")

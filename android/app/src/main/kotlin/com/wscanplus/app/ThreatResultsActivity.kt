@@ -20,7 +20,6 @@ import androidx.core.content.FileProvider
 import com.wscanplus.app.db.DbPassphraseProvider
 import com.wscanplus.app.export.ScanDataExporter
 import com.wscanplus.core.db.WscanDatabase
-import com.wscanplus.core.db.entity.GeminiNarrativeEntity
 import com.wscanplus.core.db.entity.ScanResultEntity
 import com.wscanplus.core.db.entity.ScanSessionEntity
 import com.wscanplus.core.db.entity.ThreatSignalEntity
@@ -42,7 +41,7 @@ class ThreatResultsActivity : Activity() {
         WscanUi.header(
             root,
             "Threat Results",
-            "Recent scan sessions with persisted Gemini narratives and local threat context",
+            "Recent scan sessions with local threat signals",
         )
         val scrollView = ScrollView(this).apply { isFillViewport = true }
         contentLayout =
@@ -83,12 +82,10 @@ class ThreatResultsActivity : Activity() {
                         .map { session ->
                             val results = db.scanResultDao().getBySession(session.id)
                             val signals = db.threatSignalDao().getBySession(session.id)
-                            val latestNarrative = db.geminiNarrativeDao().getBySession(session.id).firstOrNull()
                             SessionThreatSummary(
                                 session = session,
                                 results = results,
                                 signals = signals,
-                                narrative = latestNarrative,
                             )
                         }
 
@@ -170,32 +167,14 @@ class ThreatResultsActivity : Activity() {
             card.addView(chipRow(ssids))
         }
 
-        card.addView(labelText("Gemini Narrative"))
-        val narrative = summary.narrative
-        if (narrative != null) {
-            WscanUi.body(card, narrative.narrative)
-            val narrativeMeta =
-                "Generated ${formatTimestamp(narrative.generatedAt)}" +
-                    "  •  ${narrative.signalCount} signals  •  ${narrative.modelName}"
-            WscanUi.body(card, narrativeMeta, muted = true)
-        } else {
-            val emptyText =
-                if (summary.signals.isEmpty()) {
-                    "No persisted Gemini narrative yet. This session does not have stored threat signals."
-                } else {
-                    "Threat signals exist for this session, but no persisted Gemini narrative is available yet."
-                }
-            WscanUi.body(card, emptyText, muted = true)
-        }
-
         if (summary.signals.isNotEmpty()) {
-            card.addView(labelText("Top Signals"))
+            card.addView(labelText("Threat Analysis"))
             summary.signals
                 .sortedByDescending { it.confidence }
-                .take(3)
+                .take(5)
                 .forEach { signal ->
                     val type = signal.heuristicType?.name?.replace('_', ' ') ?: signal.source.name
-                    val reasons = signal.reasons.joinToString("; ")
+                    val reasons = signal.reasons.joinToString("  •  ")
                     val pct = signal.confidence * 100
                     val severityColor =
                         when {
@@ -205,6 +184,9 @@ class ThreatResultsActivity : Activity() {
                         }
                     card.addView(signalRow("${"%.0f".format(pct)}% $type", reasons, severityColor))
                 }
+        } else {
+            card.addView(labelText("Threat Analysis"))
+            WscanUi.body(card, "No threat signals detected in this session.", muted = true)
         }
 
         return card
@@ -343,5 +325,4 @@ private data class SessionThreatSummary(
     val session: ScanSessionEntity,
     val results: List<ScanResultEntity>,
     val signals: List<ThreatSignalEntity>,
-    val narrative: GeminiNarrativeEntity?,
 )

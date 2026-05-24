@@ -29,7 +29,7 @@ class ScanHistoryActivity : Activity() {
         WscanUi.header(
             root,
             "Scan History",
-            "Recent scanner sessions, AP observations, threat counts, and narrative availability",
+            "Recent scanner sessions, AP observations, and threat signal counts",
         )
         val scrollView = ScrollView(this).apply { isFillViewport = true }
         contentLayout =
@@ -65,13 +65,10 @@ class ScanHistoryActivity : Activity() {
                     sessions.map { session ->
                         val resultCount = db.scanResultDao().getBySession(session.id).size
                         val signalCount = db.threatSignalDao().getBySession(session.id).size
-                        val hasNarrative =
-                            db.geminiNarrativeDao().getBySession(session.id).isNotEmpty()
                         SessionHistoryRow(
                             session = session,
                             resultCount = resultCount,
                             signalCount = signalCount,
-                            hasNarrative = hasNarrative,
                         )
                     }
                 if (isDestroyed) return@execute
@@ -152,7 +149,6 @@ class ScanHistoryActivity : Activity() {
                 append(duration)
                 append("  \u2022  ${row.resultCount} APs")
                 if (row.signalCount > 0) append("  \u2022  ${row.signalCount} threats")
-                if (row.hasNarrative) append("  \u2022  narrative")
             }
 
         card.addView(
@@ -202,5 +198,4 @@ private data class SessionHistoryRow(
     val session: ScanSessionEntity,
     val resultCount: Int,
     val signalCount: Int,
-    val hasNarrative: Boolean,
 )

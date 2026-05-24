@@ -14,8 +14,8 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Serializes the 20 most recent scan sessions — including scan results, threat signals,
- * and Gemini narratives — to a JSON file in the app's cache directory.
+ * Serializes the 20 most recent scan sessions — including scan results and threat signals —
+ * to a JSON file in the app's cache directory.
  *
  * Must be called off the main thread.
  */
@@ -32,12 +32,9 @@ class ScanDataExporter(
         val sessions = db.scanSessionDao().getRecent(EXPORT_SESSION_LIMIT)
 
         val sessionsArray = JSONArray()
-        val narrativesArray = JSONArray()
         for (session in sessions) {
             val results = db.scanResultDao().getBySession(session.id)
             val signals = db.threatSignalDao().getBySession(session.id)
-            val narratives = db.geminiNarrativeDao().getBySession(session.id)
-            val latestNarrative = narratives.firstOrNull()
 
             val resultsArray = JSONArray()
             for (r in results) {
@@ -69,31 +66,15 @@ class ScanDataExporter(
                 signalsArray.put(obj)
             }
 
-            val sessionNarrativesArray = JSONArray()
-            for (n in narratives) {
-                val obj = JSONObject()
-                obj.put("id", n.id)
-                obj.put("sessionId", n.sessionId)
-                obj.put("narrative", n.narrative)
-                obj.put("generatedAt", n.generatedAt)
-                obj.put("signalCount", n.signalCount)
-                obj.put("modelName", n.modelName)
-                sessionNarrativesArray.put(obj)
-                narrativesArray.put(obj)
-            }
-
             val sessionObj = JSONObject()
             sessionObj.put("id", session.id)
             sessionObj.put("startedAt", session.startedAt)
             sessionObj.put("endedAt", session.endedAt)
             sessionObj.put("environmentType", session.environmentType.name)
             sessionObj.put("deviceSerial", session.deviceSerial)
-            sessionObj.put("signalCount", latestNarrative?.signalCount ?: signals.size)
-            sessionObj.put("modelName", latestNarrative?.modelName ?: JSONObject.NULL)
-            sessionObj.put("narrative", latestNarrative?.narrative ?: JSONObject.NULL)
+            sessionObj.put("signalCount", signals.size)
             sessionObj.put("scanResults", resultsArray)
             sessionObj.put("threatSignals", signalsArray)
-            sessionObj.put("geminiNarratives", sessionNarrativesArray)
             sessionsArray.put(sessionObj)
         }
 
@@ -101,7 +82,6 @@ class ScanDataExporter(
         root.put("exportedAt", ISO_FORMAT.format(Date()))
         root.put("sessionCount", sessions.size)
         root.put("sessions", sessionsArray)
-        root.put("narratives", narrativesArray)
 
         val exportsDir = File(context.cacheDir, "exports")
         exportsDir.mkdirs()

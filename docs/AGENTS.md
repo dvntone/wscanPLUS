@@ -38,15 +38,14 @@ The rules in this file (e.g., "agent must close its own PR") were written assumi
 
 **Current reality**: This repository uses GitHub Copilot integration, so all administrative actions require `@dvntone`.
 
-## AI Split (Critical — do not change without maintainer approval)
+## AI Split
 
 | Role | AI | Where |
 |------|----|--------|
 | Coding agent | Claude / Copilot | PRs, commits, config |
-| In-app threat analysis | Gemini / Vertex AI (Google AI Pro) | Android app only |
 | Maps & location | MapLibre (LibreMaps) + OSM tiles | Android app only |
 
-Coding agents must never remove, replace, or modify the Gemini/Vertex integration in the Android app. It is intentional, already paid for via Google AI Pro, and required for Play Store distribution. File an issue if you believe something needs changing — do not act unilaterally.
+Gemini / Firebase AI Logic was removed from the Android app (issue #371). LiteRT-LM (Apache 2.0, on-device) is the planned replacement for the desktop/Electron phase.
 
 ## Context & Why These Rules Exist
 

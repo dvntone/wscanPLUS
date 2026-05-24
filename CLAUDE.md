@@ -45,7 +45,7 @@ node --test desktop/scanner.test.js
 
 ### Secrets setup (local only — never commit)
 
-- **Android**: create `android/local.properties` with `CROWDSEC_CTI_API_KEY=`; place `google-services.json` at `android/app/google-services.json`
+- **Android**: create `android/local.properties` with `CROWDSEC_CTI_API_KEY=`
 - **Desktop**: copy `.env.example` to `desktop/.env` and fill in keys
 
 ## Architecture
@@ -63,12 +63,11 @@ node --test desktop/scanner.test.js
 **`core/`** — pure library, no Firebase, no Android UI:
 - `scanner/` — `ScannerChain` (USB > Standard; root is dev-only), `StandardScanner`, `WifiScanResult`
 - `threat/` — `HeuristicEngine` + 7 heuristics (`WepOpen`, `EvilTwin`, `EncryptionDowngrade`, `Karma`, `SsidFlooding`, `RssiAnomaly`, `BssidFingerprint`), `PolicyGate` (confidence threshold 0.3), `OuiLookup`
-- `db/` — `WscanDatabase` (Room + SQLCipher AES-256), 6 entities and DAOs, `RetentionManager` (30-day purge)
+- `db/` — `WscanDatabase` (Room + SQLCipher AES-256), 5 entities and DAOs, `RetentionManager` (30-day purge)
 
 **`app/`** — application module, depends on `:core`:
 - `WatchdogService` — foreground service (`foregroundServiceType="location|dataSync"`), runs `ScannerChain`, hosts `ServerSocket` on `localhost:9000` for ADB transport, wires all layers
 - `cti/` — `CrowdSecCtiClient` (OkHttp, `/v2/smoke/{ip}`), `CtiCacheRepository` (Room cache, smoke TTL 48h / fire TTL 6h), quota guardrails
-- `gemini/` — `GeminiThreatAnalyzer` (firebase-ai via Firebase BOM, consent-gated, 5-min cooldown)
 - `kismet/` — GPS delivery to Kismet over HTTP
 - `sensor/` — `BarometerSampler`, `FloorEstimate`
 - Activities: `MainActivity`, `ScanHistoryActivity`, `ScanMapActivity`, `ThreatResultsActivity`, `DiagnosticActivity`, `KismetSettingsActivity`
@@ -78,10 +77,9 @@ node --test desktop/scanner.test.js
 ```
 Layer 1 — Local heuristics (HeuristicEngine)   — every scan, free
 Layer 2 — CrowdSec CTI (/v2/smoke)             — IPs above suspicion threshold, cached
-Layer 3 — Gemini (firebase-ai)                 — on-demand, consent-gated, quota-limited
 ```
 
-CTI and Gemini are currently informational tracks; they do not yet feed back into confidence scoring (known gap — tracked in Known Runtime Gaps below).
+CTI is currently an informational track; it does not yet feed back into confidence scoring (known gap — tracked in Known Runtime Gaps below). Layer 3 (Gemini/Firebase AI) was removed in issue #371 — LiteRT-LM is the planned on-device replacement for the desktop phase.
 
 ### Desktop — flat ESM layout
 
@@ -113,9 +111,9 @@ Store emits events (`aps`, `riskLog`, `change`, `appError`) which `main.js` forw
 
 ## Key Constraints
 
-**AI split — do not violate:**
+**AI split:**
 - Claude / Copilot: coding only
-- Gemini / Vertex AI: in-app threat analysis (firebase-ai) — **do not remove, replace, or modify**
+- Gemini / Vertex AI: removed from Android app (issue #371). LiteRT-LM (Apache 2.0, on-device) is the planned replacement, scoped to the desktop/Electron phase.
 
 **Maps:** Current Android map is `LocalHeatmapView` — local/offline, no Google Maps SDK. MapLibre (free-only, OSM tiles) is the planned migration path and must be its own dedicated PR. Do not introduce Google Maps or any paid map provider.
 

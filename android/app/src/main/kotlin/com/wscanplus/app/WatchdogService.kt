@@ -26,8 +26,6 @@ import com.wscanplus.app.cti.CtiCacheRepository
 import com.wscanplus.app.cti.CtiLookupResult
 import com.wscanplus.app.cti.SharedPrefsQuotaTracker
 import com.wscanplus.app.db.DbPassphraseProvider
-import com.wscanplus.app.gemini.GeminiAnalysisResult
-import com.wscanplus.app.gemini.GeminiThreatAnalyzer
 import com.wscanplus.app.kismet.KismetConfigStore
 import com.wscanplus.app.kismet.KismetGpsClient
 import com.wscanplus.app.location.FusedLocationSampler
@@ -37,7 +35,6 @@ import com.wscanplus.app.sensor.BarometerSampler
 import com.wscanplus.app.sensor.FloorEstimate
 import com.wscanplus.core.db.RetentionManager
 import com.wscanplus.core.db.WscanDatabase
-import com.wscanplus.core.db.entity.GeminiNarrativeEntity
 import com.wscanplus.core.db.entity.ScanResultEntity
 import com.wscanplus.core.db.entity.ScanSessionEntity
 import com.wscanplus.core.db.entity.ThreatSignalEntity
@@ -79,7 +76,6 @@ import java.net.SocketException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
@@ -125,7 +121,6 @@ class WatchdogService : Service() {
     private lateinit var kismetGpsClient: KismetGpsClient
     private lateinit var ctiCacheRepository: CtiCacheRepository
     private lateinit var retentionManager: RetentionManager
-    private lateinit var geminiThreatAnalyzer: GeminiThreatAnalyzer
 
     @Volatile
     private var capabilityManifest: DeviceCapabilityManifest? = null
@@ -146,9 +141,6 @@ class WatchdogService : Service() {
     private var helloClientSocket: Socket? = null
     private var helloServerJob: Job? = null
 
-    @Volatile
-    private var lastGeminiAnalysisAtMs: Long = 0L
-    private val geminiAnalysisInFlight = AtomicBoolean(false)
     private val engine =
         HeuristicEngine(
             listOf(
@@ -185,7 +177,6 @@ class WatchdogService : Service() {
         val ctiClient = CrowdSecCtiClient(ctiKeyProvider, consentStore)
         val quotaTracker = SharedPrefsQuotaTracker(applicationContext)
         ctiCacheRepository = CtiCacheRepository(database.ctiCacheDao(), ctiClient, quotaTracker)
-        geminiThreatAnalyzer = GeminiThreatAnalyzer(consentStore)
         Log.i(TAG, "Service created")
     }
 
@@ -295,43 +286,6 @@ class WatchdogService : Service() {
                         results = results,
                         filteredSignals = filtered,
                     )
-                    if (filtered.isNotEmpty()) {
-                        val now = System.currentTimeMillis()
-                        if (now - lastGeminiAnalysisAtMs >= GEMINI_COOLDOWN_MS &&
-                            geminiAnalysisInFlight.compareAndSet(false, true)
-                        ) {
-                            val snapSessionId = currentSessionId
-                            serviceScope.launch {
-                                try {
-                                    when (val result = geminiThreatAnalyzer.analyze(filtered)) {
-                                        is GeminiAnalysisResult.Success -> {
-                                            Log.i(TAG, "Gemini narrative: ${result.narrative}")
-                                            if (snapSessionId != null) {
-                                                database.geminiNarrativeDao().insert(
-                                                    GeminiNarrativeEntity(
-                                                        sessionId = snapSessionId,
-                                                        narrative = result.narrative,
-                                                        generatedAt = System.currentTimeMillis(),
-                                                        signalCount = filtered.size,
-                                                        modelName = GeminiThreatAnalyzer.MODEL_NAME,
-                                                    ),
-                                                )
-                                                lastGeminiAnalysisAtMs = System.currentTimeMillis()
-                                            }
-                                        }
-                                        GeminiAnalysisResult.NoThreats ->
-                                            Log.d(TAG, "Gemini: no threats")
-                                        GeminiAnalysisResult.ConsentRequired ->
-                                            Log.d(TAG, "Gemini: consent not granted")
-                                        GeminiAnalysisResult.Unavailable ->
-                                            Log.w(TAG, "Gemini: analysis unavailable")
-                                    }
-                                } finally {
-                                    geminiAnalysisInFlight.set(false)
-                                }
-                            }
-                        }
-                    }
                 }
             startFuture =
                 executor.submit {
@@ -982,7 +936,6 @@ class WatchdogService : Service() {
         private const val HELLO_BIND_HOST = "127.0.0.1"
         private const val HELLO_PORT = 9000
         private const val KISMET_SEND_INTERVAL_MS = 10_000L
-        private const val GEMINI_COOLDOWN_MS = 5 * 60 * 1000L
 
         // Lookback window for querying recently active BSSID fingerprints (7 days)
         private const val KNOWN_PROFILE_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000L

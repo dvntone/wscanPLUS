@@ -10,13 +10,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
 import com.wscanplus.core.db.dao.BssidFingerprintDao
 import com.wscanplus.core.db.dao.CtiCacheDao
-import com.wscanplus.core.db.dao.GeminiNarrativeDao
 import com.wscanplus.core.db.dao.ScanResultDao
 import com.wscanplus.core.db.dao.ScanSessionDao
 import com.wscanplus.core.db.dao.ThreatSignalDao
 import com.wscanplus.core.db.entity.BssidFingerprintEntity
 import com.wscanplus.core.db.entity.CtiCacheEntity
-import com.wscanplus.core.db.entity.GeminiNarrativeEntity
 import com.wscanplus.core.db.entity.ScanResultEntity
 import com.wscanplus.core.db.entity.ScanSessionEntity
 import com.wscanplus.core.db.entity.ThreatSignalEntity
@@ -28,9 +26,8 @@ import com.wscanplus.core.db.entity.ThreatSignalEntity
         BssidFingerprintEntity::class,
         ThreatSignalEntity::class,
         CtiCacheEntity::class,
-        GeminiNarrativeEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -44,8 +41,6 @@ abstract class WscanDatabase : RoomDatabase() {
     abstract fun threatSignalDao(): ThreatSignalDao
 
     abstract fun ctiCacheDao(): CtiCacheDao
-
-    abstract fun geminiNarrativeDao(): GeminiNarrativeDao
 
     companion object {
         @Volatile
@@ -85,10 +80,18 @@ abstract class WscanDatabase : RoomDatabase() {
                         MIGRATION_1_2,
                         MIGRATION_2_3,
                         MIGRATION_3_4,
+                        MIGRATION_4_5,
                     )
             factory?.let { builder.openHelperFactory(it) }
             return builder.build()
         }
+
+        private val MIGRATION_4_5 =
+            object : Migration(4, 5) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("DROP TABLE IF EXISTS gemini_narratives")
+                }
+            }
 
         private val MIGRATION_1_2 =
             object : Migration(1, 2) {
