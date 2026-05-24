@@ -6,7 +6,8 @@ package com.wscanplus.app.sensor
  * All values are relative to the calibration baseline — there is no absolute MSL.
  *
  * @param relativeFloor Estimated floor offset from baseline (0 = calibration level, +1 = one floor up).
- * @param deltaHpa      Pressure change from baseline in hPa (positive = higher altitude, computed as baselineHpa − currentHpa).
+ * @param deltaHpa      Pressure change from baseline in hPa (positive = higher altitude,
+ *                      computed as baselineHpa − currentHpa).
  * @param confidenceMeters Estimated vertical uncertainty in meters (~±1.5 m typical indoors).
  * @param observedAt    Epoch milliseconds when the sensor reading that produced this estimate was captured.
  */

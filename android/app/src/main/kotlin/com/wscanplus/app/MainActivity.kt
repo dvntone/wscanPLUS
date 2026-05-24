@@ -55,7 +55,8 @@ class MainActivity : Activity() {
         WscanUi.sectionTitle(noteCard, "Test build")
         WscanUi.body(
             noteCard,
-            "Debug artifact build. Google services may use CI placeholders; validate local scanner and UI behavior first.",
+            "Debug artifact build. Google services may use CI placeholders;" +
+                " validate local scanner and UI behavior first.",
             muted = true,
         )
 

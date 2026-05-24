@@ -150,11 +150,11 @@ class ThreatResultsActivity : Activity() {
             },
         )
         WscanUi.body(card, sessionWindow, muted = true)
-        WscanUi.body(
-            card,
-            "${summary.results.size} scan results  •  ${summary.signals.size} stored threat signals  •  ${summary.session.environmentType.name.lowercase()}",
-            muted = true,
-        )
+        val sessionMeta =
+            "${summary.results.size} scan results  •  " +
+                "${summary.signals.size} stored threat signals  •  " +
+                summary.session.environmentType.name.lowercase()
+        WscanUi.body(card, sessionMeta, muted = true)
 
         val ssids =
             summary.results
