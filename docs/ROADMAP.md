@@ -18,7 +18,7 @@ Scanner chain + Android scaffold delivered, along with quality tooling and final
 
 - [x] WatchdogService + scanner chain (USB > Standard; Root dev-opt-in stub)
 - [x] AndroidManifest permissions (full set for API 24-36)
-- [x] Firebase AI Logic scaffold (firebase-bom:34.10.0 + firebase-ai)
+- [x] ~~Firebase AI Logic scaffold (firebase-bom:34.10.0 + firebase-ai)~~ — **removed PR #371**
 - [x] Local offline scan heatmap scaffold
 - [x] StandardScanner full implementation (API 24-29 + API 30+)
 - [x] Wire scanner results into WatchdogService
@@ -73,7 +73,7 @@ Phase 2 is complete. The following items are known gaps between the architecture
 
 - [x] Consent framework (opt-in, GDPR/CCPA compliant) (PR #173)
 - [x] CrowdSec CTI client (OkHttp, `/v2/smoke/{ip}`) (PR #174)
-- [x] Firebase setup (BOM 34.11.0) (PR #175)
+- [x] ~~Firebase setup (BOM 34.11.0)~~ (PR #175 — **removed PR #371**)
 - [x] CTI cache + quota guardrails + degraded-mode handler (PRs #177, #180)
 - [x] Local offline threat heatmap + GPS-tagged scan history
 - [x] SQLCipher AES-256 DB encryption + 30-day retention purge (PR #181)
@@ -82,8 +82,8 @@ PRs: #173–#182
 
 ## Phase 4 — AI Layer + Reporting (Android) ✅ Complete
 
-- [x] GeminiThreatAnalyzer (firebase-ai, consent-gated, 5-min cooldown) (PR #183)
-- [x] GeminiNarrativeEntity + DAO + DB v4 (PR #184)
+- [x] ~~GeminiThreatAnalyzer (firebase-ai, consent-gated, 5-min cooldown)~~ (PR #183 — **removed PR #371**)
+- [x] ~~GeminiNarrativeEntity + DAO + DB v4~~ (PR #184 — **removed PR #371**, DB migrated to v5)
 - [x] ThreatResultsActivity + bug fixes (PR #186)
 - [x] Scan history export (JSON) (PR #187)
 - [x] Scan history timeline activity (PR #190)
@@ -171,7 +171,7 @@ Companion app, not a network monitor. Revisit only if product direction changes.
 
 - LiteRT for anomaly detection on time-series disconnect data
 - Gemma 2B via MediaPipe for offline contextual analysis
-- Current architecture: local heuristics + cloud Gemini. On-device ML is a future tier.
+- Current architecture: local heuristics + CrowdSec CTI. Cloud Gemini removed (PR #371). On-device LiteRT is the planned ML tier.
 
 ---
 

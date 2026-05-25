@@ -56,7 +56,7 @@ An Android app that runs on your phone and detects WiFi-layer attacks in real ti
 - SQLCipher AES-256 database encryption + 30-day retention purge
 
 **Phase 4 — AI layer + reporting (complete)**
-- GeminiThreatAnalyzer (firebase-ai, consent-gated, 5-min cooldown)
+- ~~GeminiThreatAnalyzer~~ (firebase-ai — **removed PR #371**; LiteRT on-device replacement planned)
 - Scan history timeline activity
 - Scan history export (JSON)
 - ADB transport (WatchdogService tcp:9000, `@yume-chan/adb` on desktop)
@@ -81,7 +81,7 @@ These are real gaps between what the architecture describes and what the runtime
 
 - `knownProfiles` is not yet populated from Room DB at decision time — three heuristics (EncryptionDowngrade, BssidFingerprint, SsidFlooding) are structurally present but receive no historical data
 - `environmentType` defaults to `RESIDENTIAL` rather than being inferred from context
-- CTI and Gemini run as parallel informational tracks; they do not yet feed back into confidence scoring
+- CTI runs as a parallel informational track; it does not yet feed back into confidence scoring (Gemini removed in PR #371)
 - `CapabilityManifest` is probed and transported but not yet used in scoring weights
 
 These are tracked as runtime drift corrections and will be addressed before further feature expansion.
@@ -92,7 +92,7 @@ These are tracked as runtime drift corrections and will be addressed before furt
 
 - **Claude** — primary coding agent. Opens PRs, writes code. Uses `claude/` branch prefix.
 - **Copilot/Codex** — secondary coding agent. Uses `copilot/` branch prefix.
-- **Gemini** — in-app threat analysis only (firebase-ai). Not a coding agent.
+- **Gemini** — ~~in-app threat analysis (firebase-ai)~~ **removed PR #371**. LiteRT on-device replacement is the plan. Not a coding agent.
 - **@dvntone** — direction, approval, final call. Only person who merges.
 
 ---

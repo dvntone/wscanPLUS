@@ -67,7 +67,7 @@ class KismetSettingsActivity : Activity() {
             TextView(this).apply {
                 text =
                     "Use a direct Kismet URL when the device can reach the host." +
-                        " Use 127.0.0.1 only when adb reverse is active on the host port."
+                    " Use 127.0.0.1 only when adb reverse is active on the host port."
             }
         val saveButton =
             Button(this).apply {
