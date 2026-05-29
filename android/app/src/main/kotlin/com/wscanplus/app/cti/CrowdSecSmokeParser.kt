@@ -1,5 +1,6 @@
 package com.wscanplus.app.cti
 
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
@@ -59,7 +60,7 @@ object CrowdSecSmokeParser {
                 aggressiveScore = (obj["aggressive_score"] as? JsonPrimitive)?.intOrNull,
                 backgroundNoiseScore = (obj["background_noise_score"] as? JsonPrimitive)?.intOrNull,
             )
-        } catch (_: Exception) {
+        } catch (_: SerializationException) {
             ParsedScore(null, null)
         }
     }
