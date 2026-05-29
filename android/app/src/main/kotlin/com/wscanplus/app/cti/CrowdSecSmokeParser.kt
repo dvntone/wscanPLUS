@@ -1,7 +1,8 @@
 package com.wscanplus.app.cti
 
-import org.json.JSONException
-import org.json.JSONObject
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
 
 /**
  * Parses CrowdSec CTI /v2/smoke response JSON.
@@ -52,12 +53,12 @@ object CrowdSecSmokeParser {
     fun parse(rawJson: String): ParsedScore {
         if (rawJson.isBlank()) return ParsedScore(null, null)
         return try {
-            val obj = JSONObject(rawJson)
+            val obj = Json.parseToJsonElement(rawJson).jsonObject
             ParsedScore(
-                aggressiveScore = obj.optInt("aggressive_score", -1).takeIf { it >= 0 },
-                backgroundNoiseScore = obj.optInt("background_noise_score", -1).takeIf { it >= 0 },
+                aggressiveScore = (obj["aggressive_score"] as? JsonPrimitive)?.intOrNull,
+                backgroundNoiseScore = (obj["background_noise_score"] as? JsonPrimitive)?.intOrNull,
             )
-        } catch (_: JSONException) {
+        } catch (_: Exception) {
             ParsedScore(null, null)
         }
     }
