@@ -194,3 +194,7 @@ docs/local/
 
 # Raw per-device capture artifacts stay local; summarized findings live in tracked markdown
 docs/testing/devices/*/artifacts/
+
+# Downloaded local tooling (ktlint binary, Android SDK zips)
+ktlint
+*.zip
