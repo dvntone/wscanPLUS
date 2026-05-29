@@ -3,6 +3,7 @@ package com.wscanplus.app.cti
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 
 object CrowdSecSmokeParser {
