@@ -114,6 +114,115 @@ See [docs/ROADMAP.md](/docs/ROADMAP.md) for the full phased plan.
 
 ---
 
+## 2026-05-22 Handoff Snapshot
+
+### Remote repo state (2026-05-22)
+
+- `main` is current
+- Open draft PR: **#368** `claude/feat-ld2450-decoder` — LD2450 decoder + static clutter calibrator (awaiting CI green + PR queue reduction)
+- Open feature issue: **#369** — standalone battery-powered LD2450 BLE sensor node deploy mode
+
+### Agent status
+
+- **Claude**: primary coder — active
+- **Codex**: removed from main coder role; trust revoked after repeated failures and token burn. May occasionally submit work but Claude must review before any merge.
+- **Copilot**: review role unchanged
+
+### Branch: `claude/feat-ld2450-decoder` (PR #368)
+
+Closes #367. Adds to `android/core/src/main/kotlin/com/wscanplus/core/sensor/`:
+
+- **`Ld2450Decoder.kt`** — corrected against HLK-LD2450 V1.03 spec (Table 10, page 12). Three bugs fixed vs Gemini-generated spatialtracker source:
+  1. Sign convention: MSB=1 → positive (`raw − 0x8000`), was inverted
+  2. Target record: 8 bytes (not 10) — phantom status bytes removed
+  3. Speed: cm/s ÷ 100 → m/s (not mm/s ÷ 1000)
+  - Config/ACK frames (`FD FC FB FA`) silently ignored; only `AA FF 03 00` data frames parsed
+- **`StaticClutterCalibrator.kt`** — 150mm Cartesian grid, Welford online mean, `persistenceFactor` decay wired into filter gate (was tracked but never read in source)
+- **`Ld2450DecoderTest.kt`** — 13 tests (updated this session): correct signed-magnitude encoding, golden frame from spec page 12, multi-frame V2.14 burst, vertical mount axis swap, meter/foot conversion, 3-4-5 range check
+
+Tests: `./gradlew :core:testDebugUnitTest :core:ktlintCheck` — **BUILD SUCCESSFUL**
+
+### CI blocker
+
+PR queue has 8 open PRs — reduce before marking #368 ready for review.
+Recommended merge order: #360 → #362 → #365 → #364 → #366 → #363 (React 18→19, potentially breaking — last) → then #368 ready.
+
+### Open issues (2026-05-22)
+
+- **#367** — LD2450 decoder spec (closes via #368)
+- **#369** — BLE sensor node connect flow + presence state machine (next after #368)
+- **#370** — BLE radar surveillance detection, HLK LD-family (filed 2026-05-22, 3-tier detection strategy designed)
+
+### Hardware — ESP32 bridge node
+
+**Boards (confirmed — do not confuse with C3):**
+- 2× **Waveshare ESP32-S3-Zero** (S3, not C3)
+  - Unit 1: pre-soldered headers
+  - Unit 2: bare board
+  - 9 pins per side, USB-C port
+  - Red silk screen markings are Waveshare branding — NOT a C3 indicator
+  - Codex misidentified these as C3 based on visual markings; spent 45+ min arguing incorrect pinout; user verified correct pins manually
+
+**Pin assignment protocol (mandatory for any ESP32 sketch):**
+- Always reference Waveshare ESP32-S3-Zero pinout by GPIO number AND physical position
+- Write a pin-probe diagnostic sketch FIRST (outputs which pins are active) before any functional sketch
+- Physical pin count confirmed: 9 per side. USB-C orientation = north for position reference
+- Never assert pin identity from board markings alone — verify against Waveshare S3-Zero datasheet
+
+**Other hardware (cart / arriving):**
+- ACEIRMC 18650 Battery Shield (USB 5V/2A out, charging) — power for sensor node
+- GPS module (NEO-6M style) — for Kismet GPS delivery (`kismet/` package)
+- Dupont jumper wires — breadboard connections
+
+### Hardware — LD2450 sensor node (issue #369)
+
+- Standalone battery-powered node: HLK-LD2450 + 5V boost converter + 18650 cell(s), no ESP32 required
+- BLE data streams immediately on GATT subscribe (`fff0`/`fff1`), no password
+- One-time BLE provisioning command (UART, run once before going headless): `FD FC FB FA 04 00 A4 00 01 00 04 03 02 01`
+- Sensor mounted **vertically** (standing upright, long 44mm edge vertical, antenna face forward)
+- Vertical mount implications (confirmed via Gemini orientation research):
+  - Native X axis tracks height/vertical variance; native Y still tracks depth
+  - Decoder swaps X↔Y when `mountedVertically = true` to preserve output semantics
+  - Multi-target tracking unreliable in vertical orientation (ghost targets, blending)
+  - Binary presence (`targets.isNotEmpty()`) works correctly in any orientation
+  - For coordinate-accurate tracking, horizontal mount strongly preferred
+- Firmware updated to **V2.14.25112412** ("transparent transmission" trial firmware) via OTA in HLK app
+- Hardware in progress (Amazon cart ~$88): SUNAPEX 12V/24V battery box + AITRIP ESP32-C3 expansion board + battery terminal clamps
+- Serial terminal test (Android) showed raw UART at 256000 baud arriving but garbled — buffer too small in terminal app, not a sensor issue
+- **Route all wires BEHIND the board** — front face is the 24GHz radar array; metal/wires in front cause ghost targets
+- External 2.4GHz flex PCB patch antenna (U.FL pigtail) tested — BLE range improved over stock; exact numbers TBD
+- Unit cost: <$10 on Amazon → disposable covert deploy use case
+- wscan+ needs: BLE-only connect flow, presence state machine, arm/deploy UI (see issue #369)
+
+**Power profile (verified — Gemini deep research + thermal analysis):**
+- Operating voltage: **5V DC only** (4.5–5.5V). 12V is NOT supported — causes thermal runaway
+- The 12V confusion originates from documentation copy-paste from HLK-LD2410B/C (which genuinely supports 5–12V). LD2450 has a miniature LDO with no thermal headroom for high-voltage drop.
+- At 12V: LDO dissipates ~1.044W → junction temp ~286°C → instant thermal destruction (silicon max 150°C). May pass unregulated 12V into 3.3V logic rail, destroying RF IC.
+- **The sensor is operational** — confirmed running all day, warm to touch (normal: ~204mW LDO dissipation at 5V), no damage observed. The 3-hour 18650 runtime was likely from an inefficient boost stage, a partially-discharged cell, or the battery supplying other loads in the test rig.
+- 12V direct-to-sensor remains documented as destructive per thermal analysis (LDO junction ~286°C). If 12V was in the test chain, a regulator was likely stepping it down before the sensor.
+- Average draw: **~120mA** continuous; peaks 150–200mA during active FMCW chirp + BLE TX
+- No native sleep mode — sensor is always active when powered
+- Recommended supply decoupling: 100µF electrolytic + 100nF ceramic cap near VCC/GND pins
+- **Single 18650 (3500mAh) + 5V boost at 85% efficiency: ~22–24 hours**
+- 2× 18650 parallel: ~44–48 hours; 2S series + 5V buck: ~48–52 hours
+- Radome: ABS plastic / polycarbonate / glass ≤2mm passes 24GHz cleanly
+- UART logic: 3.3V CMOS — direct connect to ESP32/Pi Pico; level-shift required for 5V MCUs (Arduino Uno etc.)
+
+**Speed field note:** Gemini research doc claims mm/s; official HLK V1.03 spec golden frame confirms **cm/s** (verified by decoder test). Gemini spec is incorrect on this point — do not update decoder.
+
+### No-Google policy (active)
+
+User has declared no new Google/Firebase dependencies anywhere. Existing `firebase-ai` integration is untouched (existing, consent-gated). All new sensor/BLE work is FOSS-only.
+
+### Recommended next work
+
+1. Merge/close Dependabot PRs to unblock CI queue for PR #368
+2. Merge PR #360 (WatchdogService FQN fix, reviewed and ready) — this also lands `org.json:20240303` dep on main
+3. After #368 merges: implement #369 BLE sensor node connect flow + presence state machine
+4. `knownProfiles` still not populated from Room DB — three heuristics receive no historical data at runtime (carry-forward gap)
+
+---
+
 ## 2026-04-24 Handoff Snapshot
 
 This section is the fast re-entry point for the next session.
