@@ -79,8 +79,8 @@ dependencies {
     implementation("com.google.firebase:firebase-ai")
 
     // Kotlin coroutines — required by CrowdSecCtiClient (withContext) and other async flows
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 
     // CrowdSec CTI client — /v2/smoke IP reputation lookups (Phase 3)
@@ -93,7 +93,7 @@ dependencies {
     implementation("net.zetetic:android-database-sqlcipher:4.5.4")
 
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("com.squareup.okhttp3:mockwebserver:5.3.2")
     // Provides the real org.json.JSONObject in JVM unit tests.
     // Without this, Android's stub returns 0 for all optInt() calls, breaking CrowdSecSmokeParser tests.
