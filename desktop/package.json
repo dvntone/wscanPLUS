@@ -17,7 +17,7 @@
   "devDependencies": {
     "@babel/preset-react": "7.28.5",
     "@eslint/js": "^10.0.1",
-    "electron": "41.1.1",
+    "electron": "43.2.0",
     "eslint": "10.3.0",
     "jest": "30.4.2",
     "react": "18.3.1",
