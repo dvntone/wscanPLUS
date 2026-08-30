@@ -12,7 +12,7 @@
   "dependencies": {
     "@yume-chan/adb": "2.5.1",
     "@yume-chan/adb-server-node-tcp": "2.5.2",
-    "ws": "8.20.0"
+    "ws": "8.21.3"
   },
   "devDependencies": {
     "@babel/preset-react": "7.28.5",
